@@ -42,7 +42,9 @@ final class Plugin {
 			return;
 		}
 
-		add_action( 'admin_menu', array( $provider->get( AdminMenu::class ), 'register' ) );
+		$admin_menu = $provider->get( AdminMenu::class );
+		add_action( 'admin_menu', array( $admin_menu, 'register' ) );
+		$admin_menu->register_post_handlers();
 		add_action( 'admin_enqueue_scripts', array( $provider->get( Assets::class ), 'enqueue' ) );
 		add_action( 'rest_api_init', array( $provider->get( SettingsController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( ConnectionController::class ), 'register_routes' ) );

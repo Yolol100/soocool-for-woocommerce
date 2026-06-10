@@ -21,7 +21,7 @@ final class OptionRepository {
 			'test_base_url'              => 'https://api.staging.soocool.nl',
 			'production_base_url'        => 'https://api.soocool.nl',
 			'api_key'                    => '',
-			'enable_pickup'              => true,
+			'enable_pickup'              => false,
 			'order_reference_prefix'     => '',
 			'pickup_company'             => get_bloginfo( 'name' ),
 			'pickup_contact_name'        => '',
@@ -44,9 +44,44 @@ final class OptionRepository {
 			'label_output'               => 'a6',
 			'webhook_url'                => '',
 			'goods_description_fallback' => 'WooCommerce order',
+			'packaging_type'             => 'box',
 			'temperature_regime'         => 'cooled',
+			'package_width'              => 60,
+			'package_depth'              => 40,
+			'package_height'             => 11,
+			'package_weight'             => 1600,
 			'log_retention'              => 100,
 		);
+	}
+
+	public function migrate_for_current_version(): void {
+		$stored = get_option( self::OPTION_NAME, array() );
+		if ( ! is_array( $stored ) ) {
+			return;
+		}
+
+		$settings = wp_parse_args( $stored, $this->defaults() );
+		$changed  = false;
+
+		if ( 'https://api-test.soocool.nl' === untrailingslashit( (string) ( $settings['test_base_url'] ?? '' ) ) ) {
+			$settings['test_base_url'] = 'https://api.staging.soocool.nl';
+			$changed                   = true;
+		}
+
+		// SooCool confirmed the staging delivery agreement for this connection is exactly 08:00-18:00.
+		// Older builds prefilled the manual test with 09:00-17:00, so migrate that legacy value safely.
+		if ( 'test' === (string) ( $settings['environment'] ?? 'test' )
+			&& '09:00' === (string) ( $settings['delivery_time_from'] ?? '' )
+			&& '17:00' === (string) ( $settings['delivery_time_to'] ?? '' )
+		) {
+			$settings['delivery_time_from'] = '08:00';
+			$settings['delivery_time_to']   = '18:00';
+			$changed                       = true;
+		}
+
+		if ( $changed ) {
+			update_option( self::OPTION_NAME, $this->sanitize_settings( $settings, $this->defaults() ), false );
+		}
 	}
 
 	/** @return array<string, mixed> */
@@ -77,9 +112,11 @@ final class OptionRepository {
 	private function sanitize_settings( array $settings, array $current ): array {
 		$clean = array();
 
+		$defaults = $this->defaults();
+
 		$clean['environment']         = $this->one_of( $settings['environment'] ?? $current['environment'], array( 'test', 'production' ), 'test' );
-		$clean['test_base_url']       = $this->sanitize_url( (string) ( $settings['test_base_url'] ?? $current['test_base_url'] ), (string) $current['test_base_url'] );
-		$clean['production_base_url'] = $this->sanitize_url( (string) ( $settings['production_base_url'] ?? $current['production_base_url'] ), (string) $current['production_base_url'] );
+		$clean['test_base_url']       = $this->sanitize_url( (string) ( $settings['test_base_url'] ?? $current['test_base_url'] ), (string) $defaults['test_base_url'] );
+		$clean['production_base_url'] = $this->sanitize_url( (string) ( $settings['production_base_url'] ?? $current['production_base_url'] ), (string) $defaults['production_base_url'] );
 		$clean['api_key']             = $this->sanitize_secret( $settings['api_key'] ?? null, (string) $current['api_key'] );
 
 		$clean['enable_pickup']          = $this->to_bool( $settings['enable_pickup'] ?? $current['enable_pickup'] );
@@ -90,15 +127,25 @@ final class OptionRepository {
 		$clean['pickup_phone']           = sanitize_text_field( (string) ( $settings['pickup_phone'] ?? $current['pickup_phone'] ) );
 		$clean['pickup_street']          = sanitize_text_field( (string) ( $settings['pickup_street'] ?? $current['pickup_street'] ) );
 		$clean['pickup_house_number']    = sanitize_text_field( (string) ( $settings['pickup_house_number'] ?? $current['pickup_house_number'] ) );
-		$clean['pickup_postal_code']     = strtoupper( sanitize_text_field( (string) ( $settings['pickup_postal_code'] ?? $current['pickup_postal_code'] ) ) );
+		$clean['pickup_postal_code']     = strtoupper( (string) preg_replace( '/\s+/', '', sanitize_text_field( (string) ( $settings['pickup_postal_code'] ?? $current['pickup_postal_code'] ) ) ) );
 		$clean['pickup_city']            = sanitize_text_field( (string) ( $settings['pickup_city'] ?? $current['pickup_city'] ) );
 		$clean['pickup_country']         = $this->sanitize_country( (string) ( $settings['pickup_country'] ?? $current['pickup_country'] ) );
 
 		$clean['pickup_days_offset'] = max( 0, min( 30, absint( $settings['pickup_days_offset'] ?? $current['pickup_days_offset'] ) ) );
 		$clean['pickup_time_from']   = $this->sanitize_time( (string) ( $settings['pickup_time_from'] ?? $current['pickup_time_from'] ), '08:00' );
 		$clean['pickup_time_to']     = $this->sanitize_time( (string) ( $settings['pickup_time_to'] ?? $current['pickup_time_to'] ), '18:00' );
-		$clean['delivery_time_from'] = '08:00';
-		$clean['delivery_time_to']   = '18:00';
+		$clean['delivery_time_from'] = $this->sanitize_time( (string) ( $settings['delivery_time_from'] ?? $current['delivery_time_from'] ), '08:00' );
+		$clean['delivery_time_to']   = $this->sanitize_time( (string) ( $settings['delivery_time_to'] ?? $current['delivery_time_to'] ), '18:00' );
+
+		if ( $clean['pickup_time_to'] <= $clean['pickup_time_from'] ) {
+			$clean['pickup_time_from'] = '08:00';
+			$clean['pickup_time_to']   = '18:00';
+		}
+		if ( $clean['delivery_time_to'] <= $clean['delivery_time_from'] ) {
+			$clean['delivery_time_from'] = '08:00';
+			$clean['delivery_time_to']   = '18:00';
+		}
+
 		$delivery_days_offset        = max( 0, min( 30, absint( $settings['delivery_days_offset'] ?? $current['delivery_days_offset'] ) ) );
 		if ( (bool) $clean['enable_pickup'] && $delivery_days_offset < 1 ) {
 			$delivery_days_offset = 1;
@@ -111,10 +158,28 @@ final class OptionRepository {
 		$clean['label_output']               = $this->one_of( $settings['label_output'] ?? $current['label_output'], array( 'a6', 'collated_a4' ), 'a6' );
 		$clean['webhook_url']                = $this->sanitize_url_or_empty( (string) ( $settings['webhook_url'] ?? $current['webhook_url'] ) );
 		$clean['goods_description_fallback'] = sanitize_text_field( (string) ( $settings['goods_description_fallback'] ?? $current['goods_description_fallback'] ) );
+		$clean['packaging_type']             = sanitize_key( (string) ( $settings['packaging_type'] ?? $current['packaging_type'] ?? 'box' ) );
+		$clean['packaging_type']             = '' !== $clean['packaging_type'] ? $clean['packaging_type'] : 'box';
 		$clean['temperature_regime']         = $this->one_of( $settings['temperature_regime'] ?? $current['temperature_regime'], array( 'cooled', 'frozen', 'ambient' ), 'cooled' );
+		$clean['package_width']              = $this->positive_int_between( $settings['package_width'] ?? $current['package_width'] ?? $defaults['package_width'], 1, 9999, (int) $defaults['package_width'] );
+		$clean['package_depth']              = $this->positive_int_between( $settings['package_depth'] ?? $current['package_depth'] ?? $defaults['package_depth'], 1, 9999, (int) $defaults['package_depth'] );
+		$clean['package_height']             = $this->positive_int_between( $settings['package_height'] ?? $current['package_height'] ?? $defaults['package_height'], 1, 9999, (int) $defaults['package_height'] );
+		$clean['package_weight']             = $this->positive_int_between( $settings['package_weight'] ?? $current['package_weight'] ?? $defaults['package_weight'], 1, 999999, (int) $defaults['package_weight'] );
 		$clean['log_retention']              = max( 20, min( 500, absint( $settings['log_retention'] ?? $current['log_retention'] ) ) );
 
 		return $clean;
+	}
+
+
+	private function positive_int_between( mixed $value, int $min, int $max, int $fallback ): int {
+		if ( is_numeric( $value ) ) {
+			$int = (int) $value;
+			if ( $int >= $min && $int <= $max ) {
+				return $int;
+			}
+		}
+
+		return $fallback;
 	}
 
 	public function api_key(): string {
@@ -130,20 +195,14 @@ final class OptionRepository {
 		return strlen( $this->api_key() );
 	}
 
-	public function api_key_first4(): string {
-		$api_key = $this->api_key();
-		return strlen( $api_key ) >= 8 ? substr( $api_key, 0, 4 ) : '';
-	}
-
-	public function api_key_last4(): string {
-		$api_key = $this->api_key();
-		return strlen( $api_key ) >= 8 ? substr( $api_key, -4 ) : '';
-	}
-
 	public function base_url(): string {
 		$settings = $this->all();
-		$base     = 'production' === $settings['environment'] ? (string) $settings['production_base_url'] : (string) $settings['test_base_url'];
-		return untrailingslashit( $base );
+		$defaults = $this->defaults();
+		$is_production = 'production' === (string) ( $settings['environment'] ?? 'test' );
+		$base = $is_production ? (string) ( $settings['production_base_url'] ?? '' ) : (string) ( $settings['test_base_url'] ?? '' );
+		$fallback = $is_production ? (string) $defaults['production_base_url'] : (string) $defaults['test_base_url'];
+
+		return untrailingslashit( $this->sanitize_url( $base, $fallback ) );
 	}
 
 	/** @return array<string, mixed> */
@@ -152,8 +211,6 @@ final class OptionRepository {
 		$settings['api_key_present']  = '' !== $this->api_key();
 		$settings['api_key_source']   = $this->api_key_source();
 		$settings['api_key_length']   = $this->api_key_length();
-		$settings['api_key_first4']   = $this->api_key_first4();
-		$settings['api_key_last4']    = $this->api_key_last4();
 		$settings['api_key_status']   = $this->api_key_status();
 		$settings['api_key_masked']   = $this->masked_api_key();
 		$settings['api_key']          = $settings['api_key_present'] ? $settings['api_key_masked'] : '';
@@ -261,7 +318,7 @@ final class OptionRepository {
 			return '';
 		}
 
-		return str_starts_with( $url, 'https://' ) ? $url : '';
+		return str_starts_with( $url, 'https://' ) && false !== wp_http_validate_url( $url ) ? $url : '';
 	}
 
 	public function is_allowed_api_url( string $url ): bool {
@@ -271,6 +328,19 @@ final class OptionRepository {
 
 		$parts = wp_parse_url( $url );
 		if ( ! is_array( $parts ) || 'https' !== strtolower( (string) ( $parts['scheme'] ?? '' ) ) || empty( $parts['host'] ) ) {
+			return false;
+		}
+
+		if ( ! empty( $parts['user'] ) || ! empty( $parts['pass'] ) || ! empty( $parts['query'] ) || ! empty( $parts['fragment'] ) ) {
+			return false;
+		}
+
+		$path = isset( $parts['path'] ) ? trim( (string) $parts['path'] ) : '';
+		if ( '' !== $path && '/' !== $path ) {
+			return false;
+		}
+
+		if ( isset( $parts['port'] ) && 443 !== (int) $parts['port'] ) {
 			return false;
 		}
 

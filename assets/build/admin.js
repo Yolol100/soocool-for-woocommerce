@@ -14,8 +14,6 @@
     delete payload.api_key_present;
     delete payload.api_key_source;
     delete payload.api_key_length;
-    delete payload.api_key_first4;
-    delete payload.api_key_last4;
     delete payload.api_key_status;
     var keyValue = payload.api_key == null ? '' : String(payload.api_key).trim();
     var uuidMatch = keyValue.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
@@ -180,6 +178,7 @@
         ),
         null
       ),
+      status ? el(Status, { tone: status.tone, message: status.message }) : null,
       el('div', { className: 'soocool-actions' }, el(SaveButton, { isSaving: s.saving, onClick: function(){ s.save(__('Could not save settings. Check the entered values.', 'soocool-for-woocommerce'), __('API settings saved.', 'soocool-for-woocommerce')); } }), el(c.Button, { variant: 'secondary', isBusy: testing, disabled: s.saving || testing || s.loading, onClick: ping }, __('Test connection', 'soocool-for-woocommerce')), settings.environment === 'test' ? el(c.Button, { variant: 'link', href: 'https://orders-test.soocool.nl:8443/#/authenticate/login', target: '_blank', rel: 'noreferrer noopener' }, __('Open SooCool test portal', 'soocool-for-woocommerce')) : null),
     );
   }
@@ -218,20 +217,22 @@
             el(c.TextControl, { type: 'number', min: 0, max: 30, label: __('Delivery date offset in days', 'soocool-for-woocommerce'), value: String(settings.delivery_days_offset == null ? 1 : settings.delivery_days_offset), onChange: function(v){ upd('delivery_days_offset', Number(v)); } }),
             el(c.TextControl, { type: 'time', label: __('Pickup window starts', 'soocool-for-woocommerce'), value: settings.pickup_time_from || '', onChange: function(v){ upd('pickup_time_from', v); } }),
             el(c.TextControl, { type: 'time', label: __('Pickup window ends', 'soocool-for-woocommerce'), value: settings.pickup_time_to || '', onChange: function(v){ upd('pickup_time_to', v); } }),
-            el('div', { className: 'soocool-fixed-window' },
-              el('span', { className: 'soocool-fixed-window__label' }, __('Delivery time window', 'soocool-for-woocommerce')),
-              el('strong', null, '08:00–18:00'),
-              el('span', null, __('Required by SooCool for delivery tasks and always used in the order payload.', 'soocool-for-woocommerce'))
-            )
+            el(c.TextControl, { type: 'time', label: __('Delivery window starts', 'soocool-for-woocommerce'), value: settings.delivery_time_from || '', onChange: function(v){ upd('delivery_time_from', v); } }),
+            el(c.TextControl, { type: 'time', label: __('Delivery window ends', 'soocool-for-woocommerce'), value: settings.delivery_time_to || '', onChange: function(v){ upd('delivery_time_to', v); } })
           ),
           el('div', { className: 'soocool-field-grid two' },
-            el(c.TextControl, { label: __('Fallback goods description', 'soocool-for-woocommerce'), value: settings.goods_description_fallback || '', onChange: function(v){ upd('goods_description_fallback', v); } }),
-            el(c.SelectControl, { label: __('Temperature requirement', 'soocool-for-woocommerce'), value: settings.temperature_regime || 'cooled', options: [{ label: __('Cooled', 'soocool-for-woocommerce'), value: 'cooled' }, { label: __('Frozen', 'soocool-for-woocommerce'), value: 'frozen' }, { label: __('Ambient', 'soocool-for-woocommerce'), value: 'ambient' }], onChange: function(v){ upd('temperature_regime', v); } })
+            el(c.TextControl, { label: __('Fallback goods contents', 'soocool-for-woocommerce'), value: settings.goods_description_fallback || '', onChange: function(v){ upd('goods_description_fallback', v); } }),
+            el(c.TextControl, { label: __('SooCool packagingType', 'soocool-for-woocommerce'), help: __('Default: box. Change this when SooCool expects a different packagingType value.', 'soocool-for-woocommerce'), value: settings.packaging_type || 'box', onChange: function(v){ upd('packaging_type', v); } }),
+            el(c.SelectControl, { label: __('Transport requirement', 'soocool-for-woocommerce'), help: __('Sent as goods[].transportRequirements. Default: cooled.', 'soocool-for-woocommerce'), value: settings.temperature_regime || 'cooled', options: [{ label: __('Cooled', 'soocool-for-woocommerce'), value: 'cooled' }, { label: __('Frozen', 'soocool-for-woocommerce'), value: 'frozen' }, { label: __('Ambient', 'soocool-for-woocommerce'), value: 'ambient' }], onChange: function(v){ upd('temperature_regime', v); } }),
+            el(c.TextControl, { type: 'number', min: 1, label: __('Package width', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.width.', 'soocool-for-woocommerce'), value: String(settings.package_width == null ? 60 : settings.package_width), onChange: function(v){ upd('package_width', Number(v)); } }),
+            el(c.TextControl, { type: 'number', min: 1, label: __('Package depth', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.depth.', 'soocool-for-woocommerce'), value: String(settings.package_depth == null ? 40 : settings.package_depth), onChange: function(v){ upd('package_depth', Number(v)); } }),
+            el(c.TextControl, { type: 'number', min: 1, label: __('Package height', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.height.', 'soocool-for-woocommerce'), value: String(settings.package_height == null ? 11 : settings.package_height), onChange: function(v){ upd('package_height', Number(v)); } }),
+            el(c.TextControl, { type: 'number', min: 1, label: __('Package weight', 'soocool-for-woocommerce'), help: __('Sent as goods[].weight.', 'soocool-for-woocommerce'), value: String(settings.package_weight == null ? 1600 : settings.package_weight), onChange: function(v){ upd('package_weight', Number(v)); } })
           ),
           el(c.TextControl, { type: 'url', label: __('SooCool webhook URL', 'soocool-for-woocommerce'), help: __('Optional callback URL sent with the SooCool order. Leave empty when SooCool does not require it.', 'soocool-for-woocommerce'), value: settings.webhook_url || '', onChange: function(v){ upd('webhook_url', v); } })
         )
       ),
-      el(Note, null, __('When SooCool collects packages from you, keep pickup enabled. SooCool receives two tasks: one pickup task with the pickup window above and one delivery task with the fixed 08:00–18:00 delivery window.', 'soocool-for-woocommerce')),
+      el(Note, null, __('When SooCool collects packages from you, keep pickup enabled. SooCool receives two tasks: one pickup task with the pickup window above and one delivery task with the configured delivery window.', 'soocool-for-woocommerce')),
       el('div', { className: 'soocool-actions' }, el(SaveButton, { isSaving: s.saving, onClick: function(){ s.save(__('Could not save mapping settings. Check required pickup and delivery fields.', 'soocool-for-woocommerce'), __('Pickup & delivery settings saved.', 'soocool-for-woocommerce')); } }, __('Save pickup & delivery', 'soocool-for-woocommerce')))
     );
   }
@@ -302,13 +303,35 @@
   }
 
   var tabs = [
-    { name: 'connection', title: __('API connection', 'soocool-for-woocommerce'), className: 'soocool-tab' },
-    { name: 'mapping', title: __('Pickup & delivery', 'soocool-for-woocommerce'), className: 'soocool-tab' },
-    { name: 'automation', title: __('Automation', 'soocool-for-woocommerce'), className: 'soocool-tab' },
-    { name: 'labels', title: __('Shipping labels', 'soocool-for-woocommerce'), className: 'soocool-tab' },
-    { name: 'logs', title: __('Activity logs', 'soocool-for-woocommerce'), className: 'soocool-tab' }
+    { name: 'connection', title: __('API connection', 'soocool-for-woocommerce') },
+    { name: 'mapping', title: __('Pickup & delivery', 'soocool-for-woocommerce') },
+    { name: 'automation', title: __('Automation', 'soocool-for-woocommerce') },
+    { name: 'labels', title: __('Shipping labels', 'soocool-for-woocommerce') },
+    { name: 'api_test', title: __('API-Test', 'soocool-for-woocommerce'), url: (window.sooCoolAdmin && window.sooCoolAdmin.manualTestUrl) ? window.sooCoolAdmin.manualTestUrl : 'admin.php?page=soocool-manual-order-test' },
+    { name: 'logs', title: __('Activity logs', 'soocool-for-woocommerce') }
   ];
-  function App(){ return el('main', { className: 'soocool-shell', 'aria-label': __('SooCool for WooCommerce settings', 'soocool-for-woocommerce') }, el(ToastHost), el('section', { className: 'soocool-panel', 'aria-label': __('SooCool settings', 'soocool-for-woocommerce') }, el(c.TabPanel, { className: 'soocool-tabs', tabs: tabs }, function(tab){ if (tab.name === 'connection') { return el(ConnectionScreen); } if (tab.name === 'mapping') { return el(MappingScreen); } if (tab.name === 'automation') { return el(AutomationScreen); } if (tab.name === 'labels') { return el(LabelsScreen); } return el(LogsScreen); }))); }
+  function activeFromHash(){ var hash = (window.location.hash || '').replace('#', ''); return ['mapping', 'automation', 'labels', 'logs'].indexOf(hash) !== -1 ? hash : 'connection'; }
+  function renderTabContent(active){ if (active === 'mapping') { return el(MappingScreen); } if (active === 'automation') { return el(AutomationScreen); } if (active === 'labels') { return el(LabelsScreen); } if (active === 'logs') { return el(LogsScreen); } return el(ConnectionScreen); }
+  function App(){
+    var activeState = useState(activeFromHash());
+    var active = activeState[0];
+    var setActive = activeState[1];
+    function selectTab(name){ setActive(name); if (name === 'connection') { history.replaceState(null, '', window.location.pathname + window.location.search); } else { history.replaceState(null, '', '#' + name); } }
+    return el('main', { className: 'soocool-shell', 'aria-label': __('SooCool for WooCommerce settings', 'soocool-for-woocommerce') },
+      el(ToastHost),
+      el('section', { className: 'soocool-panel soocool-tabs', 'aria-label': __('SooCool settings', 'soocool-for-woocommerce') },
+        el('div', { className: 'components-tab-panel__tabs', role: 'tablist', 'aria-label': __('SooCool settings sections', 'soocool-for-woocommerce') },
+          tabs.map(function(tab){
+            if (tab.url) {
+              return el('a', { key: tab.name, className: 'components-button soocool-tab soocool-tab-link', href: tab.url }, tab.title);
+            }
+            return el(c.Button, { key: tab.name, className: 'soocool-tab' + (active === tab.name ? ' is-active' : ''), onClick: function(){ selectTab(tab.name); } }, tab.title);
+          })
+        ),
+        el('div', { className: 'components-tab-panel__tab-content' }, renderTabContent(active))
+      )
+    );
+  }
   var root = document.getElementById('soocool-admin-app');
   if (root) { wp.element.createRoot(root).render(el(App)); }
 })(window.wp);

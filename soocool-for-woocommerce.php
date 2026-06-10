@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SooCool for WooCommerce
  * Description: Connect WooCommerce orders with the SooCool transport API.
- * Version: 0.3.41
+ * Version: 0.3.87
  * Author: Webactueel
  * Text Domain: soocool-for-woocommerce
  * Domain Path: /languages
@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'SOOCOOL_PLUGIN_FILE', __FILE__ );
 define( 'SOOCOOL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SOOCOOL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'SOOCOOL_VERSION', '0.3.41' );
+define( 'SOOCOOL_VERSION', '0.3.87' );
 
 add_action(
 	'before_woocommerce_init',
@@ -78,12 +78,16 @@ register_activation_hook(
 			deactivate_plugins( plugin_basename( __FILE__ ) );
 			wp_die( esc_html__( 'SooCool for WooCommerce requires PHP 8.1 or higher.', 'soocool-for-woocommerce' ) );
 		}
+
+		( new SooCool\WooCommerce\Infrastructure\OptionRepository() )->migrate_for_current_version();
 	}
 );
 
 add_action(
 	'plugins_loaded',
 	static function (): void {
+		load_plugin_textdomain( 'soocool-for-woocommerce', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+		( new SooCool\WooCommerce\Infrastructure\OptionRepository() )->migrate_for_current_version();
 		SooCool\WooCommerce\Plugin::boot();
 	}
 );

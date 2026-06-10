@@ -69,6 +69,15 @@ final class ConnectionController extends AbstractRestController {
 				),
 				$status
 			);
+		} catch ( \Throwable $exception ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'status'  => 500,
+					'message' => __( 'Connection test failed unexpectedly. Check the SooCool logs and PHP error log for details.', 'soocool-for-woocommerce' ),
+				),
+				500
+			);
 		}
 	}
 

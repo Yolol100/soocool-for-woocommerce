@@ -1,4 +1,170 @@
-# Changelog
+## 0.3.86 - 2026-06-10
+
+- Bump release version metadata to 0.3.86.
+- Avoid storing manual API-Test form values in the transient result because the response screen no longer reuses them and the fields may contain contact/address data.
+- Recheck PHP syntax, admin JS syntax, CSS parse and ZIP integrity after the patch.
+
+## 0.3.85 - 2026-06-10
+
+- Fix dropdown arrow visibility in the SooCool admin UI while keeping the styling scoped to the plugin screen.
+
+## 0.3.84 - 2026-06-10
+- Release-ready package with the correct `soocool-for-woocommerce/` ZIP root folder.
+- Align version metadata across plugin header, `SOOCOOL_VERSION`, assets, readme and POT.
+- Clarify readme external service wording to only describe active connection, order submission, order lookup and label download flows.
+- Recheck PHP syntax, admin JS syntax, CSS parse, REST/admin security greps, credential exposure, HPOS storage patterns and ZIP integrity.
+
+## 0.3.83 - 2026-06-10
+- Audit and clean the SooCool admin CSS/JS layer.
+- Remove unnecessary `!important` flags from scoped admin CSS.
+- Consolidate duplicate select, full-width panel and card-layout overrides without changing plugin behavior.
+- Recheck PHP syntax, admin JS syntax, CSS parse, asset enqueue scope and ZIP integrity.
+
+## 0.3.82 - 2026-06-10
+- Move the API-Test tab between Shipping labels and Activity logs in the SooCool admin navigation.
+
+## 0.3.81 - 2026-06-10
+- Make the manual API-Test delivery-only in the UI because the form builds a single task and the SooCool contract requires at least one delivery task.
+- Pickup + delivery remains available through normal WooCommerce order sync when pickup is enabled.
+
+## 0.3.80 - 2026-06-10
+- Move API-Test from the WordPress left submenu into the main SooCool tab navigation.
+- Keep the API-Test page available as a hidden admin page linked from the tab bar.
+- Add the shared tab navigation to the API-Test page so the active API-Test tab matches the main settings UI.
+
+## 0.3.79 - 2026-06-10
+- Polish main settings layout: keep cards content-sized instead of stretching short cards, and keep odd fields aligned in the grid.
+
+## 0.3.78 - 2026-06-10
+- Style the API-Test Vorige button with the same primary red button design as the existing plugin actions.
+
+## 0.3.77 - 2026-06-10
+- Hide the manual API-Test form after a response is shown and add a Vorige button to return to the editable form.
+
+## 0.3.76 - 2026-06-10
+- Migrates legacy 09:00-17:00 test delivery windows to the SooCool-confirmed 08:00-18:00 staging delivery window.
+- Keeps API keys and portal credentials out of the plugin code.
+
+## 0.3.75 - 2026-06-10
+
+- Admin: rename the submenu label and page heading to **API-Test**.
+- Admin: make the order reference field full width on the API-Test page.
+
+## 0.3.73 - 2026-06-10
+
+- Style the manual API-test page with the main SooCool admin design system.
+- Enqueue the shared SooCool admin stylesheet on the manual API-test submenu page.
+- Remove the old fictitious WooCommerce test-order button and unused REST route from the React settings screen.
+- Keep the API-Test page as the staging validation path.
+
+## 0.3.72 - 2026-06-10
+- Combo fix: merge the uploaded API-contract controller/builders with the already fixed plugin instead of replacing the plugin wholesale.
+- Payload: prefer product dimensions/weight when available and safely fall back to configured package width, depth, height and weight.
+- Manual API test: keep the improved API-contract form fields, settings-based defaults and privacy redaction for displayed/stored debug output.
+- Task handling: keep pickup/delivery date ordering safe when pickup is enabled, add mobile contact mapping, and expose a contactInfo filter.
+- QA: reran PHP syntax checks, targeted compatibility greps and ZIP integrity after the patch.
+
+## 0.3.71 - 2026-06-10
+- Bugfix: save package width, depth, height and weight from the REST settings endpoint so the admin UI values are used in SooCool order payloads.
+- Privacy hardening: redact personal/contact/address fields from manual API-test debug output before storing or rendering the transient result.
+- Order safety: add a short per-order sync lock around REST and WooCommerce order-action submissions to reduce duplicate create-order requests from concurrent triggers.
+- QA: reran PHP syntax checks and ZIP integrity after the patch.
+
+## 0.3.70 - 2026-06-10
+- API contract fix: build SooCool create-order payloads with nested task `timeWindow`, `address`, `contactInfo` and task-level `goods` ID references.
+- Goods contract fix: use negative create-request `goodId` values, include dimensions, weight and `transportRequirements`, and reference those IDs from every task.
+- Debugging: surface SooCool `errors[]` details in test-order and order-sync responses instead of only showing a generic rejection message.
+- Settings: add package dimension, weight and transport requirement fields; normalize NL postcodes without spaces.
+- QA: reran PHP syntax checks, admin JS syntax check, automatic delivery/pickup payload harnesses, version consistency and ZIP integrity.
+
+## 0.3.66 - 2026-06-10
+- Remove an unreachable duplicate return in API URL sanitizing.
+- Fall back to the official SooCool hosts when direct option sanitizing receives old/corrupt API base URLs.
+- Re-run PHP syntax, JS syntax, version consistency and ZIP integrity checks after the patch.
+
+## 0.3.60 - 2026-06-10
+
+- Settings: reject invalid pickup/delivery time windows in the REST controller before sanitizer fallback can silently reset them.
+- Release hygiene: consolidate duplicate readme changelog and upgrade-notice entries, and set a conservative tested-up-to value.
+- QA: rerun full file-by-file static audit, PHP syntax checks, JS syntax check, version consistency checks and ZIP integrity checks.
+
+## 0.3.59 - 2026-06-10
+- Manual API-test hardening: after Extra JSON merging, require at least one delivery task and ensure pickup tasks start before delivery tasks, matching the documented order requirement.
+- Documentation cleanup: update stale README wording about the configurable delivery window.
+
+## 0.3.58 - 2026-06-10
+- API safety: do not automatically retry non-idempotent POST/PUT/DELETE requests, reducing duplicate-order risk when a create-order request reaches SooCool but the response is temporarily unavailable.
+- Test-order hardening: validate the final payload again after overriding the generated test order reference.
+- Documentation packaging: include the privacy and source/build disclosure files referenced from README.md.
+- Documentation cleanup: remove stale fixed-delivery-window wording now that delivery windows are configurable.
+
+## 0.3.57 - 2026-06-10
+- Avoid WordPress local timestamp double-offset edge cases when building SooCool task dates and manual test defaults.
+
+- Label hardening: treat any `order_ids` request as a bulk-label request, even when only one ID is provided, so nonce handling and the documented `/shipping-label?orderIds=` endpoint stay consistent.
+- Test-order hardening: re-check the generated SooCool test order reference after overriding the payload reference.
+
+## 0.3.55 - 2026-06-10
+
+- Bugfix: keep commas unescaped in multiple-label `orderIds=1,2,3` requests while still encoding each ID value, matching the SooCool comma-separated query contract.
+- Rechecked PHP syntax, admin JS syntax, ZIP integrity and release metadata after the patch.
+
+## 0.3.53 - 2026-06-10
+
+- Release/cache bugfix: update `assets/build/admin.asset.php` to the current plugin version so WordPress does not keep serving stale admin JavaScript after upload updates.
+- API hardening: only send `Content-Type: application/json` when a JSON body is present, keeping GET/PDF label requests cleaner for stricter API gateways.
+- Release hygiene: update the POT project version and upgrade notice to the current release.
+
+## 0.3.52 - 2026-06-10
+
+- Bugfix: catch unexpected runtime failures in the REST order sync endpoint so admin UI calls return a safe error response instead of a fatal error.
+- Bugfix: catch unexpected runtime failures in the REST connection test endpoint.
+- Validation: require `goods[].goodId` to be a positive integer in both automatic payloads and the manual API test.
+- Privacy hardening: remove query strings such as `orderReference` from API log path context.
+- Validation: keep manual API test `taskType` limited to `delivery` or `pickup` after Extra JSON merging.
+
+## 0.3.49 - 2026-06-10
+
+- Bugfix: use the configurable delivery time window in the admin UI and REST settings instead of showing a stale fixed 08:00-18:00 message.
+- Bugfix: reject invalid delivery windows where the end time is not later than the start time.
+- Bugfix: add a configurable `packaging_type` setting and use it for `goods[].packagingType` instead of hardcoding `box` only.
+- Bugfix: validate the final manual API-test payload after Extra JSON merging so required SooCool fields cannot be accidentally removed.
+
+## 0.3.48 - 2026-06-10
+
+- Bugfix: preserve configured delivery time window settings instead of resetting them to 08:00-18:00 on save.
+- Bugfix: format SooCool `startTime` and `endTime` with the WordPress site timezone offset instead of forcing UTC output.
+- Validation: reject manual and automatic payloads where `endTime` is not later than `startTime`.
+
+## 0.3.47 - 2026-06-10
+
+- API: align the automatic WooCommerce order payload with the SooCool `/order` contract used by the manual API test.
+- Tasks: send `taskType`, `startTime`, `endTime` and `postCode` inside every task instead of the older `type`, `date`, `timeWindow` and nested address-only shape.
+- Goods: send `goodId`, `packagingType` and `contents` for each WooCommerce package, and omit empty barcode values by default.
+- Validation: check required SooCool task and good fields before submitting automatic orders.
+
+## 0.3.46 - 2026-06-10
+
+- Admin: add a separate **SooCool > API-Test** menu item for sending an explicit SooCool `/order` test payload.
+- API test: align the manual test body with the documented SooCool order shape: root `orderReference`, non-empty `tasks[]` and non-empty `goods[]`.
+- API test: place `taskType`, `startTime`, `endTime` and `postCode` inside `tasks[0]`, and place `goodId`, `packagingType`, `contents` and optional `barcode` inside `goods[0]`.
+- Admin: show a clear success/failure result, HTTP status, returned API errors, sent payload and SooCool response after every manual test.
+
+## 0.3.44 - 2026-06-10
+
+- Admin UI: make the test-order action a branded primary SooCool button with a visible busy label, so it is visually clear and consistent with the plugin interface.
+
+## 0.3.43 - 2026-06-10
+
+- Security hardening: remove API key first/last-character diagnostics from REST/admin/debug paths. Only non-secret diagnostics such as presence, source, status and length remain.
+- Rechecked test-order implementation after packaging: PHP lint, admin JS syntax and ZIP integrity are clean.
+
+## 0.3.42
+
+- Add a secured REST endpoint and admin UI button to create a fictitious WooCommerce test order and send it to the SooCool test API.
+- Block test-order creation when the plugin is configured for the production SooCool environment.
+- Align the REST order sync endpoint with the manual order action by checking existing SooCool orders by reference before creating a new one.
+- Keep API-key edge fragments out of stored logs while retaining non-secret key diagnostics.
 
 ## 0.3.41
 - Release hygiene: consolidate duplicate readme changelog and upgrade-notice entries.

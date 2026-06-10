@@ -55,6 +55,11 @@ final class SettingsController extends AbstractRestController {
 			}
 		}
 
+		$raw_window_error = $this->validate_requested_time_windows( $payload );
+		if ( $raw_window_error instanceof WP_Error ) {
+			return $raw_window_error;
+		}
+
 		$settings = $this->options->preview_update( $payload );
 		if ( (bool) $settings['enable_pickup'] && (int) $settings['delivery_days_offset'] < 1 ) {
 			return new WP_Error( 'soocool_invalid_delivery_offset', __( 'Delivery days offset must be at least 1 when pickup tasks are enabled.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
@@ -64,6 +69,9 @@ final class SettingsController extends AbstractRestController {
 		}
 		if ( (bool) $settings['enable_pickup'] && (string) $settings['pickup_time_to'] <= (string) $settings['pickup_time_from'] ) {
 			return new WP_Error( 'soocool_invalid_pickup_window', __( 'Pickup window end time must be later than the pickup window start time.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+		}
+		if ( (string) $settings['delivery_time_to'] <= (string) $settings['delivery_time_from'] ) {
+			return new WP_Error( 'soocool_invalid_delivery_window', __( 'Delivery window end time must be later than the delivery window start time.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
 		}
 
 		$this->options->update( $payload );
@@ -231,12 +239,41 @@ final class SettingsController extends AbstractRestController {
 				'required'          => false,
 				'sanitize_callback' => $text,
 			),
+			'packaging_type'             => array(
+				'type'              => 'string',
+				'required'          => false,
+				'sanitize_callback' => $key,
+			),
 			'temperature_regime'         => array(
 				'type'              => 'string',
 				'required'          => false,
 				'sanitize_callback' => $key,
 				'enum'              => array( 'cooled', 'frozen', 'ambient' ),
 				'validate_callback' => array( $this, 'validate_temperature_regime' ),
+			),
+			'package_width'              => array(
+				'type'              => 'integer',
+				'required'          => false,
+				'sanitize_callback' => $int,
+				'validate_callback' => $range_validate( 1, 9999 ),
+			),
+			'package_depth'              => array(
+				'type'              => 'integer',
+				'required'          => false,
+				'sanitize_callback' => $int,
+				'validate_callback' => $range_validate( 1, 9999 ),
+			),
+			'package_height'             => array(
+				'type'              => 'integer',
+				'required'          => false,
+				'sanitize_callback' => $int,
+				'validate_callback' => $range_validate( 1, 9999 ),
+			),
+			'package_weight'             => array(
+				'type'              => 'integer',
+				'required'          => false,
+				'sanitize_callback' => $int,
+				'validate_callback' => $range_validate( 1, 999999 ),
 			),
 			'log_retention'              => array(
 				'type'              => 'integer',
@@ -247,6 +284,45 @@ final class SettingsController extends AbstractRestController {
 		);
 	}
 
+
+
+	/** @param array<string, mixed> $payload */
+	private function validate_requested_time_windows( array $payload ): ?WP_Error {
+		$current = $this->options->all();
+
+		$pickup_from = $this->normalized_requested_time( $payload, $current, 'pickup_time_from' );
+		$pickup_to   = $this->normalized_requested_time( $payload, $current, 'pickup_time_to' );
+		if ( $this->payload_touches_any( $payload, array( 'pickup_time_from', 'pickup_time_to' ) ) && '' !== $pickup_from && '' !== $pickup_to && $pickup_to <= $pickup_from ) {
+			return new WP_Error( 'soocool_invalid_pickup_window', __( 'Pickup window end time must be later than the pickup window start time.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+		}
+
+		$delivery_from = $this->normalized_requested_time( $payload, $current, 'delivery_time_from' );
+		$delivery_to   = $this->normalized_requested_time( $payload, $current, 'delivery_time_to' );
+		if ( $this->payload_touches_any( $payload, array( 'delivery_time_from', 'delivery_time_to' ) ) && '' !== $delivery_from && '' !== $delivery_to && $delivery_to <= $delivery_from ) {
+			return new WP_Error( 'soocool_invalid_delivery_window', __( 'Delivery window end time must be later than the delivery window start time.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+		}
+
+		return null;
+	}
+
+	/** @param array<string, mixed> $payload @param array<string, mixed> $current */
+	private function normalized_requested_time( array $payload, array $current, string $key ): string {
+		$value = array_key_exists( $key, $payload ) ? $payload[ $key ] : ( $current[ $key ] ?? '' );
+		$value = sanitize_text_field( (string) $value );
+
+		return preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $value ) ? $value : '';
+	}
+
+	/** @param array<string, mixed> $payload @param array<int, string> $keys */
+	private function payload_touches_any( array $payload, array $keys ): bool {
+		foreach ( $keys as $key ) {
+			if ( array_key_exists( $key, $payload ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
 
 	public function validate_environment( mixed $value ): bool {
 		return in_array( (string) $value, array( 'test', 'production' ), true );

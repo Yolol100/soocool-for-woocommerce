@@ -49,8 +49,6 @@ final class SecretSanitizer {
 				'api_key_present',
 				'api_key_source',
 				'api_key_length',
-				'api_key_first4',
-				'api_key_last4',
 				'api_key_status',
 				'header_name_sent',
 				'request_url_host',

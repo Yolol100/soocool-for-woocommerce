@@ -17,6 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class OrderActions {
 
+	private const SYNC_LOCK_TTL_SECONDS = 120;
+
 	public function __construct(
 		private readonly ApiClient $client,
 		private readonly OrderPayloadBuilder $builder,
@@ -43,6 +45,12 @@ final class OrderActions {
 			return;
 		}
 
+		$order_id = (int) $order->get_id();
+		if ( ! $this->acquire_sync_lock( $order_id ) ) {
+			$order->add_order_note( __( 'SooCool sync skipped because another sync is already running for this order.', 'soocool-for-woocommerce' ) );
+			return;
+		}
+
 		try {
 			$this->meta->save_pending( $order );
 			$payload = $this->builder->build( $order );
@@ -63,16 +71,47 @@ final class OrderActions {
 			$this->meta->save_success( $order, $body );
 			$order->add_order_note( __( 'Order sent to SooCool.', 'soocool-for-woocommerce' ) );
 		} catch ( PayloadValidationException $exception ) {
-			$this->meta->save_error( $order, $exception->getMessage() );
+			$message = sanitize_text_field( $exception->getMessage() );
+			$this->meta->save_error( $order, $message );
 			/* translators: %s: Validation error message returned while building the SooCool order payload. */
-			$order->add_order_note( sprintf( __( 'SooCool validation failed: %s', 'soocool-for-woocommerce' ), $exception->getMessage() ) );
+			$order->add_order_note( sprintf( __( 'SooCool validation failed: %s', 'soocool-for-woocommerce' ), $message ) );
 		} catch ( ApiException $exception ) {
 			$message = $this->public_api_error_message( $exception );
 			$this->meta->save_error( $order, $message );
 			$order->add_order_note( $message );
+		} catch ( \Throwable $exception ) {
+			$message = __( 'SooCool sync failed unexpectedly. Check the SooCool logs and PHP error log for details.', 'soocool-for-woocommerce' );
+			$this->meta->save_error( $order, $message );
+			$order->add_order_note( $message );
+		} finally {
+			$this->release_sync_lock( $order_id );
 		}
 	}
 
+
+	private function acquire_sync_lock( int $order_id ): bool {
+		$key     = $this->sync_lock_key( $order_id );
+		$expires = (int) get_option( $key, 0 );
+		$now     = time();
+
+		if ( $expires > $now ) {
+			return false;
+		}
+
+		if ( $expires > 0 ) {
+			delete_option( $key );
+		}
+
+		return add_option( $key, (string) ( $now + self::SYNC_LOCK_TTL_SECONDS ), '', false );
+	}
+
+	private function release_sync_lock( int $order_id ): void {
+		delete_option( $this->sync_lock_key( $order_id ) );
+	}
+
+	private function sync_lock_key( int $order_id ): string {
+		return 'soocool_sync_lock_' . absint( $order_id );
+	}
 
 	/** @return array<string, mixed> */
 	private function find_existing_soocool_order( string $order_reference ): array {

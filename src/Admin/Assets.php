@@ -11,7 +11,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Assets {
 
 	public function enqueue( string $hook ): void {
-		if ( 'toplevel_page_' . AdminMenu::PAGE_SLUG !== $hook ) {
+		$is_settings_page = 'toplevel_page_' . AdminMenu::PAGE_SLUG === $hook;
+		$is_manual_page   = str_ends_with( $hook, '_page_' . AdminMenu::MANUAL_TEST_PAGE_SLUG ) || 'admin_page_' . AdminMenu::MANUAL_TEST_PAGE_SLUG === $hook;
+
+		if ( ! $is_settings_page && ! $is_manual_page ) {
 			return;
 		}
 
@@ -20,21 +23,23 @@ final class Assets {
 			$asset_file = SOOCOOL_PLUGIN_DIR . 'assets/build/admin.asset.php';
 		}
 
-		$asset = is_readable( $asset_file ) ? require $asset_file : array(
-			'dependencies' => array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n' ),
-			'version'      => SOOCOOL_VERSION,
+		$asset = is_readable( $asset_file ) ? require $asset_file : array();
+		if ( ! is_array( $asset ) ) {
+			$asset = array();
+		}
+		$asset = wp_parse_args(
+			$asset,
+			array(
+				'dependencies' => array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n' ),
+				'version'      => SOOCOOL_VERSION,
+			)
 		);
+		if ( ! is_array( $asset['dependencies'] ) ) {
+			$asset['dependencies'] = array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n' );
+		}
 
 		$script_file = is_readable( SOOCOOL_PLUGIN_DIR . 'assets/build/app.js' ) ? 'app.js' : 'admin.js';
 		$style_file  = is_readable( SOOCOOL_PLUGIN_DIR . 'assets/build/app.css' ) ? 'app.css' : 'admin.css';
-
-		wp_enqueue_script(
-			'soocool-admin',
-			SOOCOOL_PLUGIN_URL . 'assets/build/' . $script_file,
-			$asset['dependencies'],
-			$asset['version'],
-			true
-		);
 
 		if ( is_readable( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $style_file ) ) {
 			wp_enqueue_style(
@@ -45,12 +50,25 @@ final class Assets {
 			);
 		}
 
+		if ( ! $is_settings_page ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			'soocool-admin',
+			SOOCOOL_PLUGIN_URL . 'assets/build/' . $script_file,
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
 		wp_add_inline_script(
 			'soocool-admin',
 			'window.sooCoolAdmin=' . wp_json_encode(
 				array(
-					'restUrl' => esc_url_raw( rest_url( 'soocool/v1' ) ),
-					'nonce'   => wp_create_nonce( 'wp_rest' ),
+					'restUrl'       => esc_url_raw( rest_url( 'soocool/v1' ) ),
+					'nonce'         => wp_create_nonce( 'wp_rest' ),
+					'manualTestUrl' => esc_url_raw( admin_url( 'admin.php?page=' . AdminMenu::MANUAL_TEST_PAGE_SLUG ) ),
 				)
 			) . ';',
 			'before'

@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class ApiClient {
 
-	private const RETRYABLE_STATUS_CODES = array( 502, 503 );
+	private const RETRYABLE_STATUS_CODES = array( 502, 503, 504 );
 	private const REQUEST_TIMEOUT_SECONDS = 10;
 	private const MAX_RETRY_ATTEMPTS = 2;
 
@@ -69,7 +69,7 @@ final class ApiClient {
 		}
 
 		$output = $this->normalize_label_output( $output );
-		return $this->request( 'GET', '/shipping-label?orderIds=' . rawurlencode( implode( ',', $ids ) ) . '&output=' . rawurlencode( $output ), null, array( 'Accept' => 'application/pdf' ) );
+		return $this->request( 'GET', '/shipping-label?orderIds=' . implode( ',', array_map( 'rawurlencode', $ids ) ) . '&output=' . rawurlencode( $output ), null, array( 'Accept' => 'application/pdf' ) );
 	}
 
 	private function normalize_label_output( string $output ): string {
@@ -97,19 +97,20 @@ final class ApiClient {
 			throw new ApiException( esc_html__( 'Missing or invalid SooCool API key. Paste and save the API key again.', 'soocool-for-woocommerce' ), 401 );
 		}
 
+		$headers = array_merge(
+			array(
+				'X-API-Key'  => $api_key,
+				'Accept'     => 'application/json',
+				'User-Agent' => 'SooCool for WooCommerce/' . SOOCOOL_VERSION . '; ' . home_url( '/' ),
+			),
+			$extra_headers
+		);
+
 		$args = array(
 			'method'      => $method,
 			'timeout'     => self::REQUEST_TIMEOUT_SECONDS,
 			'redirection' => 0,
-			'headers'     => array_merge(
-				array(
-					'X-API-Key'    => $api_key,
-					'Content-Type' => 'application/json',
-					'Accept'       => 'application/json',
-					'User-Agent'   => 'SooCool for WooCommerce/' . SOOCOOL_VERSION . '; ' . home_url( '/' ),
-				),
-				$extra_headers
-			),
+			'headers'     => $headers,
 		);
 
 		if ( null !== $payload ) {
@@ -117,16 +118,17 @@ final class ApiClient {
 			if ( false === $json ) {
 				throw new ApiException( esc_html__( 'Could not encode SooCool payload.', 'soocool-for-woocommerce' ), 0 );
 			}
+			$args['headers']['Content-Type'] = 'application/json';
 			$args['body'] = $json;
 		}
 
-		$response = $this->remote_request_with_retry( $url, $args );
+		$response = $this->remote_request_with_retry( $method, $url, $args );
 		if ( is_wp_error( $response ) ) {
 			$this->logger->error(
 				'SooCool request failed.',
 				array(
 					'method' => $method,
-					'path'   => $path,
+					'path'   => $this->log_path( $path ),
 					'error'  => $response->get_error_message(),
 				)
 			);
@@ -146,7 +148,7 @@ final class ApiClient {
 			$context = array_merge(
 				array(
 					'method' => $method,
-					'path'   => $path,
+					'path'   => $this->log_path( $path ),
 					'status' => $status,
 					'errors' => $errors,
 				),
@@ -163,7 +165,7 @@ final class ApiClient {
 			'SooCool API request completed.',
 			array(
 				'method' => $method,
-				'path'   => $path,
+				'path'   => $this->log_path( $path ),
 				'status' => $status,
 			)
 		);
@@ -181,12 +183,17 @@ final class ApiClient {
 			'api_key_source'  => $this->options->api_key_source(),
 			'api_key_status'  => $this->options->api_key_status(),
 			'api_key_length'  => strlen( $api_key ),
-			'api_key_first4'  => strlen( $api_key ) >= 8 ? substr( $api_key, 0, 4 ) : '',
-			'api_key_last4'   => strlen( $api_key ) >= 8 ? substr( $api_key, -4 ) : '',
 			'header_name_sent' => 'X-API-Key',
 			'request_url_host' => $host,
-			'request_path'     => $path,
+			'request_path'     => $this->log_path( $path ),
 		);
+	}
+
+	private function log_path( string $path ): string {
+		$query_position = strpos( $path, '?' );
+		$path_only      = false === $query_position ? $path : substr( $path, 0, $query_position );
+
+		return sanitize_text_field( $path_only );
 	}
 
 	private function decode_body( string $raw ): mixed {
@@ -260,23 +267,29 @@ final class ApiClient {
 		return sanitize_text_field( (string) $body['traceId'] );
 	}
 
-	/** @param array<string, mixed> $args @return array<string, mixed>|WP_Error */
-	private function remote_request_with_retry( string $url, array $args ): array|WP_Error {
+	/** @param array<string, mixed> $args @return array<string, mixed>|\WP_Error */
+	private function remote_request_with_retry( string $method, string $url, array $args ): array|\WP_Error {
 		$attempts = 0;
 		$response = null;
+
+		$method    = strtoupper( $method );
+		$may_retry = in_array( $method, array( 'GET', 'HEAD' ), true );
 
 		do {
 			++$attempts;
 			$response = wp_remote_request( $url, $args );
-			$status   = is_wp_error( $response ) ? 0 : (int) wp_remote_retrieve_response_code( $response );
-			if ( ! in_array( $status, self::RETRYABLE_STATUS_CODES, true ) ) {
+			$status       = is_wp_error( $response ) ? 0 : (int) wp_remote_retrieve_response_code( $response );
+			$should_retry = $may_retry && ( is_wp_error( $response ) || in_array( $status, self::RETRYABLE_STATUS_CODES, true ) );
+			if ( ! $should_retry ) {
 				break;
 			}
 			$this->logger->info(
 				'Retrying temporary SooCool API error.',
 				array(
+					'method'  => $method,
 					'status'  => $status,
 					'attempt' => $attempts,
+					'error'   => is_wp_error( $response ) ? $response->get_error_message() : '',
 				)
 			);
 		} while ( $attempts < self::MAX_RETRY_ATTEMPTS );

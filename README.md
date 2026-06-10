@@ -32,8 +32,8 @@ This release package contains runtime PHP source and human-readable built admin 
 - SooCool API connection test via `/ping`.
 - Manual WooCommerce order action to send an order to SooCool.
 - Optional automatic order submission by WooCommerce status.
-- Pickup and delivery task support.
-- Fixed SooCool delivery window `08:00-18:00` for every delivery task.
+- Optional pickup and delivery task support; delivery-only is the safe default.
+- Configurable SooCool delivery window for every delivery task.
 - SooCool order ID, reference, sync status and last error stored in WooCommerce order meta.
 - Shipping label download from the WooCommerce order screen.
 - HPOS compatible through WooCommerce custom order tables declaration.
@@ -65,13 +65,13 @@ Do not commit API keys, portal passwords, `.env` files, production URLs with sec
 2. Activate WooCommerce and enable HPOS in WooCommerce settings.
 3. Open **SooCool**.
 4. Enter the test API base URL and API key.
-5. Fill in the pickup address completely.
+5. Keep pickup disabled for delivery-only testing. Enable pickup only after SooCool confirms pickup task support, then fill in the pickup address completely.
 6. Save settings and run **Test connection**.
 7. Create a test WooCommerce order with shipping address.
 8. Use the order action **Send to SooCool**.
 9. Confirm SooCool order ID appears in the SooCool order box.
-10. In the SooCool test portal, confirm that pickup-enabled orders create exactly two tasks: one pickup task and one delivery task.
-11. Confirm the delivery task uses exactly `08:00-18:00`.
+10. In the SooCool test portal, confirm that delivery-only orders create one delivery task. If pickup is enabled, confirm the order creates one pickup task and one later delivery task.
+11. Confirm the delivery task uses the configured delivery window.
 12. Download both A6 and Collated A4 labels only after SooCool accepted the order.
 13. Keep automatic sync disabled until manual orders are accepted consistently.
 
@@ -94,7 +94,7 @@ npm run lint:css
 npm run build
 ```
 
-Use WooCommerce HPOS in staging and verify the manual order action, optional status hook, `/ping` connection test, pickup plus delivery task creation, fixed `08:00-18:00` delivery window and PDF label downloads before enabling production credentials.
+Use WooCommerce HPOS in staging and verify the manual order action, optional status hook, `/ping` connection test, delivery-only task creation, optional pickup plus delivery task creation, configured delivery window and PDF label downloads before enabling production credentials.
 
 
 ## Release note
@@ -145,7 +145,7 @@ Before production, record evidence for:
 - HPOS-enabled order screen test.
 - SooCool `/ping` test.
 - Pickup-enabled test order in SooCool portal.
-- Delivery task fixed at `08:00-18:00`.
+- Delivery task uses the configured delivery window.
 - A6 and Collated A4 shipping label downloads.
 - Safe API error handling and sanitized logs.
 
@@ -164,7 +164,7 @@ The stored SooCool `orderId` must be a positive numeric ID returned by the SooCo
 ### OpenAPI schema coverage
 
 The plugin is aligned with the supplied SooCool OpenAPI root specification for servers, authentication, order endpoints, numeric `orderId` handling, shipping labels and `/ping`.
-The supplied root specification references external schema files including `models/order.json`, `requests/create-order.json`, `requests/update-order.json` and `responses/generic/*.json`. Those external files are not bundled in this release. Until those files are reviewed, the plugin enforces the confirmed contract minimums locally: an order reference, at least one delivery task, optional pickup before delivery, at least one good, numeric SooCool order IDs and `ping: pong` for connection tests.
+The supplied root specification references external schema files including `models/order.json`, `requests/create-order.json`, `requests/update-order.json` and `responses/generic/*.json`. Those external files are not bundled in this release. Until those files are reviewed, the plugin enforces the confirmed contract minimums locally: an order reference, at least one delivery task, optional pickup before delivery, nested task `timeWindow`/`address`/`contactInfo`, task-level `goods` references, at least one root good with dimensions, weight and transport requirements, numeric SooCool order IDs and `ping: pong` for connection tests.
 
 
 ## API key handling

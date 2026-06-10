@@ -19,13 +19,14 @@
   --soocool-shadow: 0 1px 2px rgba(23, 23, 23, 0.05);
   width: auto;
   max-width: none;
-  margin: 20px 20px 0 0;
+  margin: 20px 20px 0 20px;
   color: var(--soocool-ink);
 }
 
 .soocool-panel {
   overflow: hidden;
-  max-width: 1440px;
+  width: 100%;
+  max-width: none;
   background: var(--soocool-surface);
   border: 1px solid var(--soocool-border);
   border-radius: var(--soocool-radius-md);
@@ -42,7 +43,8 @@
   border-bottom: 1px solid var(--soocool-border);
 }
 
-.soocool-tabs .components-tab-panel__tabs .components-button {
+.soocool-tabs .components-tab-panel__tabs .components-button,
+.soocool-tabs .components-tab-panel__tabs .soocool-tab-link {
   min-height: 40px;
   padding: 0 16px;
   color: var(--soocool-ink-soft);
@@ -53,14 +55,16 @@
   font-weight: 500;
 }
 
-.soocool-tabs .components-tab-panel__tabs .components-button:hover {
+.soocool-tabs .components-tab-panel__tabs .components-button:hover,
+.soocool-tabs .components-tab-panel__tabs .soocool-tab-link:hover {
   color: var(--soocool-accent);
   background: var(--soocool-warm-soft);
   border-color: rgba(217, 162, 115, 0.45);
   box-shadow: none;
 }
 
-.soocool-tabs .components-tab-panel__tabs .components-button:focus {
+.soocool-tabs .components-tab-panel__tabs .components-button:focus,
+.soocool-tabs .components-tab-panel__tabs .soocool-tab-link:focus {
   color: var(--soocool-accent);
   background: var(--soocool-warm-soft);
   border-color: rgba(191, 4, 19, 0.32);
@@ -70,11 +74,22 @@
 
 .soocool-tabs .components-tab-panel__tabs .components-button.is-active,
 .soocool-tabs .components-tab-panel__tabs .components-button.is-active:hover,
-.soocool-tabs .components-tab-panel__tabs .components-button.is-active:focus {
+.soocool-tabs .components-tab-panel__tabs .components-button.is-active:focus,
+.soocool-tabs .components-tab-panel__tabs .soocool-tab-link.is-active,
+.soocool-tabs .components-tab-panel__tabs .soocool-tab-link.is-active:hover,
+.soocool-tabs .components-tab-panel__tabs .soocool-tab-link.is-active:focus {
   color: var(--soocool-surface);
   background: var(--soocool-ink);
   border-color: var(--soocool-ink);
   box-shadow: none;
+}
+
+
+.soocool-tabs .components-tab-panel__tabs .soocool-tab-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .soocool-tabs .components-tab-panel__tab-content {
@@ -271,6 +286,7 @@
 .soocool-shell input[type='password'],
 .soocool-shell input[type='number'],
 .soocool-shell input[type='time'],
+.soocool-shell input[type='datetime-local'],
 .soocool-shell select,
 .soocool-shell textarea,
 .soocool-shell .components-text-control__input,
@@ -539,7 +555,7 @@
 
 @media (max-width: 782px) {
   .soocool-shell {
-    margin-right: 10px;
+    margin: 10px 10px 0 10px;
   }
 
   .soocool-tabs .components-tab-panel__tabs {
@@ -547,7 +563,8 @@
     padding: 10px;
   }
 
-  .soocool-tabs .components-tab-panel__tabs .components-button {
+  .soocool-tabs .components-tab-panel__tabs .components-button,
+.soocool-tabs .components-tab-panel__tabs .soocool-tab-link {
     flex: 1 1 160px;
     justify-content: center;
   }
@@ -652,6 +669,7 @@
 .soocool-shell input[type='password'],
 .soocool-shell input[type='number'],
 .soocool-shell input[type='time'],
+.soocool-shell input[type='datetime-local'],
 .soocool-shell textarea,
 .soocool-shell select,
 .soocool-shell .components-text-control__input,
@@ -672,28 +690,7 @@
   box-shadow: none;
 }
 
-/* WP Components already renders the select indicator. Do not add a CSS arrow. */
-.soocool-shell .components-select-control__input {
-  padding-right: 36px;
-  background-image: none !important;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-}
-
-/* Plain selects keep their native arrow; this prevents two arrows in non-WP selects. */
-.soocool-shell select:not(.components-select-control__input) {
-  padding-right: 36px;
-  background-image: none !important;
-  appearance: auto;
-  -webkit-appearance: menulist;
-  -moz-appearance: auto;
-}
-
-.soocool-shell select::-ms-expand {
-  display: none;
-}
-
+/* Select arrows are controlled in one scoped rule near the end of this file. */
 .soocool-shell input:hover,
 .soocool-shell textarea:hover,
 .soocool-shell select:hover,
@@ -748,9 +745,8 @@
   }
 }
 
-/* Single / odd fields should look intentional, not broken. */
-.soocool-shell .soocool-field-grid.two > *:only-child,
-.soocool-shell .soocool-field-grid.two > *:last-child:nth-child(odd) {
+/* Single-control cards should look intentional, but normal odd fields stay in the grid. */
+.soocool-shell .soocool-field-grid.two > *:only-child {
   grid-column: 1 / -1;
   width: 100%;
   max-width: 560px;
@@ -809,14 +805,18 @@
 .soocool-shell .components-button:hover,
 .soocool-shell .components-button:focus,
 .soocool-shell .components-button:active,
-.soocool-shell .components-button.is-active {
-  text-decoration: none !important;
+.soocool-shell .components-button.is-active,
+.soocool-shell .soocool-tab-link,
+.soocool-shell .soocool-tab-link:hover,
+.soocool-shell .soocool-tab-link:focus,
+.soocool-shell .soocool-tab-link:active {
+  text-decoration: none;
 }
 
 .soocool-shell .components-button::before,
 .soocool-shell .components-button::after {
-  display: none !important;
-  content: none !important;
+  display: none;
+  content: none;
 }
 
 /* SooCool admin UI stable layout polish end */
@@ -836,12 +836,12 @@
 .soocool-shell .components-input-control__label,
 .soocool-shell .components-select-control__label,
 .soocool-shell label.components-input-control__label {
-  color: var(--soocool-ink) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0 !important;
-  line-height: 1.3 !important;
-  text-transform: none !important;
+  color: var(--soocool-ink);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-transform: none;
 }
 
 .soocool-shell .components-input-control__container,
@@ -854,171 +854,142 @@
 
 .soocool-shell .components-input-control__backdrop,
 .soocool-shell .components-select-control .components-input-control__backdrop {
-  border-color: var(--soocool-border-strong) !important;
-  border-radius: var(--soocool-radius-xs) !important;
-  box-shadow: none !important;
+  border-color: var(--soocool-border-strong);
+  border-radius: var(--soocool-radius-xs);
+  box-shadow: none;
 }
 
 .soocool-shell .components-input-control__container:hover .components-input-control__backdrop,
 .soocool-shell .components-select-control:hover .components-input-control__backdrop {
-  border-color: var(--soocool-ink) !important;
+  border-color: var(--soocool-ink);
 }
 
 .soocool-shell .components-input-control__container:focus-within .components-input-control__backdrop,
 .soocool-shell .components-select-control:focus-within .components-input-control__backdrop {
-  border-color: var(--soocool-accent) !important;
-  box-shadow: 0 0 0 1px var(--soocool-accent) !important;
-  outline: none !important;
+  border-color: var(--soocool-accent);
+  box-shadow: 0 0 0 1px var(--soocool-accent);
+  outline: none;
 }
 
 .soocool-shell .components-select-control__input,
 .soocool-shell select.components-select-control__input {
-  min-height: 42px !important;
-  color: var(--soocool-ink) !important;
-  font-size: 14px !important;
-  line-height: 1.4 !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
+  min-height: 42px;
+  color: var(--soocool-ink);
+  font-size: 14px;
+  line-height: 1.4;
+  background-color: transparent;
+  box-shadow: none;
+  outline: none;
 }
 
 /* SooCool admin UI select spacing fix start
    Scope: only WordPress Components SelectControl wrappers inside SooCool admin.
    Do not apply this compact label spacing to text inputs. */
 .soocool-shell .components-select-control {
-  gap: 0 !important;
+  gap: 0;
 }
 
 .soocool-shell .components-select-control > div,
 .soocool-shell .components-select-control__field {
-  gap: 0 !important;
+  gap: 0;
 }
 
 .soocool-shell .components-select-control__label,
 .soocool-shell .components-select-control label.components-input-control__label {
-  margin: 0 !important;
+  margin: 0;
 }
 
 .soocool-shell .components-select-control .components-input-control__container {
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 
 .soocool-shell .components-select-control .components-input-control__label + .components-input-control__container,
 .soocool-shell .components-select-control label.components-input-control__label + .components-input-control__container {
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 .soocool-shell .components-select-control__input,
 .soocool-shell select.components-select-control__input {
-  padding-right: 48px !important;
+  padding-right: 48px;
 }
 
 .soocool-shell .components-select-control .components-input-control__suffix {
-  margin-right: 12px !important;
-  padding-right: 0 !important;
+  margin-right: 12px;
+  padding-right: 0;
 }
 
 .soocool-shell .components-select-control .components-input-control__suffix svg {
-  margin-right: 0 !important;
+  margin-right: 0;
 }
 /* SooCool admin UI select spacing fix end */
-
-/* SooCool admin UI equal settings card height fix start
-   Scope: paired settings cards only. Keeps fields and labels untouched. */
-@media (min-width: 641px) {
-  .soocool-shell .soocool-card-grid {
-    align-items: stretch;
-  }
-
-  .soocool-shell .soocool-card-grid > .soocool-settings-card {
-    height: 100%;
-  }
-}
-/* SooCool admin UI equal settings card height fix end */
 
 /* SooCool admin UI automation/dropdown polish start
    Scope: visual alignment only. No API/order behavior changes. */
 .soocool-shell .components-toggle-control .components-base-control__field,
 .soocool-shell .components-toggle-control .components-toggle-control__field {
-  align-items: center !important;
+  align-items: center;
 }
 
 .soocool-shell .components-toggle-control .components-form-toggle {
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 .soocool-shell .components-toggle-control .components-toggle-control__label {
   display: block;
-  padding-top: 0 !important;
-  line-height: 20px !important;
+  padding-top: 0;
+  line-height: 20px;
 }
 
 .soocool-shell .components-toggle-control__help {
-  margin-top: 10px !important;
+  margin-top: 10px;
 }
 
 .soocool-shell .soocool-card .soocool-field-grid.two > .components-select-control:only-child,
 .soocool-shell .soocool-card .soocool-field-grid.two > .components-base-control.components-select-control:only-child {
   grid-column: 1 / -1;
   width: 100%;
-  max-width: none !important;
-}
-
-.soocool-shell .components-select-control__input,
-.soocool-shell select.components-select-control__input {
-  padding-right: 56px !important;
-}
-
-.soocool-shell .components-select-control .components-input-control__suffix {
-  margin-right: 20px !important;
-  padding-right: 0 !important;
+  max-width: none;
 }
 /* SooCool admin UI automation/dropdown polish end */
 
-/* SooCool admin UI select arrow position fix start
-   Scope: all SooCool admin dropdowns. Hide the native browser arrow and draw a controlled chevron with stable spacing. */
+/* SooCool admin UI dropdown arrow visibility fix start
+   Scope: WordPress Components SelectControl fields in the SooCool admin.
+   Use one scoped chevron only; native selects keep their browser arrow. */
 .soocool-shell .components-select-control__input,
-.soocool-shell select.components-select-control__input,
-.soocool-shell select {
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  appearance: none !important;
-  padding-left: 10px !important;
-  padding-right: 60px !important;
-  background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%23111111' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
-  background-repeat: no-repeat !important;
-  background-position: right 16px center !important;
-  background-size: 16px 16px !important;
+.soocool-shell select.components-select-control__input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-left: 10px;
+  padding-right: 48px;
+  background-image: none;
 }
 
 .soocool-shell .components-select-control .components-input-control__suffix,
 .soocool-shell .components-select-control .components-input-control__suffix > *,
 .soocool-shell .components-select-control .components-input-control__suffix svg {
-  display: none !important;
-}
-/* SooCool admin UI select arrow position fix end */
-
-
-/* SooCool admin UI full-width admin canvas fix start
-   Scope: SooCool admin shell only. Makes the plugin panel use the full available WordPress admin content width with balanced left/right gutters. */
-.soocool-shell {
-  width: auto !important;
-  max-width: none !important;
-  margin: 20px 20px 0 20px !important;
+  display: none;
 }
 
-.soocool-shell .soocool-panel {
-  width: 100% !important;
-  max-width: none !important;
+.soocool-shell .components-select-control .components-input-control__container {
+  position: relative;
 }
 
-@media (max-width: 782px) {
-  .soocool-shell {
-    margin: 10px 10px 0 10px !important;
-  }
+.soocool-shell .components-select-control .components-input-control__container::after {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  z-index: 2;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--soocool-ink);
+  border-bottom: 2px solid var(--soocool-ink);
+  content: '';
+  pointer-events: none;
+  transform: translateY(-65%) rotate(45deg);
 }
-/* SooCool admin UI full-width admin canvas fix end */
+/* SooCool admin UI dropdown arrow visibility fix end */
 
 /* SooCool admin toast notifications start
    Scope: bottom feedback centered within the SooCool plugin panel for admin actions such as save, test connection and log actions. */
@@ -1063,3 +1034,139 @@
   }
 }
 /* SooCool admin toast notifications end */
+
+
+/* SooCool manual API-test page polish start
+   Scope: admin-post manual API test page only. Reuses the main SooCool admin design system. */
+.soocool-manual-test-page .soocool-card-header {
+  align-items: center;
+}
+
+.soocool-manual-test-page .soocool-manual-form {
+  display: grid;
+  gap: var(--soocool-space-lg);
+}
+
+.soocool-manual-test-page .soocool-manual-field {
+  min-width: 0;
+}
+
+.soocool-manual-test-page .soocool-manual-field label {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--soocool-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.soocool-manual-test-page .soocool-field-help {
+  max-width: 100%;
+  margin: 8px 0 0;
+  color: var(--soocool-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.soocool-manual-test-page .soocool-manual-field.is-full,
+.soocool-manual-test-page .soocool-field-grid.two > .soocool-manual-field.is-full,
+.soocool-manual-test-page .soocool-field-grid.three > .soocool-manual-field.is-full {
+  grid-column: 1 / -1;
+  max-width: none;
+}
+
+.soocool-manual-test-page .soocool-field-grid.two > .soocool-manual-field:only-child,
+.soocool-manual-test-page .soocool-field-grid.two > .soocool-manual-field.is-full {
+  max-width: none;
+}
+
+.soocool-manual-test-page textarea.code,
+.soocool-manual-test-page textarea.large-text {
+  width: 100%;
+  min-height: 180px;
+  font-family: Consolas, Monaco, monospace;
+}
+
+.soocool-manual-test-page .soocool-manual-submit.button.button-primary {
+  min-height: 42px;
+  padding: 0 18px;
+  color: var(--soocool-surface);
+  background: var(--soocool-accent);
+  border-color: var(--soocool-accent);
+  border-radius: var(--soocool-radius-xs);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.soocool-manual-test-page .soocool-manual-submit.button.button-primary:hover,
+.soocool-manual-test-page .soocool-manual-submit.button.button-primary:focus {
+  background: var(--soocool-accent-dark);
+  border-color: var(--soocool-accent-dark);
+  box-shadow: 0 0 0 1px rgba(191, 4, 19, 0.22);
+}
+
+.soocool-manual-test-page .soocool-manual-environment {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.soocool-manual-test-page .soocool-manual-result {
+  display: block;
+}
+
+.soocool-manual-test-page .soocool-manual-result strong,
+.soocool-manual-test-page .soocool-manual-result span {
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.soocool-manual-test-page .soocool-manual-result p {
+  margin: 6px 0 0;
+}
+
+.soocool-manual-test-page .soocool-manual-errors {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.soocool-manual-test-page .soocool-manual-json pre {
+  overflow: auto;
+  max-width: 100%;
+  max-height: 520px;
+  margin: 0;
+  padding: 14px 16px;
+  color: #f0f0f1;
+  background: #111827;
+  border-radius: var(--soocool-radius-sm);
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+/* SooCool manual API-test page polish end */
+
+.soocool-manual-back {
+  margin-top: 16px;
+}
+
+
+/* SooCool admin UI pickup/settings spacing final polish start */
+@media (min-width: 641px) {
+  .soocool-shell .soocool-card-grid {
+    align-items: start;
+  }
+
+  .soocool-shell .soocool-card-grid > .soocool-settings-card {
+    height: auto;
+    align-self: start;
+    align-content: start;
+  }
+
+  .soocool-shell .soocool-field-grid.two > *:last-child:nth-child(odd):not(:only-child):not(.is-full) {
+    grid-column: auto;
+    max-width: 100%;
+  }
+}
+/* SooCool admin UI pickup/settings spacing final polish end */

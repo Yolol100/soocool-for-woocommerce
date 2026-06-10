@@ -2,7 +2,7 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: SooCool for WooCommerce 0.3.41\n"
+"Project-Id-Version: SooCool for WooCommerce 0.3.87\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/soocool-for-woocommerce\n"
 "POT-Creation-Date: 2026-06-10 00:00+0000\n"
 "MIME-Version: 1.0\n"
@@ -179,7 +179,7 @@ msgid "Delivery days offset must be at least 1 when pickup tasks are enabled."
 msgstr ""
 
 #: assets/build/admin.js:208
-msgid "Delivery time window"
+msgid "Delivery window starts"
 msgstr ""
 
 #: assets/build/admin.js:262
@@ -195,7 +195,7 @@ msgid "Enable this when SooCool must create both a pickup task and a delivery ta
 msgstr ""
 
 #: assets/build/admin.js:214
-msgid "Fallback goods description"
+msgid "Fallback goods contents"
 msgstr ""
 
 #: assets/build/admin.js:215
@@ -579,7 +579,7 @@ msgid "SooCool webhook URL"
 msgstr ""
 
 #: assets/build/admin.js:215
-msgid "Temperature requirement"
+msgid "SooCool packagingType"
 msgstr ""
 
 #: assets/build/admin.js:167
@@ -615,7 +615,7 @@ msgid "Use these logs for troubleshooting only. Use WooCommerce order notes and 
 msgstr ""
 
 #: assets/build/admin.js:220
-msgid "When pickup is enabled, SooCool receives two tasks: one pickup task with the pickup window above and one delivery task with the fixed 08:00–18:00 delivery window."
+msgid "When pickup is enabled, SooCool receives two tasks: one pickup task with the pickup window above and one delivery task with the configured delivery window."
 msgstr ""
 
 #: assets/build/admin.js:183
@@ -637,7 +637,7 @@ msgstr ""
 msgid "Enable this when SooCool collects packages from you. The order will then be sent with both a pickup task and a delivery task."
 msgstr ""
 
-msgid "When SooCool collects packages from you, keep pickup enabled. SooCool receives two tasks: one pickup task with the pickup window above and one delivery task with the fixed 08:00–18:00 delivery window."
+msgid "When SooCool collects packages from you, keep pickup enabled. SooCool receives two tasks: one pickup task with the pickup window above and one delivery task with the configured delivery window."
 msgstr ""
 
 msgid "Existing SooCool order found by order reference. WooCommerce order linked without creating a duplicate SooCool order."
@@ -671,4 +671,20 @@ msgid "API key is saved."
 msgstr ""
 
 msgid "No valid API key is saved."
+msgstr ""
+
+#: src/Rest/OrderSyncController.php:85
+msgid "SooCool sync is already running for this order. Try again in a moment."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:51
+msgid "SooCool sync skipped because another sync is already running for this order."
+msgstr ""
+
+#: src/Admin/AdminMenu.php
+msgid "Vorige"
+msgstr ""
+
+#: src/Admin/AdminMenu.php
+msgid "Deze API-Test verstuurt één delivery task. Pickup + delivery test je via een echte WooCommerce order met pickup ingeschakeld."
 msgstr ""

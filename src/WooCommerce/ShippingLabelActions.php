@@ -31,20 +31,34 @@ final class ShippingLabelActions {
 		}
 		$output = 'collated_a4' === $requested_output ? 'collated_a4' : 'a6';
 
-		$order_ids = $this->request_order_ids();
-		if ( count( $order_ids ) > 1 ) {
+		$has_bulk_request = $this->has_bulk_order_ids_request();
+		$order_ids        = $this->request_order_ids();
+		if ( $has_bulk_request ) {
 			check_admin_referer( 'soocool_download_labels_bulk' );
-			$orders = array_filter( array_map( 'wc_get_order', $order_ids ) );
+			if ( array() === $order_ids ) {
+				wp_die( esc_html__( 'No valid orders selected for SooCool label download.', 'soocool-for-woocommerce' ) );
+			}
+
+			$orders = array();
+			foreach ( $order_ids as $selected_order_id ) {
+				$order = wc_get_order( $selected_order_id );
+				if ( ! $order ) {
+					wp_die( esc_html__( 'One or more selected orders could not be found for SooCool label download.', 'soocool-for-woocommerce' ) );
+				}
+				$orders[] = $order;
+			}
+
 			try {
 				$pdf = $this->labels->get_bulk_labels( $orders, $output );
 			} catch ( \Throwable $exception ) {
 				wp_die( esc_html__( 'SooCool bulk label download failed. Check the SooCool logs for details.', 'soocool-for-woocommerce' ) );
 			}
 
-			$this->send_pdf( $pdf, 'soocool-labels.pdf' );
+			$filename = count( $order_ids ) > 1 ? 'soocool-labels.pdf' : 'soocool-label-' . absint( $order_ids[0] ) . '.pdf';
+			$this->send_pdf( $pdf, $filename );
 		}
 
-		$order_id = $order_ids[0] ?? absint( filter_input( INPUT_GET, 'order_id', FILTER_VALIDATE_INT ) ?: 0 );
+		$order_id = absint( filter_input( INPUT_GET, 'order_id', FILTER_VALIDATE_INT ) ?: 0 );
 		check_admin_referer( 'soocool_download_label_' . $order_id );
 		$order = wc_get_order( $order_id );
 		if ( ! $order ) {
@@ -60,6 +74,10 @@ final class ShippingLabelActions {
 
 		$filename = $good_id > 0 ? 'soocool-label-' . absint( $order_id ) . '-good-' . absint( $good_id ) . '.pdf' : 'soocool-label-' . absint( $order_id ) . '.pdf';
 		$this->send_pdf( $pdf, $filename );
+	}
+
+	private function has_bulk_order_ids_request(): bool {
+		return null !== filter_input( INPUT_GET, 'order_ids', FILTER_UNSAFE_RAW, FILTER_NULL_ON_FAILURE );
 	}
 
 	/** @return array<int, int> */

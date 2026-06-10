@@ -55,7 +55,7 @@ final class ServiceProvider {
 			OrderPayloadBuilder::class => new OrderPayloadBuilder( $this->get( TaskFactory::class ), $this->get( OptionRepository::class ) ),
 			OrderMeta::class => new OrderMeta(),
 			ShippingLabelService::class => new ShippingLabelService( $this->get( ApiClient::class ), $this->get( OrderMeta::class ) ),
-			AdminMenu::class => new AdminMenu(),
+			AdminMenu::class => new AdminMenu( $this->get( ApiClient::class ), $this->get( OptionRepository::class ) ),
 			Assets::class => new Assets(),
 			Notices::class => new Notices( $this->get( Requirements::class ) ),
 			SettingsController::class => new SettingsController( $this->get( OptionRepository::class ) ),
