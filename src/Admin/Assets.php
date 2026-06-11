@@ -42,11 +42,12 @@ final class Assets {
 		$style_file  = is_readable( SOOCOOL_PLUGIN_DIR . 'assets/build/app.css' ) ? 'app.css' : 'admin.css';
 
 		if ( is_readable( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $style_file ) ) {
+			$style_mtime = filemtime( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $style_file );
 			wp_enqueue_style(
 				'soocool-admin',
 				SOOCOOL_PLUGIN_URL . 'assets/build/' . $style_file,
 				array( 'wp-components' ),
-				(string) filemtime( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $style_file )
+				false !== $style_mtime ? (string) $style_mtime : SOOCOOL_VERSION
 			);
 		}
 
@@ -54,11 +55,14 @@ final class Assets {
 			return;
 		}
 
+		$script_mtime = filemtime( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $script_file );
+		$script_version = false !== $script_mtime ? (string) $script_mtime : (string) $asset['version'];
+
 		wp_enqueue_script(
 			'soocool-admin',
 			SOOCOOL_PLUGIN_URL . 'assets/build/' . $script_file,
 			$asset['dependencies'],
-			$asset['version'],
+			$script_version,
 			true
 		);
 

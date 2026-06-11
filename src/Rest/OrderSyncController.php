@@ -65,8 +65,18 @@ final class OrderSyncController extends AbstractRestController {
 			);
 		}
 
-		$settings = $this->options->all();
-		$force    = filter_var( $request->get_param( 'force' ), FILTER_VALIDATE_BOOLEAN );
+		$settings        = $this->options->all();
+		$requested_force = filter_var( $request->get_param( 'force' ), FILTER_VALIDATE_BOOLEAN );
+		$force           = $requested_force && (bool) $settings['allow_resubmit'];
+		if ( $requested_force && ! (bool) $settings['allow_resubmit'] ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => __( 'Manual resubmission is disabled in the SooCool settings.', 'soocool-for-woocommerce' ),
+				),
+				403
+			);
+		}
 		if ( ! $force && ! (bool) $settings['allow_resubmit'] && $this->meta->is_synced( $order ) ) {
 			return new WP_REST_Response(
 				array(
@@ -94,13 +104,13 @@ final class OrderSyncController extends AbstractRestController {
 			$existing_order = $this->find_existing_soocool_order( (string) $payload['orderReference'] );
 			if ( array() !== $existing_order ) {
 				$soocool_order_id = $this->meta->extract_order_id( $existing_order );
-				$this->meta->save_success( $order, $existing_order );
+				$this->meta->save_success( $order, $existing_order, (string) $payload['orderReference'] );
 				$order->add_order_note( __( 'Existing SooCool order found by order reference. WooCommerce order linked without creating a duplicate SooCool order.', 'soocool-for-woocommerce' ) );
 				return new WP_REST_Response(
 					array(
 						'success'      => true,
 						'orderId'      => $soocool_order_id,
-						'ourReference' => isset( $existing_order['ourReference'] ) ? sanitize_text_field( (string) $existing_order['ourReference'] ) : '',
+						'ourReference' => isset( $existing_order['ourReference'] ) ? sanitize_text_field( (string) $existing_order['ourReference'] ) : sanitize_text_field( (string) $payload['orderReference'] ),
 						'existing'     => true,
 						'message'      => __( 'Existing SooCool order found by order reference. No duplicate SooCool order was created.', 'soocool-for-woocommerce' ),
 					)
@@ -113,12 +123,12 @@ final class OrderSyncController extends AbstractRestController {
 			if ( '' === $soocool_order_id ) {
 				throw new ApiException( esc_html__( 'SooCool did not return a valid order ID.', 'soocool-for-woocommerce' ) );
 			}
-			$this->meta->save_success( $order, $body );
+			$this->meta->save_success( $order, $body, (string) $payload['orderReference'] );
 			return new WP_REST_Response(
 				array(
 					'success'      => true,
 					'orderId'      => $soocool_order_id,
-					'ourReference' => isset( $body['ourReference'] ) ? sanitize_text_field( (string) $body['ourReference'] ) : '',
+					'ourReference' => isset( $body['ourReference'] ) ? sanitize_text_field( (string) $body['ourReference'] ) : sanitize_text_field( (string) $payload['orderReference'] ),
 					'existing'     => false,
 				)
 			);
@@ -183,8 +193,16 @@ final class OrderSyncController extends AbstractRestController {
 
 	/** @return array<string, mixed> */
 	private function find_existing_soocool_order( string $order_reference ): array {
-		$response = $this->client->search_order_by_reference( $order_reference );
-		$body     = $response->body();
+		try {
+			$response = $this->client->search_order_by_reference( $order_reference );
+		} catch ( ApiException $exception ) {
+			// A 404 on the search endpoint means no order with this reference exists yet.
+			if ( 404 === $exception->status_code() ) {
+				return array();
+			}
+			throw $exception;
+		}
+		$body = $response->body();
 
 		if ( ! is_array( $body ) ) {
 			return array();

@@ -25,12 +25,12 @@ This release package contains runtime PHP source and human-readable built admin 
 ## Features
 
 - Prevents duplicate SooCool orders by checking `GET /order?orderReference=...` before creating a new order.
-- Supports the documented order label endpoint, good-specific label endpoint and multiple-label API in the PHP client.
+- Supports the documented order label endpoint, good-specific label endpoint, order-level bulk labels and stored-good-ID label downloads.
 - Shows the SooCool test portal link in test mode without storing portal credentials in plugin files.
 
 - WordPress admin settings under **SooCool**.
 - SooCool API connection test via `/ping`.
-- Manual WooCommerce order action to send an order to SooCool.
+- Manual WooCommerce order actions to send, refresh, update and cancel an order at SooCool.
 - Optional automatic order submission by WooCommerce status.
 - Optional pickup and delivery task support; delivery-only is the safe default.
 - Configurable SooCool delivery window for every delivery task.
@@ -59,6 +59,8 @@ composer quality
 
 Do not commit API keys, portal passwords, `.env` files, production URLs with secrets, or exported logs containing customer data. Use the test environment first.
 
+The webhook receiver accepts the token in the `X-SooCool-Webhook-Token` header or as a fallback query token in the generated callback URL. Prefer the header when SooCool supports custom webhook headers; use the generated query-token URL only when SooCool can configure a URL but no custom headers.
+
 ## Staging checklist
 
 1. Install the plugin on staging.
@@ -72,8 +74,10 @@ Do not commit API keys, portal passwords, `.env` files, production URLs with sec
 9. Confirm SooCool order ID appears in the SooCool order box.
 10. In the SooCool test portal, confirm that delivery-only orders create one delivery task. If pickup is enabled, confirm the order creates one pickup task and one later delivery task.
 11. Confirm the delivery task uses the configured delivery window.
-12. Download both A6 and Collated A4 labels only after SooCool accepted the order.
-13. Keep automatic sync disabled until manual orders are accepted consistently.
+12. Use **Refresh from SooCool** after the test order exists and confirm local status/tracking/good IDs update when SooCool returns them.
+13. Download both A6 and Collated A4 labels only after SooCool accepted the order.
+14. Test webhook success/failure and token rejection.
+15. Keep automatic sync disabled until manual orders are accepted consistently.
 
 ## Quality checks
 

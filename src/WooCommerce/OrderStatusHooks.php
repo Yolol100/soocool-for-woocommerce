@@ -18,15 +18,17 @@ final class OrderStatusHooks {
 		add_action( 'woocommerce_order_status_changed', array( $this, 'maybe_auto_submit' ), 10, 4 );
 	}
 
-	public function maybe_auto_submit( int $order_id, string $old_status, string $new_status ): void {
+	public function maybe_auto_submit( int $order_id, string $old_status, string $new_status, $order = null ): void {
 		unset( $old_status );
 		$settings = $this->options->all();
 		if ( ! (bool) $settings['auto_submit_enabled'] || $new_status !== (string) $settings['auto_submit_status'] ) {
 			return;
 		}
 
-		$order = wc_get_order( $order_id );
-		if ( ! $order ) {
+		if ( ! $order instanceof \WC_Order ) {
+			$order = wc_get_order( $order_id );
+		}
+		if ( ! $order instanceof \WC_Order ) {
 			return;
 		}
 

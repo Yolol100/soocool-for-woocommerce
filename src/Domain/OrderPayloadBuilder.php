@@ -35,8 +35,14 @@ final class OrderPayloadBuilder {
 			'goods'          => $goods,
 		);
 
-		if ( ! empty( $settings['webhook_url'] ) ) {
-			$payload['webhook'] = array( 'webhookUrl' => esc_url_raw( (string) $settings['webhook_url'] ) );
+		$webhook_url = $this->options->effective_webhook_url();
+		if ( '' !== $webhook_url ) {
+			$webhook_block = array(
+				'webhookUrl'     => esc_url_raw( $webhook_url ),
+				'webhookUpdates' => array( 'task_state', 'planned_time' ),
+			);
+			// SooCool validates webhookUpdates as an enum array inside the webhook object.
+			$payload['webhook'] = $webhook_block;
 		}
 
 		$this->validate_contract_minimums( $payload );
@@ -48,6 +54,19 @@ final class OrderPayloadBuilder {
 	public function validate_contract_minimums( array $payload ): void {
 		if ( '' === trim( (string) ( $payload['orderReference'] ?? '' ) ) ) {
 			throw new PayloadValidationException( esc_html__( 'SooCool order reference is missing.', 'soocool-for-woocommerce' ) );
+		}
+
+		// Per the SooCool OpenAPI contract (1.2.1) only orderReference, tasks and goods
+		// are required; the webhook block is optional. Sites without a public HTTPS
+		// callback (local/staging or HTTP installs) must still be able to create orders.
+		// Status/track & trace can then be pulled with the "refresh status" order action.
+		// The webhook is sent automatically whenever an HTTPS URL is available, so when it
+		// is present we still validate its shape to avoid sending a malformed block.
+		if ( array_key_exists( 'webhook', $payload ) ) {
+			$webhook = $payload['webhook'];
+			if ( ! is_array( $webhook ) || empty( $webhook['webhookUrl'] ) || empty( $webhook['webhookUpdates'] ) ) {
+				throw new PayloadValidationException( esc_html__( 'SooCool webhook block is present but incomplete. Provide a HTTPS webhook.webhookUrl and webhook.webhookUpdates, or remove the webhook block.', 'soocool-for-woocommerce' ) );
+			}
 		}
 
 		$tasks = $payload['tasks'] ?? array();
@@ -141,8 +160,12 @@ final class OrderPayloadBuilder {
 			throw new PayloadValidationException( esc_html__( 'SooCool task contactInfo is missing.', 'soocool-for-woocommerce' ) );
 		}
 
-		if ( '' === trim( (string) ( $contact['email'] ?? '' ) ) && '' === trim( (string) ( $contact['phone'] ?? '' ) ) && '' === trim( (string) ( $contact['mobile'] ?? '' ) ) ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool task contactInfo must contain at least an email address, phone number or mobile number.', 'soocool-for-woocommerce' ) );
+		if ( isset( $contact['phone'] ) || isset( $contact['phoneNumber'] ) ) {
+			throw new PayloadValidationException( esc_html__( 'SooCool task contactInfo.phone is intentionally not sent. Use email and a valid mobile number instead.', 'soocool-for-woocommerce' ) );
+		}
+
+		if ( '' === trim( (string) ( $contact['email'] ?? '' ) ) && '' === trim( (string) ( $contact['mobile'] ?? '' ) ) ) {
+			throw new PayloadValidationException( esc_html__( 'SooCool task contactInfo must contain at least an email address or mobile number.', 'soocool-for-woocommerce' ) );
 		}
 	}
 

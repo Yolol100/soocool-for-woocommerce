@@ -41,7 +41,6 @@ final class SecretSanitizer {
 		return $value;
 	}
 
-
 	private function is_safe_debug_key( string $key ): bool {
 		return in_array(
 			$key,
@@ -50,6 +49,9 @@ final class SecretSanitizer {
 				'api_key_source',
 				'api_key_length',
 				'api_key_status',
+				'traceId',
+				'trace_id',
+				'orderId',
 				'header_name_sent',
 				'request_url_host',
 				'request_path',

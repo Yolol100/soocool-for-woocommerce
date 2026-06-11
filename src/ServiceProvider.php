@@ -20,6 +20,7 @@ use SooCool\WooCommerce\Rest\ConnectionController;
 use SooCool\WooCommerce\Rest\LogsController;
 use SooCool\WooCommerce\Rest\OrderSyncController;
 use SooCool\WooCommerce\Rest\SettingsController;
+use SooCool\WooCommerce\Rest\WebhookController;
 use SooCool\WooCommerce\WooCommerce\OrderActions;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use SooCool\WooCommerce\WooCommerce\OrderStatusHooks;
@@ -55,13 +56,14 @@ final class ServiceProvider {
 			OrderPayloadBuilder::class => new OrderPayloadBuilder( $this->get( TaskFactory::class ), $this->get( OptionRepository::class ) ),
 			OrderMeta::class => new OrderMeta(),
 			ShippingLabelService::class => new ShippingLabelService( $this->get( ApiClient::class ), $this->get( OrderMeta::class ) ),
-			AdminMenu::class => new AdminMenu( $this->get( ApiClient::class ), $this->get( OptionRepository::class ) ),
+			AdminMenu::class => new AdminMenu( $this->get( ApiClient::class ), $this->get( OptionRepository::class ), $this->get( OrderPayloadBuilder::class ) ),
 			Assets::class => new Assets(),
 			Notices::class => new Notices( $this->get( Requirements::class ) ),
 			SettingsController::class => new SettingsController( $this->get( OptionRepository::class ) ),
 			ConnectionController::class => new ConnectionController( $this->get( ApiClient::class ) ),
 			LogsController::class => new LogsController( $this->get( Logger::class ) ),
 			OrderSyncController::class => new OrderSyncController( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ) ),
+			WebhookController::class => new WebhookController( $this->get( OptionRepository::class ), $this->get( OrderMeta::class ), $this->get( Logger::class ) ),
 			OrderActions::class => new OrderActions( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ) ),
 			OrderStatusHooks::class => new OrderStatusHooks( $this->get( OptionRepository::class ), $this->get( OrderActions::class ), $this->get( OrderMeta::class ) ),
 			ShippingLabelActions::class => new ShippingLabelActions( $this->get( ShippingLabelService::class ), $this->get( OptionRepository::class ) ),

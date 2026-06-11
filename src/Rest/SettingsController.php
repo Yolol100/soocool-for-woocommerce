@@ -60,6 +60,11 @@ final class SettingsController extends AbstractRestController {
 			return $raw_window_error;
 		}
 
+		$delivery_window_error = $this->validate_fixed_delivery_window( $payload );
+		if ( $delivery_window_error instanceof WP_Error ) {
+			return $delivery_window_error;
+		}
+
 		$settings = $this->options->preview_update( $payload );
 		if ( (bool) $settings['enable_pickup'] && (int) $settings['delivery_days_offset'] < 1 ) {
 			return new WP_Error( 'soocool_invalid_delivery_offset', __( 'Delivery days offset must be at least 1 when pickup tasks are enabled.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
@@ -284,8 +289,6 @@ final class SettingsController extends AbstractRestController {
 		);
 	}
 
-
-
 	/** @param array<string, mixed> $payload */
 	private function validate_requested_time_windows( array $payload ): ?WP_Error {
 		$current = $this->options->all();
@@ -322,6 +325,19 @@ final class SettingsController extends AbstractRestController {
 		}
 
 		return false;
+	}
+
+
+	/** @param array<string, mixed> $payload */
+	private function validate_fixed_delivery_window( array $payload ): ?WP_Error {
+		$from = array_key_exists( 'delivery_time_from', $payload ) ? sanitize_text_field( (string) $payload['delivery_time_from'] ) : '08:00';
+		$to   = array_key_exists( 'delivery_time_to', $payload ) ? sanitize_text_field( (string) $payload['delivery_time_to'] ) : '18:00';
+
+		if ( $this->payload_touches_any( $payload, array( 'delivery_time_from', 'delivery_time_to' ) ) && ( '08:00' !== $from || '18:00' !== $to ) ) {
+			return new WP_Error( 'soocool_invalid_delivery_window_fixed', __( 'SooCool delivery tasks must use the exact 08:00-18:00 delivery window for this connection.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+		}
+
+		return null;
 	}
 
 	public function validate_environment( mixed $value ): bool {

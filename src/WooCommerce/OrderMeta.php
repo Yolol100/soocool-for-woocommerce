@@ -14,21 +14,45 @@ final class OrderMeta {
 
 	public const ORDER_ID       = '_soocool_soocool_order_id';
 	public const OUR_REFERENCE  = '_soocool_soocool_our_reference';
+	public const ORDER_REFERENCE = '_soocool_order_reference';
 	public const SYNC_STATUS    = '_soocool_sync_status';
 	public const LAST_ERROR     = '_soocool_last_error';
-	public const LAST_SYNCED_AT = '_soocool_last_synced_at';
+	public const LAST_SYNCED_AT  = '_soocool_last_synced_at';
+	public const LAST_WEBHOOK_AT = '_soocool_last_webhook_at';
+	public const TRACKING_CODE   = '_soocool_tracking_code';
+	public const TRACKING_URL    = '_soocool_tracking_url';
+	public const GOOD_IDS        = '_soocool_good_ids';
 
 	/** @param array<string, mixed> $body */
-	public function save_success( WC_Order $order, array $body ): void {
+	public function save_success( WC_Order $order, array $body, string $order_reference = '' ): void {
 		$soocool_order_id = $this->extract_order_id( $body );
 		if ( '' === $soocool_order_id ) {
 			throw new \InvalidArgumentException( 'Missing valid SooCool order ID.' );
 		}
 
 		$order->update_meta_data( self::ORDER_ID, $soocool_order_id );
-		if ( isset( $body['ourReference'] ) ) {
-			$order->update_meta_data( self::OUR_REFERENCE, sanitize_text_field( (string) $body['ourReference'] ) );
+
+		$customer_reference = $this->extract_order_reference( $body, $order_reference );
+		if ( '' !== $customer_reference ) {
+			$order->update_meta_data( self::ORDER_REFERENCE, $customer_reference );
 		}
+
+		$good_ids = $this->extract_good_ids( $body );
+		if ( array() !== $good_ids ) {
+			$order->update_meta_data( self::GOOD_IDS, implode( ',', $good_ids ) );
+		}
+
+		$our_reference = '';
+		if ( isset( $body['ourReference'] ) && ! is_array( $body['ourReference'] ) && ! is_object( $body['ourReference'] ) ) {
+			$our_reference = sanitize_text_field( (string) $body['ourReference'] );
+		} elseif ( '' !== $customer_reference ) {
+			$our_reference = $customer_reference;
+		}
+
+		if ( '' !== $our_reference ) {
+			$order->update_meta_data( self::OUR_REFERENCE, $our_reference );
+		}
+
 		$order->update_meta_data( self::SYNC_STATUS, 'synced' );
 		$order->update_meta_data( self::LAST_SYNCED_AT, current_time( 'mysql' ) );
 		$order->delete_meta_data( self::LAST_ERROR );
@@ -38,6 +62,44 @@ final class OrderMeta {
 	public function save_pending( WC_Order $order ): void {
 		$order->update_meta_data( self::SYNC_STATUS, 'pending' );
 		$order->save();
+	}
+
+	public function save_updated( WC_Order $order ): void {
+		$order->update_meta_data( self::SYNC_STATUS, 'synced' );
+		$order->update_meta_data( self::LAST_SYNCED_AT, current_time( 'mysql' ) );
+		$order->delete_meta_data( self::LAST_ERROR );
+		$order->save();
+	}
+
+	public function save_cancelled( WC_Order $order ): void {
+		$order->update_meta_data( self::SYNC_STATUS, 'cancelled' );
+		$order->delete_meta_data( self::LAST_ERROR );
+		$order->save();
+	}
+
+	/** @param array<string, string> $data */
+	public function save_webhook_update( WC_Order $order, array $data, bool $mark_webhook = true ): bool {
+		$changed = false;
+
+		if ( '' !== ( $data['status'] ?? '' ) && (string) $order->get_meta( self::SYNC_STATUS, true ) !== $data['status'] ) {
+			$order->update_meta_data( self::SYNC_STATUS, sanitize_key( $data['status'] ) );
+			$changed = true;
+		}
+		if ( '' !== ( $data['tracking_code'] ?? '' ) && (string) $order->get_meta( self::TRACKING_CODE, true ) !== $data['tracking_code'] ) {
+			$order->update_meta_data( self::TRACKING_CODE, sanitize_text_field( $data['tracking_code'] ) );
+			$changed = true;
+		}
+		if ( '' !== ( $data['tracking_url'] ?? '' ) && (string) $order->get_meta( self::TRACKING_URL, true ) !== $data['tracking_url'] ) {
+			$order->update_meta_data( self::TRACKING_URL, esc_url_raw( $data['tracking_url'] ) );
+			$changed = true;
+		}
+
+		if ( $mark_webhook ) {
+			$order->update_meta_data( self::LAST_WEBHOOK_AT, current_time( 'mysql' ) );
+		}
+		$order->save();
+
+		return $changed;
 	}
 
 	public function save_error( WC_Order $order, string $message ): void {
@@ -58,6 +120,78 @@ final class OrderMeta {
 		}
 
 		return (string) (int) $order_id;
+	}
+
+	public function get_our_reference( WC_Order $order ): string {
+		$value = $order->get_meta( self::OUR_REFERENCE, true );
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		return trim( sanitize_text_field( (string) $value ) );
+	}
+
+	public function get_order_reference( WC_Order $order ): string {
+		$value = $order->get_meta( self::ORDER_REFERENCE, true );
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		return trim( sanitize_text_field( (string) $value ) );
+	}
+
+	/** @return array<int, int> */
+	public function get_good_ids( WC_Order $order ): array {
+		$value = $order->get_meta( self::GOOD_IDS, true );
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return array();
+		}
+
+		$ids = array();
+		foreach ( explode( ',', sanitize_text_field( (string) $value ) ) as $good_id ) {
+			$id = absint( $good_id );
+			if ( $id > 0 ) {
+				$ids[] = $id;
+			}
+		}
+
+		return array_values( array_unique( $ids ) );
+	}
+
+	/** @param array<string, mixed> $body */
+	private function extract_order_reference( array $body, string $fallback ): string {
+		if ( isset( $body['orderReference'] ) && ! is_array( $body['orderReference'] ) && ! is_object( $body['orderReference'] ) ) {
+			return sanitize_text_field( (string) $body['orderReference'] );
+		}
+
+		return '' !== $fallback ? sanitize_text_field( $fallback ) : '';
+	}
+
+	/** @param array<string, mixed> $body @return array<int, int> */
+	private function extract_good_ids( array $body ): array {
+		$ids = array();
+		foreach ( array( $body, $body['order'] ?? null, $body['data'] ?? null ) as $container ) {
+			if ( ! is_array( $container ) || ! isset( $container['goods'] ) || ! is_array( $container['goods'] ) ) {
+				continue;
+			}
+
+			foreach ( $container['goods'] as $good ) {
+				if ( ! is_array( $good ) ) {
+					continue;
+				}
+
+				foreach ( array( 'goodId', 'id' ) as $key ) {
+					if ( isset( $good[ $key ] ) && ! is_array( $good[ $key ] ) && ! is_object( $good[ $key ] ) ) {
+						$id = absint( $good[ $key ] );
+						if ( $id > 0 ) {
+							$ids[] = $id;
+						}
+					}
+				}
+			}
+		}
+
+		return array_values( array_unique( $ids ) );
 	}
 
 	public function get_soocool_order_id( WC_Order $order ): string {

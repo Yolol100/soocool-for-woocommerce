@@ -2,7 +2,7 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: SooCool for WooCommerce 0.3.87\n"
+"Project-Id-Version: SooCool for WooCommerce 0.4.14\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/soocool-for-woocommerce\n"
 "POT-Creation-Date: 2026-06-10 00:00+0000\n"
 "MIME-Version: 1.0\n"
@@ -351,7 +351,7 @@ msgid "Pickup location"
 msgstr ""
 
 #: assets/build/admin.js:192
-msgid "Pickup phone"
+msgid "Pickup mobile"
 msgstr ""
 
 #: assets/build/admin.js:195
@@ -687,4 +687,56 @@ msgstr ""
 
 #: src/Admin/AdminMenu.php
 msgid "Deze API-Test verstuurt één delivery task. Pickup + delivery test je via een echte WooCommerce order met pickup ingeschakeld."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php
+msgid "Download SooCool labels"
+msgstr ""
+
+msgid "SooCool task contactInfo.phone is intentionally not sent. Use email and a valid mobile number instead."
+msgstr ""
+
+#: src/Domain/TaskFactory.php
+msgid "recipient name"
+msgstr ""
+
+#: src/Domain/TaskFactory.php
+msgid "street name"
+msgstr ""
+
+#: src/Domain/TaskFactory.php
+msgid "house number"
+msgstr ""
+
+#: src/Domain/TaskFactory.php
+msgid "postcode"
+msgstr ""
+
+#: src/Domain/TaskFactory.php
+msgid "city"
+msgstr ""
+
+#: src/Domain/TaskFactory.php
+msgid "Delivery address is incomplete. Missing WooCommerce field(s): %s. Complete the shipping or billing address before sending this order to SooCool."
+msgstr ""
+
+msgid "Pickup contact is incomplete. Add a pickup email address or a valid Dutch mobile number in the SooCool settings."
+msgstr ""
+
+msgid "email or valid Dutch mobile number"
+msgstr ""
+
+msgid "SooCool delivery tasks must use the exact 08:00-18:00 delivery window for this connection."
+msgstr ""
+
+msgid "Manual resubmission is disabled in the SooCool settings."
+msgstr ""
+
+msgid "Keep this enabled when SooCool collects packages from you. The order is then sent with both a pickup task and a delivery task."
+msgstr ""
+
+msgid "SooCool requires delivery tasks to use exactly 08:00-18:00 for this connection."
+msgstr ""
+
+msgid "When SooCool collects packages from you, keep pickup enabled. SooCool receives two tasks: one pickup task with the agreed pickup window and one delivery task with the fixed 08:00-18:00 delivery window."
 msgstr ""

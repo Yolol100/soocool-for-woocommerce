@@ -12,6 +12,7 @@ use SooCool\WooCommerce\Rest\ConnectionController;
 use SooCool\WooCommerce\Rest\LogsController;
 use SooCool\WooCommerce\Rest\OrderSyncController;
 use SooCool\WooCommerce\Rest\SettingsController;
+use SooCool\WooCommerce\Rest\WebhookController;
 use SooCool\WooCommerce\WooCommerce\OrderActions;
 use SooCool\WooCommerce\WooCommerce\OrderStatusHooks;
 use SooCool\WooCommerce\WooCommerce\ShippingLabelActions;
@@ -50,6 +51,7 @@ final class Plugin {
 		add_action( 'rest_api_init', array( $provider->get( ConnectionController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( LogsController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( OrderSyncController::class ), 'register_routes' ) );
+		add_action( 'rest_api_init', array( $provider->get( WebhookController::class ), 'register_routes' ) );
 
 		$provider->get( OrderActions::class )->register();
 		$provider->get( OrderStatusHooks::class )->register();

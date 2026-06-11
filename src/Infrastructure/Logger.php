@@ -15,7 +15,7 @@ final class Logger {
 	 * Keep log context intentionally small. Values are still scrubbed by SecretSanitizer
 	 * because upstream API errors may include secrets or customer data.
 	 */
-	private const CONTEXT_ALLOW_LIST = array( 'attempt', 'error', 'errors', 'method', 'path', 'status', 'traceId', 'api_key_present', 'api_key_source', 'api_key_status', 'api_key_length', 'header_name_sent', 'request_url_host', 'request_path' );
+	private const CONTEXT_ALLOW_LIST = array( 'attempt', 'error', 'errors', 'method', 'path', 'status', 'traceId', 'orderId', 'api_key_present', 'api_key_source', 'api_key_status', 'api_key_length', 'header_name_sent', 'request_url_host', 'request_path' );
 
 	public function __construct( private readonly SecretSanitizer $sanitizer, private readonly OptionRepository $options ) {}
 
@@ -55,8 +55,6 @@ final class Logger {
 	public function clear(): void {
 		delete_option( self::OPTION_NAME );
 	}
-
-
 
 	/** @param array<string, mixed> $context @return array<string, mixed> */
 	private function filter_context( array $context ): array {

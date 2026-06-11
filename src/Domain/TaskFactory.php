@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *   - taskType    : "delivery" | "pickup"
  *   - timeWindow  : { startTime, endTime } (ISO-8601)
  *   - address     : { person, street, houseNumber, postCode, city, country }
- *   - contactInfo : { email, phone, mobile } at task level
+ *   - contactInfo : { email, mobile } at task level. Phone is intentionally not sent because SooCool staging validates phone strictly.
  *   - goods       : array of good IDs from the goods manifest
  *   - instructions: optional string
  */
@@ -31,14 +31,27 @@ final class TaskFactory {
 
 	/** @param array<int, int|string> $good_ids Requested good IDs to attach to every task. @return array<int, array<string, mixed>> */
 	public function create_tasks( WC_Order $order, array $good_ids = array() ): array {
-		$settings        = $this->options->all();
-		$good_ids        = $this->normalize_good_ids( $good_ids );
-		$pickup_offset   = (int) $settings['pickup_days_offset'];
+		$settings      = $this->options->all();
+		$good_ids      = $this->normalize_good_ids( $good_ids );
+		$pickup_offset = (int) $settings['pickup_days_offset'];
+		if ( (bool) $settings['enable_pickup'] ) {
+			$pickup_offset = $this->effective_offset_for_window(
+				$pickup_offset,
+				(string) ( $settings['pickup_time_to'] ?? self::DELIVERY_TIME_TO )
+			);
+		}
 		$pickup_date     = $this->date_for_offset( $pickup_offset );
 		$delivery_offset = (int) $settings['delivery_days_offset'];
+
 		if ( (bool) $settings['enable_pickup'] && $delivery_offset <= $pickup_offset ) {
 			$delivery_offset = $pickup_offset + 1;
+		} elseif ( ! (bool) $settings['enable_pickup'] ) {
+			$delivery_offset = $this->effective_offset_for_window(
+				$delivery_offset,
+				(string) ( $settings['delivery_time_to'] ?? self::DELIVERY_TIME_TO )
+			);
 		}
+
 		$delivery_date = $this->date_for_offset( $delivery_offset );
 		$tasks         = array();
 
@@ -59,6 +72,14 @@ final class TaskFactory {
 			}
 		}
 
+		$contact_info = $this->contact_info(
+			sanitize_email( (string) $settings['pickup_email'] ),
+			sanitize_text_field( (string) $settings['pickup_phone'] )
+		);
+		if ( array() === $contact_info ) {
+			throw new PayloadValidationException( esc_html__( 'Pickup contact is incomplete. Add a pickup email address or a valid Dutch mobile number in the SooCool settings.', 'soocool-for-woocommerce' ) );
+		}
+
 		$task = array(
 			'taskType'    => 'pickup',
 			'timeWindow'  => array(
@@ -73,12 +94,7 @@ final class TaskFactory {
 				'city'        => sanitize_text_field( (string) $settings['pickup_city'] ),
 				'country'     => $this->country_code( (string) $settings['pickup_country'] ),
 			),
-			'contactInfo' => $this->compact(
-				array(
-					'email' => sanitize_email( (string) $settings['pickup_email'] ),
-					'phone' => sanitize_text_field( (string) $settings['pickup_phone'] ),
-				)
-			),
+			'contactInfo' => $contact_info,
 			'goods'       => $good_ids,
 		);
 
@@ -87,16 +103,16 @@ final class TaskFactory {
 
 	/** @param array<string, mixed> $settings @param array<int, int> $good_ids @return array<string, mixed> */
 	private function delivery_task( WC_Order $order, array $settings, string $date, array $good_ids ): array {
-		$address     = $this->address_parser->split(
-			$order->get_shipping_address_1() ?: $order->get_billing_address_1(),
-			$order->get_shipping_address_2() ?: $order->get_billing_address_2()
-		);
-		$postal_code = $order->get_shipping_postcode() ?: $order->get_billing_postcode();
-		$city        = $order->get_shipping_city() ?: $order->get_billing_city();
-		$country     = $order->get_shipping_country() ?: $order->get_billing_country() ?: 'NL';
+		$delivery_context = $this->delivery_address_context( $order );
+		$address          = $delivery_context['address'];
+		$postal_code      = $delivery_context['postal_code'];
+		$city             = $delivery_context['city'];
+		$country          = $delivery_context['country'];
+		$recipient_name   = $delivery_context['recipient_name'];
 
-		if ( '' === trim( $this->recipient_name( $order ) ) || '' === trim( (string) $address['street'] ) || '' === trim( (string) $address['houseNumber'] ) || '' === trim( (string) $postal_code ) || '' === trim( (string) $city ) ) {
-			throw new PayloadValidationException( esc_html__( 'Delivery address is incomplete. Complete the WooCommerce shipping or billing address before sending this order to SooCool.', 'soocool-for-woocommerce' ) );
+		$missing_fields = $this->delivery_address_missing_fields( $order, $address, (string) $postal_code, (string) $city, (string) $country, (string) $recipient_name );
+		if ( array() !== $missing_fields ) {
+			throw new PayloadValidationException( $this->delivery_address_error_message( $missing_fields ) );
 		}
 
 		$time_from    = ! empty( $settings['delivery_time_from'] ) ? (string) $settings['delivery_time_from'] : self::DELIVERY_TIME_FROM;
@@ -111,7 +127,7 @@ final class TaskFactory {
 			),
 			'instructions' => '' !== $instructions ? $instructions : null,
 			'address'      => array(
-				'person'      => sanitize_text_field( $this->recipient_name( $order ) ),
+				'person'      => sanitize_text_field( (string) $recipient_name ),
 				'street'      => sanitize_text_field( (string) $address['street'] ),
 				'houseNumber' => sanitize_text_field( (string) $address['houseNumber'] ),
 				'postCode'    => $this->postal_code( (string) $postal_code ),
@@ -127,31 +143,97 @@ final class TaskFactory {
 
 	/** @return array<string, string> */
 	private function delivery_contact_info( WC_Order $order ): array {
-		$phone = sanitize_text_field( $order->get_billing_phone() );
-
-		$info = array(
-			'email' => sanitize_email( $order->get_billing_email() ),
-			'phone' => $phone,
+		$info = $this->contact_info(
+			sanitize_email( $order->get_billing_email() ),
+			sanitize_text_field( $order->get_billing_phone() )
 		);
 
-		if ( '' !== $phone && $this->looks_like_mobile( $phone ) ) {
-			$info['mobile'] = $phone;
-		}
-
 		/**
-		 * Filters the SooCool task contactInfo (email, phone, mobile).
+		 * Filters the SooCool task contactInfo (email, mobile). Phone values are stripped before sending to SooCool.
 		 *
 		 * @param array<string, string> $info
 		 * @param WC_Order             $order
 		 */
 		$info = apply_filters( 'soocool_task_contact_info', $info, $order );
+		$info = is_array( $info ) ? $info : array();
+		unset( $info['phone'], $info['phoneNumber'] );
 
-		return $this->compact( is_array( $info ) ? $info : array() );
+		return $this->compact( $info );
+	}
+
+	/** @return array<string, string> */
+	private function contact_info( string $email, string $phone ): array {
+		$phone = $this->normalize_phone_number( $phone );
+		$info  = array( 'email' => sanitize_email( $email ) );
+
+		// SooCool staging rejects some phone values through a strict oneOf schema.
+		// Only send confirmed Dutch mobile numbers as contactInfo.mobile.
+		if ( '' !== $phone && $this->looks_like_mobile( $phone ) ) {
+			$info['mobile'] = $phone;
+		}
+
+		return $this->compact( $info );
+	}
+
+	private function normalize_phone_number( string $phone ): string {
+		$phone = preg_replace( '/[^\d+]/', '', $phone ) ?? '';
+		if ( 1 === preg_match( '/^0(\d{9})$/', $phone, $matches ) ) {
+			return '+31' . $matches[1];
+		}
+		if ( 1 === preg_match( '/^31(\d{9})$/', $phone, $matches ) ) {
+			return '+31' . $matches[1];
+		}
+		return sanitize_text_field( $phone );
 	}
 
 	private function looks_like_mobile( string $phone ): bool {
 		$normalized = (string) preg_replace( '/[^\d+]/', '', $phone );
-		return 1 === preg_match( '/^(?:\+?31|0)6\d{8}$/', $normalized );
+		$normalized = ltrim( $normalized, '+' );
+
+		return 1 === preg_match( '/^(?:31|0)6\d{8}$/', $normalized );
+	}
+
+	/**
+	 * @param array{street:string, houseNumber:string} $address
+	 * @return array<int, string>
+	 */
+	private function delivery_address_missing_fields( WC_Order $order, array $address, string $postal_code, string $city, string $country, string $recipient_name ): array {
+		$fields = array();
+
+		if ( '' === trim( $recipient_name ) ) {
+			$fields[] = __( 'recipient name', 'soocool-for-woocommerce' );
+		}
+		if ( '' === trim( (string) $address['street'] ) ) {
+			$fields[] = __( 'street name', 'soocool-for-woocommerce' );
+		}
+		if ( '' === trim( (string) $address['houseNumber'] ) ) {
+			$fields[] = __( 'house number', 'soocool-for-woocommerce' );
+		}
+		if ( '' === trim( $postal_code ) ) {
+			$fields[] = __( 'postcode', 'soocool-for-woocommerce' );
+		}
+		if ( '' === trim( $city ) ) {
+			$fields[] = __( 'city', 'soocool-for-woocommerce' );
+		}
+		if ( '' === trim( $country ) ) {
+			$fields[] = __( 'country', 'soocool-for-woocommerce' );
+		}
+		if ( array() === $this->delivery_contact_info( $order ) ) {
+			$fields[] = __( 'email or valid Dutch mobile number', 'soocool-for-woocommerce' );
+		}
+
+		return $fields;
+	}
+
+	/** @param array<int, string> $missing_fields */
+	private function delivery_address_error_message( array $missing_fields ): string {
+		$fields = implode( ', ', array_map( 'sanitize_text_field', $missing_fields ) );
+
+		return sprintf(
+			/* translators: %s: comma-separated list of missing WooCommerce address fields. */
+			esc_html__( 'Delivery address is incomplete. Missing WooCommerce field(s): %s. Complete the shipping or billing address before sending this order to SooCool.', 'soocool-for-woocommerce' ),
+			$fields
+		);
 	}
 
 	/** @param array<string, mixed> $values @return array<string, mixed> */
@@ -162,10 +244,38 @@ final class TaskFactory {
 		);
 	}
 
-	private function recipient_name( WC_Order $order ): string {
-		$shipping = trim( $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name() );
-		$billing  = trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );
-		return '' !== $shipping ? $shipping : $billing;
+	/** @return array{address:array{street:string,houseNumber:string},postal_code:string,city:string,country:string,recipient_name:string} */
+	private function delivery_address_context( WC_Order $order ): array {
+		$shipping_values = array(
+			$order->get_shipping_first_name(),
+			$order->get_shipping_last_name(),
+			$order->get_shipping_address_1(),
+			$order->get_shipping_address_2(),
+			$order->get_shipping_postcode(),
+			$order->get_shipping_city(),
+			$order->get_shipping_country(),
+		);
+		$has_shipping = array() !== array_filter( $shipping_values, static fn ( mixed $value ): bool => '' !== trim( (string) $value ) );
+
+		$prefix = $has_shipping ? 'shipping' : 'billing';
+		$address_1 = 'shipping' === $prefix ? $order->get_shipping_address_1() : $order->get_billing_address_1();
+		$address_2 = 'shipping' === $prefix ? $order->get_shipping_address_2() : $order->get_billing_address_2();
+
+		return array(
+			'address'        => $this->address_parser->split( (string) $address_1, (string) $address_2 ),
+			'postal_code'    => (string) ( 'shipping' === $prefix ? $order->get_shipping_postcode() : $order->get_billing_postcode() ),
+			'city'           => (string) ( 'shipping' === $prefix ? $order->get_shipping_city() : $order->get_billing_city() ),
+			'country'        => (string) ( 'shipping' === $prefix ? $order->get_shipping_country() : $order->get_billing_country() ),
+			'recipient_name' => $this->recipient_name_for_prefix( $order, $prefix ),
+		);
+	}
+
+	private function recipient_name_for_prefix( WC_Order $order, string $prefix ): string {
+		if ( 'shipping' === $prefix ) {
+			return trim( $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name() );
+		}
+
+		return trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );
 	}
 
 	private function country_code( string $country ): string {
@@ -176,6 +286,28 @@ final class TaskFactory {
 	private function postal_code( string $postal_code ): string {
 		$postal_code = strtoupper( sanitize_text_field( trim( $postal_code ) ) );
 		return (string) preg_replace( '/\s+/', '', $postal_code );
+	}
+
+
+	private function effective_offset_for_window( int $days, string $time_to ): int {
+		$days = max( 0, $days );
+		if ( 0 !== $days ) {
+			return $days;
+		}
+
+		try {
+			$timezone = function_exists( 'wp_timezone' ) ? wp_timezone() : new \DateTimeZone( 'UTC' );
+			$now      = function_exists( 'current_datetime' ) ? current_datetime() : new \DateTimeImmutable( 'now', $timezone );
+			$end      = new \DateTimeImmutable( $this->date_for_offset( 0 ) . ' ' . $this->sanitize_time_for_window( $time_to ), $timezone );
+		} catch ( \Exception ) {
+			return $days;
+		}
+
+		return $end <= $now ? 1 : $days;
+	}
+
+	private function sanitize_time_for_window( string $time ): string {
+		return preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $time ) ? $time : self::DELIVERY_TIME_TO;
 	}
 
 	private function date_time_for_api( string $date, string $time ): string {

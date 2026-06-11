@@ -36,6 +36,12 @@ final class ShippingLabelService {
 		return (string) $response->body();
 	}
 
+	/** @param array<int, int|string> $good_ids */
+	public function get_bulk_good_labels( array $good_ids, string $output ): string {
+		$response = $this->client->get_multiple_good_shipping_labels( $good_ids, $output );
+		return (string) $response->body();
+	}
+
 	/** @param array<int, WC_Order> $orders */
 	public function get_bulk_labels( array $orders, string $output ): string {
 		$soocool_order_ids = array();

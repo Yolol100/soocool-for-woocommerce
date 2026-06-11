@@ -21,7 +21,7 @@ final class OptionRepository {
 			'test_base_url'              => 'https://api.staging.soocool.nl',
 			'production_base_url'        => 'https://api.soocool.nl',
 			'api_key'                    => '',
-			'enable_pickup'              => false,
+			'enable_pickup'              => true,
 			'order_reference_prefix'     => '',
 			'pickup_company'             => get_bloginfo( 'name' ),
 			'pickup_contact_name'        => '',
@@ -32,17 +32,18 @@ final class OptionRepository {
 			'pickup_postal_code'         => '',
 			'pickup_city'                => '',
 			'pickup_country'             => 'NL',
-			'pickup_days_offset'         => 0,
+			'pickup_days_offset'         => 1,
 			'pickup_time_from'           => '08:00',
 			'pickup_time_to'             => '18:00',
 			'delivery_time_from'         => '08:00',
 			'delivery_time_to'           => '18:00',
-			'delivery_days_offset'       => 1,
+			'delivery_days_offset'       => 2,
 			'auto_submit_enabled'        => false,
 			'auto_submit_status'         => 'processing',
 			'allow_resubmit'             => false,
 			'label_output'               => 'a6',
 			'webhook_url'                => '',
+			'webhook_secret'             => '',
 			'goods_description_fallback' => 'WooCommerce order',
 			'packaging_type'             => 'box',
 			'temperature_regime'         => 'cooled',
@@ -68,15 +69,25 @@ final class OptionRepository {
 			$changed                   = true;
 		}
 
-		// SooCool confirmed the staging delivery agreement for this connection is exactly 08:00-18:00.
-		// Older builds prefilled the manual test with 09:00-17:00, so migrate that legacy value safely.
-		if ( 'test' === (string) ( $settings['environment'] ?? 'test' )
-			&& '09:00' === (string) ( $settings['delivery_time_from'] ?? '' )
-			&& '17:00' === (string) ( $settings['delivery_time_to'] ?? '' )
-		) {
+		// SooCool confirmed delivery tasks must use the exact 08:00-18:00 window for this connection.
+		// Normalize legacy or manually changed delivery windows before new orders are sent.
+		if ( '08:00' !== (string) ( $settings['delivery_time_from'] ?? '' ) || '18:00' !== (string) ( $settings['delivery_time_to'] ?? '' ) ) {
 			$settings['delivery_time_from'] = '08:00';
 			$settings['delivery_time_to']   = '18:00';
 			$changed                       = true;
+		}
+
+		if ( (bool) ( $settings['enable_pickup'] ?? false ) && 0 === absint( $settings['pickup_days_offset'] ?? 0 ) ) {
+			$settings['pickup_days_offset'] = 1;
+			if ( absint( $settings['delivery_days_offset'] ?? 0 ) <= 1 ) {
+				$settings['delivery_days_offset'] = 2;
+			}
+			$changed = true;
+		}
+
+		if ( empty( $settings['webhook_secret'] ) ) {
+			$settings['webhook_secret'] = $this->generate_webhook_secret();
+			$changed                    = true;
 		}
 
 		if ( $changed ) {
@@ -94,6 +105,10 @@ final class OptionRepository {
 		if ( 'https://api-test.soocool.nl' === untrailingslashit( (string) $settings['test_base_url'] ) ) {
 			$settings['test_base_url'] = 'https://api.staging.soocool.nl';
 		}
+
+		// SooCool requires delivery tasks for this connection to use the exact 08:00-18:00 window.
+		$settings['delivery_time_from'] = '08:00';
+		$settings['delivery_time_to']   = '18:00';
 
 		return $settings;
 	}
@@ -134,29 +149,27 @@ final class OptionRepository {
 		$clean['pickup_days_offset'] = max( 0, min( 30, absint( $settings['pickup_days_offset'] ?? $current['pickup_days_offset'] ) ) );
 		$clean['pickup_time_from']   = $this->sanitize_time( (string) ( $settings['pickup_time_from'] ?? $current['pickup_time_from'] ), '08:00' );
 		$clean['pickup_time_to']     = $this->sanitize_time( (string) ( $settings['pickup_time_to'] ?? $current['pickup_time_to'] ), '18:00' );
-		$clean['delivery_time_from'] = $this->sanitize_time( (string) ( $settings['delivery_time_from'] ?? $current['delivery_time_from'] ), '08:00' );
-		$clean['delivery_time_to']   = $this->sanitize_time( (string) ( $settings['delivery_time_to'] ?? $current['delivery_time_to'] ), '18:00' );
+		// SooCool requires delivery tasks for this connection to be sent with exactly 08:00-18:00.
+		$clean['delivery_time_from'] = '08:00';
+		$clean['delivery_time_to']   = '18:00';
 
 		if ( $clean['pickup_time_to'] <= $clean['pickup_time_from'] ) {
 			$clean['pickup_time_from'] = '08:00';
 			$clean['pickup_time_to']   = '18:00';
 		}
-		if ( $clean['delivery_time_to'] <= $clean['delivery_time_from'] ) {
-			$clean['delivery_time_from'] = '08:00';
-			$clean['delivery_time_to']   = '18:00';
-		}
 
-		$delivery_days_offset        = max( 0, min( 30, absint( $settings['delivery_days_offset'] ?? $current['delivery_days_offset'] ) ) );
-		if ( (bool) $clean['enable_pickup'] && $delivery_days_offset < 1 ) {
-			$delivery_days_offset = 1;
+		$delivery_days_offset = max( 0, min( 30, absint( $settings['delivery_days_offset'] ?? $current['delivery_days_offset'] ) ) );
+		if ( (bool) $clean['enable_pickup'] && $delivery_days_offset <= (int) $clean['pickup_days_offset'] ) {
+			$delivery_days_offset = (int) $clean['pickup_days_offset'] + 1;
 		}
-		$clean['delivery_days_offset'] = $delivery_days_offset;
+		$clean['delivery_days_offset'] = min( 30, $delivery_days_offset );
 
 		$clean['auto_submit_enabled']        = $this->to_bool( $settings['auto_submit_enabled'] ?? $current['auto_submit_enabled'] );
 		$clean['auto_submit_status']         = $this->one_of( $settings['auto_submit_status'] ?? $current['auto_submit_status'], array( 'processing', 'completed', 'on-hold' ), 'processing' );
 		$clean['allow_resubmit']             = $this->to_bool( $settings['allow_resubmit'] ?? $current['allow_resubmit'] );
 		$clean['label_output']               = $this->one_of( $settings['label_output'] ?? $current['label_output'], array( 'a6', 'collated_a4' ), 'a6' );
 		$clean['webhook_url']                = $this->sanitize_url_or_empty( (string) ( $settings['webhook_url'] ?? $current['webhook_url'] ) );
+		$clean['webhook_secret']             = $this->sanitize_webhook_secret( $settings['webhook_secret'] ?? $current['webhook_secret'] ?? '' );
 		$clean['goods_description_fallback'] = sanitize_text_field( (string) ( $settings['goods_description_fallback'] ?? $current['goods_description_fallback'] ) );
 		$clean['packaging_type']             = sanitize_key( (string) ( $settings['packaging_type'] ?? $current['packaging_type'] ?? 'box' ) );
 		$clean['packaging_type']             = '' !== $clean['packaging_type'] ? $clean['packaging_type'] : 'box';
@@ -169,7 +182,6 @@ final class OptionRepository {
 
 		return $clean;
 	}
-
 
 	private function positive_int_between( mixed $value, int $min, int $max, int $fallback ): int {
 		if ( is_numeric( $value ) ) {
@@ -214,7 +226,63 @@ final class OptionRepository {
 		$settings['api_key_status']   = $this->api_key_status();
 		$settings['api_key_masked']   = $this->masked_api_key();
 		$settings['api_key']          = $settings['api_key_present'] ? $settings['api_key_masked'] : '';
+		$settings['generated_webhook_url'] = $this->generated_webhook_url();
+		$settings['effective_webhook_url'] = $this->effective_webhook_url();
+		unset( $settings['webhook_secret'] );
 		return $settings;
+	}
+
+	public function existing_webhook_secret(): string {
+		$settings = $this->all();
+		return $this->sanitize_webhook_secret( $settings['webhook_secret'] ?? '' );
+	}
+
+	public function webhook_secret(): string {
+		$secret = $this->existing_webhook_secret();
+		if ( '' !== $secret ) {
+			return $secret;
+		}
+
+		$settings = $this->all();
+		$secret   = $this->generate_webhook_secret();
+		$settings['webhook_secret'] = $secret;
+		update_option( self::OPTION_NAME, $this->sanitize_settings( $settings, $this->defaults() ), false );
+
+		return $secret;
+	}
+
+	public function generated_webhook_url(): string {
+		$url = add_query_arg(
+			'token',
+			$this->webhook_secret(),
+			rest_url( 'soocool/v1/webhook' )
+		);
+
+		return esc_url_raw( $url );
+	}
+
+	public function effective_webhook_url(): string {
+		$settings = $this->all();
+		$custom   = $this->sanitize_url_or_empty( (string) ( $settings['webhook_url'] ?? '' ) );
+		if ( '' !== $custom ) {
+			return $custom;
+		}
+
+		$generated = $this->generated_webhook_url();
+		return str_starts_with( $generated, 'https://' ) ? $generated : '';
+	}
+
+	private function sanitize_webhook_secret( mixed $value ): string {
+		$value = trim( sanitize_text_field( (string) $value ) );
+		return 1 === preg_match( '/^[A-Za-z0-9]{32,128}$/', $value ) ? $value : '';
+	}
+
+	private function generate_webhook_secret(): string {
+		if ( function_exists( 'wp_generate_password' ) ) {
+			return wp_generate_password( 48, false, false );
+		}
+
+		return bin2hex( random_bytes( 24 ) );
 	}
 
 	public function api_key_source(): string {

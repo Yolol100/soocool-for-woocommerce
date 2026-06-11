@@ -72,6 +72,17 @@ final class ApiClient {
 		return $this->request( 'GET', '/shipping-label?orderIds=' . implode( ',', array_map( 'rawurlencode', $ids ) ) . '&output=' . rawurlencode( $output ), null, array( 'Accept' => 'application/pdf' ) );
 	}
 
+	/** @param array<int, int|string> $good_ids */
+	public function get_multiple_good_shipping_labels( array $good_ids, string $output = 'a6' ): ApiResponse {
+		$ids = array_values( array_unique( array_map( array( $this, 'encode_numeric_order_id' ), $good_ids ) ) );
+		if ( array() === $ids ) {
+			throw new ApiException( esc_html__( 'Missing valid SooCool good IDs for label download.', 'soocool-for-woocommerce' ), 0 );
+		}
+
+		$output = $this->normalize_label_output( $output );
+		return $this->request( 'GET', '/shipping-label?goodIds=' . implode( ',', array_map( 'rawurlencode', $ids ) ) . '&output=' . rawurlencode( $output ), null, array( 'Accept' => 'application/pdf' ) );
+	}
+
 	private function normalize_label_output( string $output ): string {
 		return 'collated_a4' === $output ? 'collated_a4' : 'a6';
 	}
@@ -142,7 +153,7 @@ final class ApiClient {
 		$body         = str_contains( $content_type, 'application/pdf' ) ? $raw : $this->decode_body( $raw );
 
 		if ( $status < 200 || $status >= 300 ) {
-			$errors  = $this->extract_errors( $body );
+			$errors  = $this->redact_error_list( $this->extract_errors( $body ) );
 			$trace_id = $this->extract_trace_id( $body );
 			$message = $this->public_error_message( $status );
 			$context = array_merge(
@@ -171,7 +182,6 @@ final class ApiClient {
 		);
 		return new ApiResponse( $status, $body, method_exists( $headers, 'getAll' ) ? $headers->getAll() : array() );
 	}
-
 
 	/** @return array<string, string|int|bool> */
 	private function api_key_debug_context( string $api_key, string $url, string $path ): array {
@@ -259,6 +269,35 @@ final class ApiClient {
 		return array_values( array_unique( $errors ) );
 	}
 
+	/** @param array<int, string> $errors @return array<int, string> */
+	private function redact_error_list( array $errors ): array {
+		$redacted = array();
+		foreach ( $errors as $error ) {
+			$error = $this->redact_error_string( $error );
+			if ( '' !== $error ) {
+				$redacted[] = $error;
+			}
+		}
+
+		return array_values( array_unique( $redacted ) );
+	}
+
+	private function redact_error_string( string $value ): string {
+		$patterns = array(
+			'/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i' => '[redacted-api-key]',
+			'/([A-Z0-9._%+\-]+)@([A-Z0-9.\-]+\.[A-Z]{2,})/i' => '[redacted-email]',
+			'/\b(?:\+?\d[\d\s().\-]{7,}\d)\b/' => '[redacted-phone]',
+			'/\b\d{4}\s?[A-Z]{2}\b/i' => '[redacted-postcode]',
+			'/\b(?:api[_ -]?key|x-api-key|authorization|bearer|token|secret|password)\s*[:=]\s*[^\s,;]+/i' => '[redacted-secret]',
+		);
+
+		foreach ( $patterns as $pattern => $replacement ) {
+			$value = preg_replace( $pattern, $replacement, $value ) ?? $value;
+		}
+
+		return trim( sanitize_text_field( $value ) );
+	}
+
 	private function extract_trace_id( mixed $body ): string {
 		if ( ! is_array( $body ) || ! isset( $body['traceId'] ) || ! is_scalar( $body['traceId'] ) ) {
 			return '';
@@ -279,7 +318,7 @@ final class ApiClient {
 			++$attempts;
 			$response = wp_remote_request( $url, $args );
 			$status       = is_wp_error( $response ) ? 0 : (int) wp_remote_retrieve_response_code( $response );
-			$should_retry = $may_retry && ( is_wp_error( $response ) || in_array( $status, self::RETRYABLE_STATUS_CODES, true ) );
+			$should_retry = $may_retry && $attempts < self::MAX_RETRY_ATTEMPTS && ( is_wp_error( $response ) || in_array( $status, self::RETRYABLE_STATUS_CODES, true ) );
 			if ( ! $should_retry ) {
 				break;
 			}
