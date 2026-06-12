@@ -1,3 +1,14 @@
+## 0.4.51 - 2026-06-12
+
+- Admin UI: "Resync failed orders" button now uses the same red danger styling as the other destructive action buttons.
+
+## 0.4.50 - 2026-06-12
+
+- Reworked WooCommerce bulk label downloads to redirect through a short-lived, single-use admin-post download token instead of streaming the PDF directly from the bulk action filter.
+- Kept bulk downloads scoped to the current user, protected by a nonce, limited to 50 selected orders and compatible with both HPOS and legacy order list screens.
+- Kept webhook query-token fallback disabled by default and clarified that header-token authentication remains the production-safe default.
+- Added explicit release-package notes for runtime packages versus WordPress.org/source-review packages.
+
 ## 0.4.49 - 2026-06-12
 
 - Refreshed the admin CSS to a modern framework-free structure with scoped `.soocool-*` classes and shared CSS custom properties.

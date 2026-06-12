@@ -233,6 +233,7 @@
 .soocool-mapping-column-right > .soocool-settings-card {
   width: 100%;
   flex: 1 1 0;
+  align-content: start;
 }
 
 .soocool-field-grid.three {
@@ -579,23 +580,37 @@
 }
 
 .soocool-primary-action.components-button.is-primary,
-.soocool-danger-fill.components-button.is-secondary,
 .soocool-manual-submit.button.button-primary {
   color: var(--soocool-color-surface);
   background: var(--soocool-color-accent);
   border-color: var(--soocool-color-accent);
 }
 
+.soocool-shell .soocool-danger-fill.components-button.is-secondary,
+.soocool-danger-fill.components-button.is-secondary {
+  color: var(--soocool-color-surface);
+  background: var(--soocool-color-danger);
+  border-color: var(--soocool-color-danger);
+}
+
 .soocool-primary-action.components-button.is-primary:hover,
 .soocool-primary-action.components-button.is-primary:focus,
-.soocool-danger-fill.components-button.is-secondary:hover,
-.soocool-danger-fill.components-button.is-secondary:focus,
 .soocool-manual-submit.button.button-primary:hover,
 .soocool-manual-submit.button.button-primary:focus {
   color: var(--soocool-color-surface);
   background: var(--soocool-color-accent-dark);
   border-color: var(--soocool-color-accent-dark);
   box-shadow: 0 0 0 1px rgba(191, 4, 19, 0.2);
+}
+
+.soocool-shell .soocool-danger-fill.components-button.is-secondary:hover,
+.soocool-shell .soocool-danger-fill.components-button.is-secondary:focus,
+.soocool-danger-fill.components-button.is-secondary:hover,
+.soocool-danger-fill.components-button.is-secondary:focus {
+  color: var(--soocool-color-surface);
+  background: #8a1f20;
+  border-color: #8a1f20;
+  box-shadow: 0 0 0 1px rgba(179, 45, 46, 0.2);
 }
 
 .soocool-shell .components-button.is-secondary {

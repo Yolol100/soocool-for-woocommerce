@@ -174,3 +174,7 @@ The supplied root specification references external schema files including `mode
 ## API key handling
 
 The admin settings screen never reveals the saved SooCool API key. When a key is stored, the password field shows masked dots. Saving settings without replacing the field preserves the existing key.
+
+### Bulk label download hardening
+
+Bulk WooCommerce label downloads are routed through a short-lived, single-use `admin-post.php` download token. The token stores the selected order IDs server-side for five minutes, is scoped to the current user, is protected by a nonce, and is deleted as soon as the download endpoint is used. This avoids streaming binary PDF output directly from the WooCommerce bulk-action filter while keeping the HPOS and legacy order list flows compatible.

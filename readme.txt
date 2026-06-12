@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.4.49
+Stable tag: 0.4.51
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,13 @@ Site owners are responsible for disclosing the use of SooCool as a transport ser
 Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. WooCommerce order meta such as SooCool order IDs, references, sync status and last errors is intentionally retained for historical order and audit continuity.
 
 == Changelog ==
+
+= 0.4.51 =
+
+* Reworked WooCommerce bulk label downloads to use a short-lived, single-use admin-post download token instead of streaming the PDF directly from the bulk action filter.
+* Bulk label downloads remain scoped to the current user, nonce-protected, limited to 50 selected orders and available on HPOS and legacy order list screens.
+* Kept webhook query-token fallback disabled by default; header-token authentication remains the production-safe default.
+* Added explicit release-package notes for runtime packages versus WordPress.org/source-review packages.
 
 = 0.4.49 =
 

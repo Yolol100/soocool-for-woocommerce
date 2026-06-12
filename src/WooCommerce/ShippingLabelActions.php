@@ -17,11 +17,15 @@ final class ShippingLabelActions {
 	private const MAX_BULK_LABEL_IDS = 50;
 	private const BULK_ORDER_LABELS_ACTION = 'soocool_download_order_labels';
 	private const BULK_GOOD_LABELS_ACTION  = 'soocool_download_good_labels';
+	private const BULK_LABEL_DOWNLOAD_ACTION = 'soocool_download_bulk_labels';
+	private const BULK_LABEL_TRANSIENT_PREFIX = 'soocool_bulk_label_';
+	private const BULK_LABEL_TRANSIENT_TTL = 300;
 
 	public function __construct( private readonly ShippingLabelService $labels, private readonly OptionRepository $options, private readonly OrderMeta $meta ) {}
 
 	public function register(): void {
 		add_action( 'admin_post_soocool_download_label', array( $this, 'download' ) );
+		add_action( 'admin_post_' . self::BULK_LABEL_DOWNLOAD_ACTION, array( $this, 'download_bulk_labels' ) );
 
 		// Bulk label downloads in both the HPOS and legacy order list tables.
 		add_filter( 'bulk_actions-woocommerce_page_wc-orders', array( $this, 'add_bulk_action' ) );
@@ -56,17 +60,66 @@ final class ShippingLabelActions {
 			wp_die( esc_html__( 'Select 50 or fewer orders for one SooCool label download.', 'soocool-for-woocommerce' ) );
 		}
 
-		// Stream directly from the verified bulk-action request. Redirecting to a
-		// second admin-post URL with a freshly generated nonce can fail in the HPOS
-		// orders table and show "link expired" before the PDF is downloaded.
-		$output = $this->requested_output();
-		if ( self::BULK_GOOD_LABELS_ACTION === $action ) {
-			$this->send_bulk_good_labels_for_orders( $order_ids, $output );
-			return $redirect_to;
+		$token = $this->create_bulk_label_download_token( $action, $order_ids, $this->requested_output() );
+		if ( '' === $token ) {
+			return add_query_arg( 'soocool_label_error', 'download_token', $redirect_to );
 		}
 
-		$this->send_bulk_order_labels_for_orders( $order_ids, $output );
-		return $redirect_to;
+		return wp_nonce_url(
+			add_query_arg(
+				array(
+					'action' => self::BULK_LABEL_DOWNLOAD_ACTION,
+					'token'  => rawurlencode( $token ),
+				),
+				admin_url( 'admin-post.php' )
+			),
+			$this->bulk_label_nonce_action( $token )
+		);
+	}
+
+	public function download_bulk_labels(): void {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You are not allowed to download these labels.', 'soocool-for-woocommerce' ) );
+		}
+
+		$token = $this->query_string( 'token' );
+		if ( '' === $token ) {
+			wp_die( esc_html__( 'SooCool label download token is missing.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
+		}
+
+		check_admin_referer( $this->bulk_label_nonce_action( $token ) );
+
+		$payload = get_transient( $this->bulk_label_transient_key( $token ) );
+		delete_transient( $this->bulk_label_transient_key( $token ) );
+
+		if ( ! is_array( $payload ) ) {
+			wp_die( esc_html__( 'SooCool label download expired. Please run the bulk action again.', 'soocool-for-woocommerce' ), '', array( 'response' => 410 ) );
+		}
+
+		$user_id = isset( $payload['user_id'] ) ? absint( $payload['user_id'] ) : 0;
+		if ( get_current_user_id() !== $user_id ) {
+			wp_die( esc_html__( 'SooCool label download token is not valid for this user.', 'soocool-for-woocommerce' ), '', array( 'response' => 403 ) );
+		}
+
+		$action = isset( $payload['action'] ) ? sanitize_key( (string) $payload['action'] ) : '';
+		$order_ids = isset( $payload['order_ids'] ) && is_array( $payload['order_ids'] ) ? array_values( array_unique( array_filter( array_map( 'absint', $payload['order_ids'] ) ) ) ) : array();
+		$output = isset( $payload['output'] ) && 'collated_a4' === $payload['output'] ? 'collated_a4' : 'a6';
+
+		if ( array() === $order_ids || count( $order_ids ) > self::MAX_BULK_LABEL_IDS ) {
+			wp_die( esc_html__( 'SooCool label download request is invalid.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
+		}
+
+		if ( self::BULK_GOOD_LABELS_ACTION === $action ) {
+			$this->send_bulk_good_labels_for_orders( $order_ids, $output );
+			return;
+		}
+
+		if ( self::BULK_ORDER_LABELS_ACTION === $action ) {
+			$this->send_bulk_order_labels_for_orders( $order_ids, $output );
+			return;
+		}
+
+		wp_die( esc_html__( 'SooCool label download action is invalid.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
 	}
 
 	public function download(): void {
@@ -98,6 +151,32 @@ final class ShippingLabelActions {
 		return 'collated_a4' === $requested_output ? 'collated_a4' : 'a6';
 	}
 
+	/** @param array<int, int> $order_ids */
+	private function create_bulk_label_download_token( string $action, array $order_ids, string $output ): string {
+		$token = function_exists( 'wp_generate_uuid4' ) ? wp_generate_uuid4() : bin2hex( random_bytes( 16 ) );
+		$token = sanitize_key( str_replace( '-', '', $token ) );
+		if ( '' === $token ) {
+			return '';
+		}
+
+		$payload = array(
+			'user_id'   => get_current_user_id(),
+			'action'    => $action,
+			'order_ids' => array_values( array_unique( array_filter( array_map( 'absint', $order_ids ) ) ) ),
+			'output'    => 'collated_a4' === $output ? 'collated_a4' : 'a6',
+			'created'   => time(),
+		);
+
+		return set_transient( $this->bulk_label_transient_key( $token ), $payload, self::BULK_LABEL_TRANSIENT_TTL ) ? $token : '';
+	}
+
+	private function bulk_label_transient_key( string $token ): string {
+		return self::BULK_LABEL_TRANSIENT_PREFIX . md5( $token );
+	}
+
+	private function bulk_label_nonce_action( string $token ): string {
+		return self::BULK_LABEL_DOWNLOAD_ACTION . '_' . md5( $token );
+	}
 
 	private function handle_order_good_download( string $output ): void {
 		$order_id = $this->query_int( 'order_id' );
