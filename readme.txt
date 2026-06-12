@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.4.47
+Stable tag: 0.4.49
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -108,9 +108,11 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 
 == Changelog ==
 
-= 0.4.47 =
+= 0.4.49 =
 
+* Refreshed the admin CSS with scoped `.soocool-*` classes and shared CSS custom properties.
 * Fixed stale README webhook and delivery-window documentation to match current plugin behavior.
+* Kept the plugin version at 0.4.49 and aligned release metadata for the same-version release package.
 
 = 0.4.30 =
 * Fixed release packaging so the zip extracts to the canonical `soocool-for-woocommerce/` plugin folder instead of an internal working folder name.

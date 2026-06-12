@@ -1,3 +1,10 @@
+## 0.4.49 - 2026-06-12
+
+- Refreshed the admin CSS to a modern framework-free structure with scoped `.soocool-*` classes and shared CSS custom properties.
+- Fixed stale README webhook and delivery-window documentation to match current plugin behavior.
+- Kept asset loading, WooCommerce order screens, REST routes, plugin behavior and the public version number unchanged.
+- Repacked the release ZIP with the canonical `soocool-for-woocommerce/` plugin folder and without dev-only artifacts.
+
 ## 0.4.47 - 2026-06-12
 
 - Fixed stale README webhook documentation so it matches the header-token default and explicit query-token fallback.
