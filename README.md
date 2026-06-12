@@ -1,7 +1,5 @@
 # SooCool for WooCommerce
 
-Built by Webactueel.
-
 SooCool for WooCommerce connects WooCommerce orders to the SooCool transport API.
 
 
