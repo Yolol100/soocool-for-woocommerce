@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.4.51
+Stable tag: 0.4.52
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,10 @@ Site owners are responsible for disclosing the use of SooCool as a transport ser
 Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. WooCommerce order meta such as SooCool order IDs, references, sync status and last errors is intentionally retained for historical order and audit continuity.
 
 == Changelog ==
+
+= 0.4.52 =
+
+* Fixed WooCommerce bulk downloads for both SooCool order labels and SooCool good labels by using signed order-id download URLs instead of the short-lived token redirect that could arrive without a token.
 
 = 0.4.51 =
 

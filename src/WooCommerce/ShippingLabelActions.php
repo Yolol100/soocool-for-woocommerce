@@ -60,20 +60,20 @@ final class ShippingLabelActions {
 			wp_die( esc_html__( 'Select 50 or fewer orders for one SooCool label download.', 'soocool-for-woocommerce' ) );
 		}
 
-		$token = $this->create_bulk_label_download_token( $action, $order_ids, $this->requested_output() );
-		if ( '' === $token ) {
-			return add_query_arg( 'soocool_label_error', 'download_token', $redirect_to );
-		}
+		$output        = $this->requested_output();
+		$order_ids_arg = implode( ',', $order_ids );
 
 		return wp_nonce_url(
 			add_query_arg(
 				array(
-					'action' => self::BULK_LABEL_DOWNLOAD_ACTION,
-					'token'  => rawurlencode( $token ),
+					'action'               => self::BULK_LABEL_DOWNLOAD_ACTION,
+					'soocool_bulk_action'  => $action,
+					'order_ids'            => $order_ids_arg,
+					'output'               => $output,
 				),
 				admin_url( 'admin-post.php' )
 			),
-			$this->bulk_label_nonce_action( $token )
+			$this->bulk_label_nonce_action_for_request( $action, $order_ids_arg, $output )
 		);
 	}
 
@@ -82,28 +82,12 @@ final class ShippingLabelActions {
 			wp_die( esc_html__( 'You are not allowed to download these labels.', 'soocool-for-woocommerce' ) );
 		}
 
-		$token = $this->query_string( 'token' );
-		if ( '' === $token ) {
-			wp_die( esc_html__( 'SooCool label download token is missing.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
-		}
+		$action        = sanitize_key( $this->query_string( 'soocool_bulk_action' ) );
+		$order_ids_arg = $this->query_string( 'order_ids' );
+		$order_ids     = $this->request_order_ids( $order_ids_arg );
+		$output        = $this->requested_output();
 
-		check_admin_referer( $this->bulk_label_nonce_action( $token ) );
-
-		$payload = get_transient( $this->bulk_label_transient_key( $token ) );
-		delete_transient( $this->bulk_label_transient_key( $token ) );
-
-		if ( ! is_array( $payload ) ) {
-			wp_die( esc_html__( 'SooCool label download expired. Please run the bulk action again.', 'soocool-for-woocommerce' ), '', array( 'response' => 410 ) );
-		}
-
-		$user_id = isset( $payload['user_id'] ) ? absint( $payload['user_id'] ) : 0;
-		if ( get_current_user_id() !== $user_id ) {
-			wp_die( esc_html__( 'SooCool label download token is not valid for this user.', 'soocool-for-woocommerce' ), '', array( 'response' => 403 ) );
-		}
-
-		$action = isset( $payload['action'] ) ? sanitize_key( (string) $payload['action'] ) : '';
-		$order_ids = isset( $payload['order_ids'] ) && is_array( $payload['order_ids'] ) ? array_values( array_unique( array_filter( array_map( 'absint', $payload['order_ids'] ) ) ) ) : array();
-		$output = isset( $payload['output'] ) && 'collated_a4' === $payload['output'] ? 'collated_a4' : 'a6';
+		check_admin_referer( $this->bulk_label_nonce_action_for_request( $action, $order_ids_arg, $output ) );
 
 		if ( array() === $order_ids || count( $order_ids ) > self::MAX_BULK_LABEL_IDS ) {
 			wp_die( esc_html__( 'SooCool label download request is invalid.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
@@ -176,6 +160,10 @@ final class ShippingLabelActions {
 
 	private function bulk_label_nonce_action( string $token ): string {
 		return self::BULK_LABEL_DOWNLOAD_ACTION . '_' . md5( $token );
+	}
+
+	private function bulk_label_nonce_action_for_request( string $action, string $order_ids_arg, string $output ): string {
+		return self::BULK_LABEL_DOWNLOAD_ACTION . '_' . md5( get_current_user_id() . '|' . sanitize_key( $action ) . '|' . $order_ids_arg . '|' . ( 'collated_a4' === $output ? 'collated_a4' : 'a6' ) );
 	}
 
 	private function handle_order_good_download( string $output ): void {
@@ -318,6 +306,24 @@ final class ShippingLabelActions {
 				return array();
 			}
 			$ids[] = (int) $good_id;
+		}
+
+		return array_values( array_unique( $ids ) );
+	}
+
+	/** @return array<int, int> */
+	private function request_order_ids( string $order_ids ): array {
+		if ( '' === $order_ids ) {
+			return array();
+		}
+
+		$ids = array();
+		foreach ( explode( ',', $order_ids ) as $order_id ) {
+			$order_id = trim( $order_id );
+			if ( '' === $order_id || ! ctype_digit( $order_id ) || 0 >= (int) $order_id ) {
+				return array();
+			}
+			$ids[] = (int) $order_id;
 		}
 
 		return array_values( array_unique( $ids ) );

@@ -1,3 +1,8 @@
+## 0.4.52 - 2026-06-12
+
+- Fixed WooCommerce bulk label downloads for both SooCool order labels and SooCool good labels by replacing the short-lived token redirect with a signed admin-post download URL containing the selected order IDs.
+- Kept the existing capability check, nonce protection, output setting handling and 50-order limit.
+
 ## 0.4.51 - 2026-06-12
 
 - Admin UI: "Resync failed orders" button now uses the same red danger styling as the other destructive action buttons.
