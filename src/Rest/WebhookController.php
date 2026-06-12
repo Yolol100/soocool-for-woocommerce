@@ -22,7 +22,9 @@ final class WebhookController extends AbstractRestController {
 	public function __construct(
 		private readonly OptionRepository $options,
 		private readonly OrderMeta $meta,
-		private readonly Logger $logger
+		private readonly Logger $logger,
+		private readonly WebhookAuthenticator $authenticator,
+		private readonly WebhookPayloadExtractor $payloads
 	) {}
 
 	public function register_routes(): void {
@@ -38,24 +40,22 @@ final class WebhookController extends AbstractRestController {
 	}
 
 	public function can_receive( WP_REST_Request $request ): bool|WP_Error {
-		$expected = $this->options->existing_webhook_secret();
-		$provided = $this->provided_token( $request );
-
-		if ( '' === $expected || '' === $provided || ! hash_equals( $expected, $provided ) ) {
-			return new WP_Error( 'soocool_webhook_forbidden', __( 'Invalid SooCool webhook token.', 'soocool-for-woocommerce' ), array( 'status' => 403 ) );
-		}
-
-		return true;
+		return $this->authenticator->can_receive( $request );
 	}
 
 	public function receive( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$raw_body = $request->get_body();
+		if ( is_string( $raw_body ) && strlen( $raw_body ) > WebhookPayloadExtractor::MAX_PAYLOAD_BYTES ) {
+			return new WP_Error( 'soocool_webhook_payload_too_large', __( 'SooCool webhook payload is too large.', 'soocool-for-woocommerce' ), array( 'status' => 413 ) );
+		}
+
 		$payload = $request->get_json_params();
-		if ( ! is_array( $payload ) ) {
+		if ( ! is_array( $payload ) || ! $this->payloads->shape_is_safe( $payload ) ) {
 			return new WP_Error( 'soocool_webhook_invalid_payload', __( 'Invalid SooCool webhook payload.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
 		}
 
-		$soocool_order_id = $this->extract_numeric_string( $payload, array( 'orderId', 'soocoolOrderId', 'id' ) );
-		$order_reference  = $this->extract_text( $payload, array( 'orderReference', 'ourReference', 'reference' ) );
+		$soocool_order_id = $this->payloads->soocool_order_id( $payload );
+		$order_reference  = $this->payloads->order_reference( $payload );
 		$order            = $this->find_order( $soocool_order_id, $order_reference );
 
 		if ( ! $order instanceof WC_Order ) {
@@ -70,11 +70,7 @@ final class WebhookController extends AbstractRestController {
 			return new WP_Error( 'soocool_webhook_order_not_found', __( 'SooCool webhook order not found.', 'soocool-for-woocommerce' ), array( 'status' => 404 ) );
 		}
 
-		$data = array(
-			'status'        => $this->normalize_status( $this->extract_text( $payload, array( 'status', 'orderStatus', 'state', 'taskState' ) ) ),
-			'tracking_code' => $this->extract_text( $payload, array( 'trackingCode', 'trackAndTrace', 'trackingNumber', 'tracking', 'code' ) ),
-			'tracking_url'  => $this->extract_url( $payload, array( 'trackingUrl', 'trackAndTraceUrl', 'trackAndTraceLink', 'traceUrl', 'url', 'link' ) ),
-		);
+		$data = $this->payloads->update_data( $payload );
 
 		$changed = $this->meta->save_webhook_update( $order, $data );
 		if ( $changed ) {
@@ -89,18 +85,6 @@ final class WebhookController extends AbstractRestController {
 			),
 			200
 		);
-	}
-
-	private function provided_token( WP_REST_Request $request ): string {
-		$token = $request->get_header( 'x-soocool-webhook-token' );
-		if ( ! is_scalar( $token ) || '' === trim( (string) $token ) ) {
-			$token = $request->get_header( 'x_webhook_token' );
-		}
-		if ( ( ! is_scalar( $token ) || '' === trim( (string) $token ) ) && $request->has_param( 'token' ) ) {
-			$token = $request->get_param( 'token' );
-		}
-
-		return is_scalar( $token ) ? trim( sanitize_text_field( (string) $token ) ) : '';
 	}
 
 	private function find_order( string $soocool_order_id, string $order_reference ): ?WC_Order {
@@ -128,79 +112,13 @@ final class WebhookController extends AbstractRestController {
 			array(
 				'limit'      => 1,
 				'return'     => 'objects',
-				'meta_query' => array(
-					array(
-						'key'   => $meta_key,
-						'value' => $meta_value,
-					),
-				),
+				'meta_key'   => $meta_key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Webhook must resolve a WooCommerce order by plugin-owned external references.
+				'meta_value' => $meta_value, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Values are exact plugin-owned SooCool identifiers.
 			)
 		);
 
 		$order = is_array( $orders ) ? ( $orders[0] ?? null ) : null;
 		return $order instanceof WC_Order ? $order : null;
-	}
-
-	/** @param array<string, mixed> $payload @param array<int, string> $keys */
-	private function extract_numeric_string( array $payload, array $keys ): string {
-		$value = $this->extract_text( $payload, $keys );
-		return ctype_digit( $value ) && 0 < (int) $value ? (string) (int) $value : '';
-	}
-
-	/** @param array<string, mixed> $payload @param array<int, string> $keys */
-	private function extract_text( array $payload, array $keys ): string {
-		foreach ( $keys as $key ) {
-			$value = $this->deep_value( $payload, $key );
-			if ( is_scalar( $value ) && '' !== trim( (string) $value ) ) {
-				return sanitize_text_field( (string) $value );
-			}
-		}
-
-		return '';
-	}
-
-	/** @param array<string, mixed> $payload @param array<int, string> $keys */
-	private function extract_url( array $payload, array $keys ): string {
-		$value = $this->extract_text( $payload, $keys );
-		if ( '' === $value ) {
-			return '';
-		}
-
-		$url = esc_url_raw( $value );
-		return false !== wp_http_validate_url( $url ) ? $url : '';
-	}
-
-	/** @param array<string, mixed> $payload */
-	private function deep_value( array $payload, string $key ): mixed {
-		if ( array_key_exists( $key, $payload ) ) {
-			return $payload[ $key ];
-		}
-
-		foreach ( array( 'order', 'shipment', 'tracking', 'trackAndTrace', 'data' ) as $container ) {
-			if ( isset( $payload[ $container ] ) && is_array( $payload[ $container ] ) && array_key_exists( $key, $payload[ $container ] ) ) {
-				return $payload[ $container ][ $key ];
-			}
-		}
-
-		foreach ( $payload as $value ) {
-			if ( is_array( $value ) ) {
-				$nested = $this->deep_value( $value, $key );
-				if ( null !== $nested ) {
-					return $nested;
-				}
-			}
-		}
-
-		return null;
-	}
-
-	private function normalize_status( string $status ): string {
-		$status = sanitize_key( $status );
-		if ( '' === $status ) {
-			return '';
-		}
-
-		return str_starts_with( $status, 'soocool_' ) ? $status : 'soocool_' . $status;
 	}
 
 	/** @param array<string, string> $data */

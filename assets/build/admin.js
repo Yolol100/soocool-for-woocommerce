@@ -11,7 +11,9 @@
   var apiFetch = wp.apiFetch;
   var c = wp.components;
 
-  apiFetch.use(apiFetch.createNonceMiddleware((window.sooCoolAdmin && window.sooCoolAdmin.nonce) || ''));
+  if (apiFetch.createNonceMiddleware) {
+    apiFetch.use(apiFetch.createNonceMiddleware((window.sooCoolAdmin && window.sooCoolAdmin.nonce) || ''));
+  }
 
   function cleanPayload(settings){
     var payload = Object.assign({}, settings || {});
@@ -40,6 +42,39 @@
   function testConnection(){ return api('/soocool/v1/connection/test', 'POST'); }
   function getLogs(){ return api('/soocool/v1/logs'); }
   function clearLogs(){ return api('/soocool/v1/logs', 'DELETE'); }
+  function getWebhookSecret(){ return api('/soocool/v1/webhook/secret'); }
+  function regenWebhookSecret(){ return api('/soocool/v1/webhook/secret', 'POST'); }
+  function resyncFailed(){ return api('/soocool/v1/maintenance/resync-failed', 'POST'); }
+  function copyText(text){
+    var value = String(text || '');
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(value);
+      }
+    } catch (e) {}
+    return new Promise(function(resolve, reject){
+      var textarea = document.createElement('textarea');
+      textarea.value = value;
+      textarea.setAttribute('readonly', 'readonly');
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-1000px';
+      textarea.style.left = '-1000px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        if (document.execCommand && document.execCommand('copy')) {
+          resolve();
+        } else {
+          reject(new Error('clipboard'));
+        }
+      } catch (e) {
+        reject(e);
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    });
+  }
 
   function Loading(props){ return el('div', { className: 'soocool-inline-status', role: 'status', 'aria-live': 'polite' }, el(c.Spinner), el('span', null, props && props.message ? props.message : __('Loading settings...', 'soocool-for-woocommerce'))); }
   function ErrorNotice(props){ return el(c.Notice, { status: 'error', isDismissible: false }, props.message); }
@@ -56,6 +91,44 @@
   function SaveButton(props){ return el(c.Button, { variant: 'primary', isBusy: props.isSaving, disabled: props.isSaving, onClick: props.onClick, className: 'soocool-primary-action' }, props.isSaving ? __('Saving...', 'soocool-for-woocommerce') : (props.children || __('Save settings', 'soocool-for-woocommerce'))); }
   function Status(props){ return el('div', { className: 'soocool-status is-' + props.tone, role: 'status' }, el('span', { 'aria-hidden': true }, props.tone === 'success' ? '✓' : props.tone === 'error' ? '!' : '•'), el('span', null, props.message)); }
   function Note(props){ return el('div', { className: 'soocool-note' }, props.children); }
+  function WebhookCard(props){
+    var settings = props.settings || {};
+    var secretState = useState('');
+    var secret = secretState[0];
+    var setSecret = secretState[1];
+    var busyState = useState(false);
+    var busy = busyState[0];
+    var setBusy = busyState[1];
+    var url = settings.effective_webhook_url || settings.generated_webhook_url || '';
+    var header = settings.webhook_header_name || 'X-SooCool-Webhook-Token';
+    function copy(value, label){ copyText(value).then(function(){ emitToast(label, 'success'); }).catch(function(){ emitToast(__('Copy failed; select and copy manually.', 'soocool-for-woocommerce'), 'error'); }); }
+    function reveal(){ if (busy) { return; } setBusy(true); getWebhookSecret().then(function(r){ setSecret(r && r.secret ? r.secret : ''); }).catch(function(){ emitToast(__('Could not load the webhook token.', 'soocool-for-woocommerce'), 'error'); }).finally(function(){ setBusy(false); }); }
+    function regenerate(){ if (busy) { return; } if (!window.confirm(__('Generate a new webhook token? The current token stops working until SooCool is updated with the new one.', 'soocool-for-woocommerce'))) { return; } setBusy(true); regenWebhookSecret().then(function(r){ setSecret(r && r.secret ? r.secret : ''); emitToast(__('New webhook token generated. Update it in SooCool now.', 'soocool-for-woocommerce'), 'success'); }).catch(function(){ emitToast(__('Could not regenerate the webhook token.', 'soocool-for-woocommerce'), 'error'); }).finally(function(){ setBusy(false); }); }
+    return el(Card, null,
+      el('h3', null, __('Webhook (track & trace callbacks)', 'soocool-for-woocommerce')),
+      el('p', { className: 'soocool-field-help' }, __('Configure SooCool to call this URL and send the token in the X-SooCool-Webhook-Token header. Query-token URLs are available only when the explicit fallback filter is enabled.', 'soocool-for-woocommerce')),
+      el('div', { className: 'soocool-field-grid two' },
+        el(c.TextControl, { label: __('Webhook URL', 'soocool-for-woocommerce'), value: url, readOnly: true, onChange: function(){} }),
+        el(c.TextControl, { label: __('Header name', 'soocool-for-woocommerce'), value: header, readOnly: true, onChange: function(){} })
+      ),
+      el('div', { className: 'soocool-actions' },
+        el(c.Button, { variant: 'secondary', disabled: !url, onClick: function(){ copy(url, __('Webhook URL copied.', 'soocool-for-woocommerce')); } }, __('Copy URL', 'soocool-for-woocommerce')),
+        el(c.Button, { variant: 'secondary', isBusy: busy, disabled: busy, onClick: reveal }, secret ? __('Refresh token', 'soocool-for-woocommerce') : __('Show token', 'soocool-for-woocommerce')),
+        el(c.Button, { variant: 'link', isDestructive: true, disabled: busy, onClick: regenerate }, __('Regenerate token', 'soocool-for-woocommerce'))
+      ),
+      secret ? el('div', { className: 'soocool-field-grid two' },
+        el(c.TextControl, { label: __('Webhook token', 'soocool-for-woocommerce'), value: secret, readOnly: true, onChange: function(){} }),
+        el('div', { className: 'soocool-actions' }, el(c.Button, { variant: 'secondary', onClick: function(){ copy(secret, __('Webhook token copied.', 'soocool-for-woocommerce')); } }, __('Copy token', 'soocool-for-woocommerce')))
+      ) : null
+    );
+  }
+  function ResyncButton(){
+    var busyState = useState(false);
+    var busy = busyState[0];
+    var setBusy = busyState[1];
+    function run(){ if (busy) { return; } setBusy(true); resyncFailed().then(function(r){ emitToast(r && r.message ? r.message : __('Resync started.', 'soocool-for-woocommerce'), 'success'); }).catch(function(){ emitToast(__('Could not start the resync.', 'soocool-for-woocommerce'), 'error'); }).finally(function(){ setBusy(false); }); }
+    return el(c.Button, { variant: 'secondary', className: 'soocool-danger-fill', isBusy: busy, disabled: busy, onClick: run }, __('Resync failed orders', 'soocool-for-woocommerce'));
+  }
   var emitToast = function(){};
   function ToastHost(){
     var toastState = useState(null);
@@ -197,7 +270,7 @@
       s.loading ? el(Loading) : null,
       s.errorMessage ? el(ErrorNotice, { message: s.errorMessage }) : null,
       el(Card, { soft: true }, el('div', { className: 'soocool-compact-row' },
-        el(c.ToggleControl, { label: __('Create pickup task before delivery', 'soocool-for-woocommerce'), help: __('Keep this enabled when SooCool collects packages from you. The order is then sent with both a pickup task and a delivery task.', 'soocool-for-woocommerce'), checked: !!settings.enable_pickup, onChange: function(v){ upd('enable_pickup', v); } }),
+        el(c.ToggleControl, { label: __('Create pickup task before delivery', 'soocool-for-woocommerce'), help: __('Only enable this when pickup tasks are agreed with SooCool. The API documentation says pickup tasks should only be used in consultation.', 'soocool-for-woocommerce'), checked: !!settings.enable_pickup, onChange: function(v){ upd('enable_pickup', v); } }),
         el(c.TextControl, { label: __('WooCommerce order reference prefix', 'soocool-for-woocommerce'), help: __('Optional prefix added before the WooCommerce order number, for example TEST-.', 'soocool-for-woocommerce'), value: settings.order_reference_prefix || '', onChange: function(v){ upd('order_reference_prefix', v); } })
       )),
       el('div', { className: 'soocool-card-grid' },
@@ -207,12 +280,12 @@
             el(c.TextControl, { label: __('Pickup company', 'soocool-for-woocommerce'), value: settings.pickup_company || '', onChange: function(v){ upd('pickup_company', v); } }),
             el(c.TextControl, { label: __('Pickup contact name', 'soocool-for-woocommerce'), value: settings.pickup_contact_name || '', onChange: function(v){ upd('pickup_contact_name', v); } }),
             el(c.TextControl, { type: 'email', label: __('Pickup email', 'soocool-for-woocommerce'), value: settings.pickup_email || '', onChange: function(v){ upd('pickup_email', v); } }),
-            el(c.TextControl, { label: __('Pickup mobile', 'soocool-for-woocommerce'), help: __('Required when pickup email is empty. Fixed phone numbers are not sent to SooCool to avoid contactInfo.phone validation errors.', 'soocool-for-woocommerce'), value: settings.pickup_phone || '', onChange: function(v){ upd('pickup_phone', v); } }),
+            el(c.TextControl, { label: __('Pickup phone/mobile', 'soocool-for-woocommerce'), value: settings.pickup_phone || '', onChange: function(v){ upd('pickup_phone', v); } }),
             el(c.TextControl, { label: __('Pickup street', 'soocool-for-woocommerce'), value: settings.pickup_street || '', onChange: function(v){ upd('pickup_street', v); } }),
             el(c.TextControl, { label: __('Pickup house number', 'soocool-for-woocommerce'), value: settings.pickup_house_number || '', onChange: function(v){ upd('pickup_house_number', v); } }),
             el(c.TextControl, { label: __('Pickup postal code', 'soocool-for-woocommerce'), value: settings.pickup_postal_code || '', onChange: function(v){ upd('pickup_postal_code', v); } }),
             el(c.TextControl, { label: __('Pickup city', 'soocool-for-woocommerce'), value: settings.pickup_city || '', onChange: function(v){ upd('pickup_city', v); } }),
-            el(c.TextControl, { label: __('Pickup country code', 'soocool-for-woocommerce'), value: settings.pickup_country || 'NL', onChange: function(v){ upd('pickup_country', v); } })
+            el(c.TextControl, { className: 'soocool-field-full', label: __('Pickup country code', 'soocool-for-woocommerce'), value: settings.pickup_country || 'NL', onChange: function(v){ upd('pickup_country', v); } })
           )
         ),
         el(Card, null,
@@ -232,12 +305,13 @@
             el(c.TextControl, { type: 'number', min: 1, label: __('Package width', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.width.', 'soocool-for-woocommerce'), value: String(settings.package_width == null ? 60 : settings.package_width), onChange: function(v){ upd('package_width', Number(v)); } }),
             el(c.TextControl, { type: 'number', min: 1, label: __('Package depth', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.depth.', 'soocool-for-woocommerce'), value: String(settings.package_depth == null ? 40 : settings.package_depth), onChange: function(v){ upd('package_depth', Number(v)); } }),
             el(c.TextControl, { type: 'number', min: 1, label: __('Package height', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.height.', 'soocool-for-woocommerce'), value: String(settings.package_height == null ? 11 : settings.package_height), onChange: function(v){ upd('package_height', Number(v)); } }),
-            el(c.TextControl, { type: 'number', min: 1, label: __('Package weight', 'soocool-for-woocommerce'), help: __('Sent as goods[].weight.', 'soocool-for-woocommerce'), value: String(settings.package_weight == null ? 1600 : settings.package_weight), onChange: function(v){ upd('package_weight', Number(v)); } })
+            el(c.TextControl, { className: 'soocool-field-full', type: 'number', min: 1, label: __('Package weight', 'soocool-for-woocommerce'), help: __('Sent as goods[].weight.', 'soocool-for-woocommerce'), value: String(settings.package_weight == null ? 1600 : settings.package_weight), onChange: function(v){ upd('package_weight', Number(v)); } })
           ),
-          el(c.TextControl, { type: 'url', label: __('SooCool webhook URL', 'soocool-for-woocommerce'), help: __('Optional callback URL sent with the SooCool order. Leave empty to use the plugin\'s token-protected webhook receiver when the site uses HTTPS.', 'soocool-for-woocommerce'), value: settings.webhook_url || '', onChange: function(v){ upd('webhook_url', v); } })
+          el(c.TextControl, { type: 'url', label: __('SooCool webhook URL', 'soocool-for-woocommerce'), help: __('Optional callback URL sent with the SooCool order. Leave empty to use the plugin receiver. Header-token authentication is preferred; query-token URLs require the explicit fallback filter.', 'soocool-for-woocommerce'), value: settings.webhook_url || '', onChange: function(v){ upd('webhook_url', v); } })
         )
       ),
-      el(Note, null, __('When SooCool collects packages from you, keep pickup enabled. SooCool receives two tasks: one pickup task with the agreed pickup window and one delivery task with the fixed 08:00-18:00 delivery window.', 'soocool-for-woocommerce')),
+      el(WebhookCard, { settings: settings }),
+      el(Note, null, __('Pickup is optional. Keep it disabled unless SooCool has agreed that your account should send pickup tasks. Delivery-only orders still include the required delivery task and goods.', 'soocool-for-woocommerce')),
       el('div', { className: 'soocool-actions' }, el(SaveButton, { isSaving: s.saving, onClick: function(){ s.save(__('Could not save mapping settings. Check required pickup and delivery fields.', 'soocool-for-woocommerce'), __('Pickup & delivery settings saved.', 'soocool-for-woocommerce')); } }, __('Save pickup & delivery', 'soocool-for-woocommerce')))
     );
   }
@@ -257,6 +331,11 @@
           el(c.SelectControl, { label: __('Order status for automatic sending', 'soocool-for-woocommerce'), value: settings.auto_submit_status || 'processing', options: [{ label: __('Processing', 'soocool-for-woocommerce'), value: 'processing' }, { label: __('Completed', 'soocool-for-woocommerce'), value: 'completed' }, { label: __('On hold', 'soocool-for-woocommerce'), value: 'on-hold' }], onChange: function(v){ upd('auto_submit_status', v); } }),
           el(c.TextControl, { type: 'number', min: 20, max: 500, label: __('Log retention limit', 'soocool-for-woocommerce'), value: String(settings.log_retention == null ? 100 : settings.log_retention), onChange: function(v){ upd('log_retention', Number(v)); } })
         )
+      ),
+      el(Card, { soft: true },
+        el('h3', null, __('Maintenance', 'soocool-for-woocommerce')),
+        el('p', { className: 'soocool-field-help' }, __('Re-send every order whose last SooCool sync failed. Large batches run in the background via Action Scheduler.', 'soocool-for-woocommerce')),
+        el('div', { className: 'soocool-actions' }, el(ResyncButton))
       ),
       el(Note, null, __('Manual sending remains available from the WooCommerce order screen.', 'soocool-for-woocommerce')),
       el('div', { className: 'soocool-actions' }, el(SaveButton, { isSaving: s.saving, onClick: function(){ s.save(__('Could not save automation settings.', 'soocool-for-woocommerce'), __('Automation settings saved.', 'soocool-for-woocommerce')); } }, __('Save automation', 'soocool-for-woocommerce')))

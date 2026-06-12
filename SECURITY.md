@@ -10,7 +10,7 @@ Report security issues privately to the project maintainer. Do not open public i
 
 ## External service and privacy
 
-The plugin sends selected WooCommerce order, address, contact, pickup and package data to the official SooCool API hosts only when configured actions are run. See `PRIVACY.md` and `readme.txt` for the full external-service disclosure.
+The plugin sends selected WooCommerce order, address, contact, pickup and package data to the official SooCool API hosts only when configured actions are run. See `readme.txt` for the full external-service disclosure.
 
 ## Public reports
 

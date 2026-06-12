@@ -81,8 +81,9 @@ final class OrderMeta {
 	public function save_webhook_update( WC_Order $order, array $data, bool $mark_webhook = true ): bool {
 		$changed = false;
 
-		if ( '' !== ( $data['status'] ?? '' ) && (string) $order->get_meta( self::SYNC_STATUS, true ) !== $data['status'] ) {
-			$order->update_meta_data( self::SYNC_STATUS, sanitize_key( $data['status'] ) );
+		$status = $this->normalize_sync_status( (string) ( $data['status'] ?? '' ) );
+		if ( '' !== $status && (string) $order->get_meta( self::SYNC_STATUS, true ) !== $status ) {
+			$order->update_meta_data( self::SYNC_STATUS, $status );
 			$changed = true;
 		}
 		if ( '' !== ( $data['tracking_code'] ?? '' ) && (string) $order->get_meta( self::TRACKING_CODE, true ) !== $data['tracking_code'] ) {
@@ -210,5 +211,12 @@ final class OrderMeta {
 
 	public function is_synced( WC_Order $order ): bool {
 		return '' !== $this->get_soocool_order_id( $order );
+	}
+
+	private function normalize_sync_status( string $status ): string {
+		$status = sanitize_key( $status );
+
+		// Keep the local terminal state consistent with manual cancel actions and filters.
+		return 'soocool_cancelled' === $status ? 'cancelled' : $status;
 	}
 }

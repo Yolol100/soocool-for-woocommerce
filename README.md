@@ -16,11 +16,11 @@ Official API hosts:
 
 The API key is sent through the `X-API-Key` header and is masked in admin responses and logs. No unrelated third-party JavaScript, CSS, tracking pixels or advertising mechanisms are loaded by the plugin. Site owners remain responsible for disclosing SooCool as a transport/logistics processor in their own privacy policy where applicable.
 
-See `PRIVACY.md` for the full privacy and external-service disclosure.
+Privacy and external-service details are documented in `readme.txt` under the external service section.
 
 ## Source and build route
 
-This release package contains runtime PHP source and human-readable built admin assets. For public WordPress.org submission, publish the development repository or include the original source assets and build tooling so reviewers can reproduce `assets/build/admin.js` and `assets/build/admin.css`. See `SOURCE.md`.
+This release package contains runtime PHP source, human-readable built admin assets, and production minified admin assets. The plugin loads `.min` admin assets by default and falls back to readable assets when `SCRIPT_DEBUG` is enabled. For public WordPress.org submission, publish the development repository or include the original source assets and build tooling so reviewers can reproduce `assets/build/admin.js`, `assets/build/admin.min.js`, `assets/build/admin.css`, and `assets/build/admin.min.css`.
 
 ## Features
 
@@ -33,7 +33,7 @@ This release package contains runtime PHP source and human-readable built admin 
 - Manual WooCommerce order actions to send, refresh, update and cancel an order at SooCool.
 - Optional automatic order submission by WooCommerce status.
 - Optional pickup and delivery task support; delivery-only is the safe default.
-- Configurable SooCool delivery window for every delivery task.
+- Fixed 08:00-18:00 SooCool delivery window for every delivery task; pickup windows remain configurable.
 - SooCool order ID, reference, sync status and last error stored in WooCommerce order meta.
 - Shipping label download from the WooCommerce order screen.
 - HPOS compatible through WooCommerce custom order tables declaration.
@@ -59,7 +59,7 @@ composer quality
 
 Do not commit API keys, portal passwords, `.env` files, production URLs with secrets, or exported logs containing customer data. Use the test environment first.
 
-The webhook receiver accepts the token in the `X-SooCool-Webhook-Token` header or as a fallback query token in the generated callback URL. Prefer the header when SooCool supports custom webhook headers; use the generated query-token URL only when SooCool can configure a URL but no custom headers.
+The webhook receiver requires the stored SooCool webhook token. Generated webhook URLs do not include `?token=...` by default; configure SooCool to send the token via the `X-SooCool-Webhook-Token` header where supported. For legacy callback systems that cannot send custom headers, a developer can explicitly re-enable query-token webhook URLs with the `soocool_allow_query_token_webhook_url` filter.
 
 ## Staging checklist
 
@@ -73,7 +73,7 @@ The webhook receiver accepts the token in the `X-SooCool-Webhook-Token` header o
 8. Use the order action **Send to SooCool**.
 9. Confirm SooCool order ID appears in the SooCool order box.
 10. In the SooCool test portal, confirm that delivery-only orders create one delivery task. If pickup is enabled, confirm the order creates one pickup task and one later delivery task.
-11. Confirm the delivery task uses the configured delivery window.
+11. Confirm the delivery task uses the fixed 08:00-18:00 delivery window.
 12. Use **Refresh from SooCool** after the test order exists and confirm local status/tracking/good IDs update when SooCool returns them.
 13. Download both A6 and Collated A4 labels only after SooCool accepted the order.
 14. Test webhook success/failure and token rejection.
@@ -98,7 +98,7 @@ npm run lint:css
 npm run build
 ```
 
-Use WooCommerce HPOS in staging and verify the manual order action, optional status hook, `/ping` connection test, delivery-only task creation, optional pickup plus delivery task creation, configured delivery window and PDF label downloads before enabling production credentials.
+Use WooCommerce HPOS in staging and verify the manual order action, optional status hook, `/ping` connection test, delivery-only task creation, optional pickup plus delivery task creation, fixed 08:00-18:00 delivery window and PDF label downloads before enabling production credentials.
 
 
 ## Release note
@@ -149,7 +149,7 @@ Before production, record evidence for:
 - HPOS-enabled order screen test.
 - SooCool `/ping` test.
 - Pickup-enabled test order in SooCool portal.
-- Delivery task uses the configured delivery window.
+- Delivery task uses the fixed 08:00-18:00 delivery window.
 - A6 and Collated A4 shipping label downloads.
 - Safe API error handling and sanitized logs.
 

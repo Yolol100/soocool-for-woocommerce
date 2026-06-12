@@ -7,6 +7,7 @@ namespace SooCool\WooCommerce\Rest;
 use SooCool\WooCommerce\Api\ApiClient;
 use SooCool\WooCommerce\Api\ApiException;
 use SooCool\WooCommerce\Domain\OrderPayloadBuilder;
+use SooCool\WooCommerce\Domain\OrderSyncService;
 use SooCool\WooCommerce\Domain\PayloadValidationException;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
@@ -20,13 +21,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class OrderSyncController extends AbstractRestController {
 
-	private const SYNC_LOCK_TTL_SECONDS = 120;
-
 	public function __construct(
 		private readonly ApiClient $client,
 		private readonly OrderPayloadBuilder $builder,
 		private readonly OrderMeta $meta,
-		private readonly OptionRepository $options
+		private readonly OptionRepository $options,
+		private readonly OrderSyncService $sync
 	) {}
 
 	public function register_routes(): void {
@@ -88,7 +88,7 @@ final class OrderSyncController extends AbstractRestController {
 		}
 
 		$order_id = (int) $order->get_id();
-		if ( ! $this->acquire_sync_lock( $order_id ) ) {
+		if ( ! $this->sync->acquire_lock( $order_id ) ) {
 			return new WP_REST_Response(
 				array(
 					'success' => false,
@@ -101,7 +101,7 @@ final class OrderSyncController extends AbstractRestController {
 		try {
 			$this->meta->save_pending( $order );
 			$payload        = $this->builder->build( $order );
-			$existing_order = $this->find_existing_soocool_order( (string) $payload['orderReference'] );
+			$existing_order = $this->sync->find_existing_order( (string) $payload['orderReference'] );
 			if ( array() !== $existing_order ) {
 				$soocool_order_id = $this->meta->extract_order_id( $existing_order );
 				$this->meta->save_success( $order, $existing_order, (string) $payload['orderReference'] );
@@ -133,11 +133,12 @@ final class OrderSyncController extends AbstractRestController {
 				)
 			);
 		} catch ( PayloadValidationException $exception ) {
-			$this->meta->save_error( $order, $exception->getMessage() );
+			$message = sanitize_text_field( $exception->getMessage() );
+			$this->meta->save_error( $order, $message );
 			return new WP_REST_Response(
 				array(
 					'success' => false,
-					'message' => $exception->getMessage(),
+					'message' => $message,
 				),
 				422
 			);
@@ -164,61 +165,10 @@ final class OrderSyncController extends AbstractRestController {
 				500
 			);
 		} finally {
-			$this->release_sync_lock( $order_id );
+			$this->sync->release_lock( $order_id );
 		}
 	}
-	private function acquire_sync_lock( int $order_id ): bool {
-		$key     = $this->sync_lock_key( $order_id );
-		$expires = (int) get_option( $key, 0 );
-		$now     = time();
 
-		if ( $expires > $now ) {
-			return false;
-		}
-
-		if ( $expires > 0 ) {
-			delete_option( $key );
-		}
-
-		return add_option( $key, (string) ( $now + self::SYNC_LOCK_TTL_SECONDS ), '', false );
-	}
-
-	private function release_sync_lock( int $order_id ): void {
-		delete_option( $this->sync_lock_key( $order_id ) );
-	}
-
-	private function sync_lock_key( int $order_id ): string {
-		return 'soocool_sync_lock_' . absint( $order_id );
-	}
-
-	/** @return array<string, mixed> */
-	private function find_existing_soocool_order( string $order_reference ): array {
-		try {
-			$response = $this->client->search_order_by_reference( $order_reference );
-		} catch ( ApiException $exception ) {
-			// A 404 on the search endpoint means no order with this reference exists yet.
-			if ( 404 === $exception->status_code() ) {
-				return array();
-			}
-			throw $exception;
-		}
-		$body = $response->body();
-
-		if ( ! is_array( $body ) ) {
-			return array();
-		}
-
-		$candidate = $body;
-		if ( array_is_list( $body ) ) {
-			$candidate = is_array( $body[0] ?? null ) ? $body[0] : array();
-		}
-
-		if ( ! is_array( $candidate ) || '' === $this->meta->extract_order_id( $candidate ) ) {
-			return array();
-		}
-
-		return $candidate;
-	}
 
 	private function safe_status_code( int $status ): int {
 		return $status >= 400 && $status <= 599 ? $status : 400;

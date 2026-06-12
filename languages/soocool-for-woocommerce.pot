@@ -1,742 +1,1515 @@
-# Copyright (C) 2026 SooCool
+# Copyright (C) 2026 Webactueel
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: SooCool for WooCommerce 0.4.14\n"
+"Project-Id-Version: SooCool for WooCommerce 0.4.47\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/soocool-for-woocommerce\n"
-"POT-Creation-Date: 2026-06-10 00:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-06-12T07:17:54+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"X-Generator: ChatGPT static i18n extractor\n"
+"X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: soocool-for-woocommerce\n"
 
-#: assets/build/admin.js:255
-msgid "A6 single label"
-msgstr ""
-
-#: assets/build/admin.js:283 assets/build/admin.js:297
-msgid "Activity logs"
-msgstr ""
-
-#: assets/build/admin.js:237
-msgid "Allow manual resubmission of synced orders"
-msgstr ""
-
-#: assets/build/admin.js:215
-msgid "Ambient"
-msgstr ""
-
-#: assets/build/admin.js:161
-msgid "An API key is already saved. Enter a new key only when you want to replace it."
-msgstr ""
-
-#: assets/build/admin.js:154 assets/build/admin.js:293
-msgid "API connection"
-msgstr ""
-
-#: assets/build/admin.js:167
-msgid "API settings saved."
-msgstr ""
-
-#: assets/build/admin.js:230
-msgid "Automatic sending is off by default. Keep manual sync available during staging."
-msgstr ""
-
-#: assets/build/admin.js:236
-msgid "Automatically send eligible orders to SooCool"
-msgstr ""
-
-#: assets/build/admin.js:236
-msgid "Automatically submits matching WooCommerce orders when they reach the selected status."
-msgstr ""
-
-#: assets/build/admin.js:230 assets/build/admin.js:295
-msgid "Automation"
-msgstr ""
-
-#: assets/build/admin.js:243
-msgid "Automation settings saved."
-msgstr ""
-
-#: assets/build/admin.js:251
-msgid "Choose the default PDF format used when downloading SooCool shipping labels from an order."
-msgstr ""
-
-#: assets/build/admin.js:287
-msgid "Clear logs"
-msgstr ""
-
-#: assets/build/admin.js:255
-msgid "Collated A4 sheet"
-msgstr ""
-
-#: assets/build/admin.js:238
-msgid "Completed"
-msgstr ""
-
-#: assets/build/admin.js:177
-msgid "Configure pickup details, delivery scheduling and fallback goods details used for SooCool orders."
-msgstr ""
-
-#: assets/build/admin.js:154
-msgid "Connect WooCommerce to the correct SooCool API environment before sending orders."
-msgstr ""
-
-#: assets/build/admin.js:148
-msgid "Connection failed. Check API key and base URL."
-msgstr ""
-
-#: src/Rest/ConnectionController.php:68
-msgid "Connection failed. Check the SooCool API key and base URL."
-msgstr ""
-
-#: src/Rest/ConnectionController.php:43
-msgid "Connection failed. SooCool returned HTTP 200, but the ping body did not match the documented contract."
-msgstr ""
-
-#: assets/build/admin.js:142 src/Rest/ConnectionController.php:54
-msgid "Connection successful."
-msgstr ""
-
-#: assets/build/admin.js:215
-msgid "Cooled"
-msgstr ""
-
-#: assets/build/admin.js:281
-msgid "Could not clear logs."
-msgstr ""
-
-#: src/Api/ApiClient.php:100
-msgid "Could not connect to the SooCool API. Please try again or check the SooCool logs."
-msgstr ""
-
-#: src/Api/ApiClient.php:85
-msgid "Could not encode SooCool payload."
-msgstr ""
-
-#: assets/build/admin.js:226
-msgid "Could not load automation settings."
-msgstr ""
-
-#: assets/build/admin.js:248
-msgid "Could not load label settings."
-msgstr ""
-
-#: assets/build/admin.js:280
-msgid "Could not load logs."
-msgstr ""
-
-#: assets/build/admin.js:173
-msgid "Could not load mapping settings."
-msgstr ""
-
-#: assets/build/admin.js:121
-msgid "Could not load SooCool settings."
-msgstr ""
-
-#: assets/build/admin.js:243
-msgid "Could not save automation settings."
-msgstr ""
-
-#: assets/build/admin.js:256
-msgid "Could not save label settings."
-msgstr ""
-
-#: assets/build/admin.js:221
-msgid "Could not save mapping settings. Check required pickup and delivery fields."
-msgstr ""
-
-#: assets/build/admin.js:167
-msgid "Could not save settings. Check the entered values."
-msgstr ""
-
-#: assets/build/admin.js:182
-msgid "Create pickup task before delivery"
-msgstr ""
-
-#: assets/build/admin.js:255
-msgid "Default label format"
-msgstr ""
-
-#: src/Domain/TaskFactory.php:85
-msgid "Delivery address is incomplete. Complete the WooCommerce shipping or billing address before sending this order to SooCool."
-msgstr ""
-
-#: assets/build/admin.js:204
-msgid "Delivery date offset in days"
-msgstr ""
-
-#: src/Rest/SettingsController.php:63
-msgid "Delivery date offset must be later than the pickup date offset when pickup tasks are enabled."
-msgstr ""
-
-#: src/Rest/SettingsController.php:60
-msgid "Delivery days offset must be at least 1 when pickup tasks are enabled."
-msgstr ""
-
-#: assets/build/admin.js:208
-msgid "Delivery window starts"
-msgstr ""
-
-#: assets/build/admin.js:262
-msgid "Details"
-msgstr ""
-
-#: src/WooCommerce/OrderActions.php:114
-msgid "Download SooCool label"
-msgstr ""
-
-#: assets/build/admin.js:182
-msgid "Enable this when SooCool must create both a pickup task and a delivery task."
-msgstr ""
-
-#: assets/build/admin.js:214
-msgid "Fallback goods contents"
-msgstr ""
-
-#: assets/build/admin.js:215
-msgid "Frozen"
-msgstr ""
-
-#: src/Rest/SettingsController.php:48
-msgid "Invalid settings payload."
-msgstr ""
-
-#: assets/build/admin.js:237
-msgid "Keep disabled unless SooCool asks for a replacement order or a staging retest."
-msgstr ""
-
-#: src/WooCommerce/OrderActions.php:106
-msgid "Last error:"
-msgstr ""
-
-#: assets/build/admin.js:262
-msgid "Level"
-msgstr ""
-
-#: assets/build/admin.js:284
-msgid "Loading logs…"
-msgstr ""
-
-#: assets/build/admin.js:29
-msgid "Loading settings..."
-msgstr ""
-
-#: assets/build/admin.js:239
-msgid "Log retention limit"
-msgstr ""
-
-#: assets/build/admin.js:281
-msgid "Logs cleared."
-msgstr ""
-
-#: assets/build/admin.js:280
-msgid "Logs refreshed."
-msgstr ""
-
-#: assets/build/admin.js:242
-msgid "Manual sending remains available from the WooCommerce order screen."
-msgstr ""
-
-#: assets/build/admin.js:262
-msgid "Message"
-msgstr ""
-
-#: src/Api/ApiClient.php:63
-msgid "Missing SooCool API key."
-msgstr ""
-
-#: src/Api/ApiClient.php:53
-msgid "Missing valid numeric SooCool order ID."
-msgstr ""
-
-#: assets/build/admin.js:263
-msgid "No logs yet."
-msgstr ""
-
-#: src/WooCommerce/OrderActions.php:101
-msgid "Not synced"
-msgstr ""
-
-#: assets/build/admin.js:238
-msgid "On hold"
-msgstr ""
-
-#: assets/build/admin.js:162
-msgid "Only official SooCool API hosts are accepted by default."
-msgstr ""
-
-#: assets/build/admin.js:230
-msgid "Optional"
-msgstr ""
-
-#: assets/build/admin.js:217
-msgid "Optional callback URL sent with the SooCool order. Leave empty when SooCool does not require it."
-msgstr ""
-
-#: assets/build/admin.js:183
-msgid "Optional prefix added before the WooCommerce order number, for example TEST-."
-msgstr ""
-
-#: src/Rest/OrderSyncController.php:72
-msgid "Order is already synced with SooCool."
-msgstr ""
-
-#: src/Rest/OrderSyncController.php:60 src/WooCommerce/ShippingLabelActions.php:31
-msgid "Order not found."
-msgstr ""
-
-#: src/WooCommerce/OrderActions.php:55
-msgid "Order sent to SooCool."
-msgstr ""
-
-#: assets/build/admin.js:238
-msgid "Order status for automatic sending"
-msgstr ""
-
-#: assets/build/admin.js:177
-msgid "Orders"
-msgstr ""
-
-#: assets/build/admin.js:161
-msgid "Paste the X-API-Key value for the selected SooCool environment."
-msgstr ""
-
-#: assets/build/admin.js:251
-msgid "PDF"
-msgstr ""
-
-#: assets/build/admin.js:177 assets/build/admin.js:294
-msgid "Pickup & delivery"
-msgstr ""
-
-#: assets/build/admin.js:221
-msgid "Pickup & delivery settings saved."
-msgstr ""
-
-#: assets/build/admin.js:196
-msgid "Pickup city"
-msgstr ""
-
-#: assets/build/admin.js:189
-msgid "Pickup company"
-msgstr ""
-
-#: assets/build/admin.js:190
-msgid "Pickup contact name"
-msgstr ""
-
-#: assets/build/admin.js:197
-msgid "Pickup country code"
-msgstr ""
-
-#: assets/build/admin.js:203
-msgid "Pickup date offset in days"
-msgstr ""
-
-#: assets/build/admin.js:191
-msgid "Pickup email"
-msgstr ""
-
-#: assets/build/admin.js:194
-msgid "Pickup house number"
-msgstr ""
-
-#: assets/build/admin.js:187
-msgid "Pickup location"
-msgstr ""
-
-#: assets/build/admin.js:192
-msgid "Pickup mobile"
-msgstr ""
-
-#: assets/build/admin.js:195
-msgid "Pickup postal code"
-msgstr ""
-
-#: src/Domain/TaskFactory.php:45
-msgid "Pickup settings are incomplete. Complete the pickup address before sending orders to SooCool."
-msgstr ""
-
-#: assets/build/admin.js:193
-msgid "Pickup street"
-msgstr ""
-
-#: src/Rest/SettingsController.php:66
-msgid "Pickup window end time must be later than the pickup window start time."
-msgstr ""
-
-#: assets/build/admin.js:206
-msgid "Pickup window ends"
-msgstr ""
-
-#: assets/build/admin.js:205
-msgid "Pickup window starts"
-msgstr ""
-
-#: assets/build/admin.js:238
-msgid "Processing"
-msgstr ""
-
-#: assets/build/admin.js:283
-msgid "Recent sanitized SooCool API activity. Secrets and full payload bodies are not stored."
-msgstr ""
-
-#: assets/build/admin.js:287
-msgid "Refresh"
-msgstr ""
-
-#: assets/build/admin.js:154
-msgid "Required"
-msgstr ""
-
-#: assets/build/admin.js:210
-msgid "Required by SooCool for delivery tasks and always used in the order payload."
-msgstr ""
-
-#: assets/build/admin.js:283
-msgid "Sanitized"
-msgstr ""
-
-#: assets/build/admin.js:243
-msgid "Save automation"
-msgstr ""
-
-#: assets/build/admin.js:221
-msgid "Save pickup & delivery"
-msgstr ""
-
-#: assets/build/admin.js:42
-msgid "Save settings"
-msgstr ""
-
-#: assets/build/admin.js:256
-msgid "Save shipping label settings"
-msgstr ""
-
-#: assets/build/admin.js:134
-msgid "Saving settings before testing…"
-msgstr ""
-
-#: assets/build/admin.js:42
-msgid "Saving..."
-msgstr ""
-
-#: assets/build/admin.js:201
-msgid "Scheduling & goods"
-msgstr ""
-
-#: src/WooCommerce/OrderActions.php:35
-msgid "Send order to SooCool"
-msgstr ""
-
-#: soocool-for-woocommerce.php:67
-msgid "Settings"
-msgstr ""
-
-#: assets/build/admin.js:115 assets/build/admin.js:31
-msgid "Settings saved."
-msgstr ""
-
-#: assets/build/admin.js:256
-msgid "Shipping label settings saved."
-msgstr ""
-
-#: assets/build/admin.js:251 assets/build/admin.js:296
-msgid "Shipping labels"
-msgstr ""
-
-#: src/Admin/AdminMenu.php:18 src/WooCommerce/OrderActions.php:83
-msgid "SooCool"
-msgstr ""
-
-#: assets/build/admin.js:261
-msgid "SooCool activity logs"
-msgstr ""
-
-#: assets/build/admin.js:161
-msgid "SooCool API key"
-msgstr ""
-
-#: src/Api/ApiClient.php:156
-msgid "SooCool API returned HTTP %d. Check the SooCool logs for details."
-msgstr ""
-
-#: src/Api/ApiClient.php:149
-msgid "SooCool authentication failed. Check the configured API key."
-msgstr ""
-
-#: src/Api/ApiClient.php:151
-msgid "SooCool could not generate the label because a precondition failed. Check the SooCool logs and order data."
-msgstr ""
-
-#: src/Domain/OrderPayloadBuilder.php:71
-msgid "SooCool delivery date must be later than the pickup date when a pickup task is used."
-msgstr ""
-
-#: src/Rest/OrderSyncController.php:84 src/WooCommerce/OrderActions.php:52
-msgid "SooCool did not return a valid order ID."
-msgstr ""
-
-#: src/WooCommerce/ShippingLabelActions.php:47
-msgid "SooCool did not return a valid PDF label."
-msgstr ""
-
-#: assets/build/admin.js:160
-msgid "SooCool environment"
-msgstr ""
-
-#: src/Admin/AdminMenu.php:17
+#. Plugin Name of the plugin
+#: soocool-for-woocommerce.php
+#: src/Admin/AdminMenu.php:35
+#: src/Admin/PrivacyPolicy.php:19
 msgid "SooCool for WooCommerce"
 msgstr ""
 
-#: soocool-for-woocommerce.php:79 src/Infrastructure/Requirements.php:19
+#. Description of the plugin
+#: soocool-for-woocommerce.php
+msgid "Connect WooCommerce orders with the SooCool transport API."
+msgstr ""
+
+#. Author of the plugin
+#: soocool-for-woocommerce.php
+msgid "Webactueel"
+msgstr ""
+
+#: soocool-for-woocommerce.php:66
+msgid "Settings"
+msgstr ""
+
+#: soocool-for-woocommerce.php:78
+#: src/Infrastructure/Requirements.php:19
 msgid "SooCool for WooCommerce requires PHP 8.1 or higher."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:36
+#: src/Admin/OrderListColumn.php:48
+#: src/Admin/OrderListColumn.php:53
+#: src/Admin/OrderMetaBox.php:21
+msgid "SooCool"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:49
+#: src/Admin/AdminMenu.php:76
+#: src/Admin/AdminMenu.php:82
+msgid "SooCool API-Test"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:50
+#: src/Admin/AdminMenu.php:85
+#: src/Admin/AdminMenu.php:151
+#: assets/build/admin.js:363
+msgid "API-Test"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:67
+msgid "You do not have permission to access this SooCool test page."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:83
+msgid "Kies één test: stuur een echte WooCommerce order of gebruik een veilige testorder. De plugin bouwt in beide gevallen dezelfde SooCool orderpayload als de normale order-sync."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:94
+msgid "Nieuwe API-test starten"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:102
+msgid "Welke order wil je testen?"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:103
+msgid "Gebruik bij voorkeur een echte WooCommerce order. Kies testorder alleen om snel te controleren of de SooCool API de standaardpayload accepteert."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:104
+msgid "Type API-test"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:107
+msgid "Echte WooCommerce order"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:107
+msgid "Vul hieronder een WooCommerce order-ID in. Dit is de beste stagingtest."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:111
+msgid "Testorder"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:111
+msgid "Gebruikt een niet-opgeslagen dummy WooCommerce order. Er wordt geen order in WordPress aangemaakt."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:115
+msgid "WooCommerce order-ID"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:115
+msgid "Alleen nodig bij “Echte WooCommerce order”. De plugin haalt deze order op via wc_get_order() en bouwt de normale SooCool payload."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:120
+msgid "Start API-test naar SooCool"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:135
+#: assets/build/admin.js:216
+#: assets/build/admin.js:359
+msgid "API connection"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:139
+#: assets/build/admin.js:238
+#: assets/build/admin.js:360
+msgid "Pickup & delivery"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:143
+#: assets/build/admin.js:293
+#: assets/build/admin.js:361
+msgid "Automation"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:147
+#: assets/build/admin.js:318
+#: assets/build/admin.js:362
+msgid "Shipping labels"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:155
+#: assets/build/admin.js:349
+#: assets/build/admin.js:364
+msgid "Activity logs"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:160
+#: assets/build/admin.js:376
+msgid "SooCool settings sections"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:170
+msgid "You do not have permission to send SooCool test orders."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:187
+msgid "Vul een WooCommerce order-ID in of kies Testorder."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:193
+msgid "WooCommerce order niet gevonden."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:206
+msgid "SooCool heeft de testaanvraag geaccepteerd."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:222
+msgid "De handmatige SooCool test is mislukt. Controleer de logs voor details."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:282
+msgid "Actieve SooCool omgeving:"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:298
+msgid "Resultaat: testorder verstuurd naar SooCool"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:298
+msgid "Resultaat: testorder niet verstuurd"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:303
+msgid "Details:"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:306
+msgid "WooCommerce orderpayload"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:306
+msgid "Dummy WooCommerce orderpayload"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:306
+msgid "Handmatige payload"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:310
+msgid "Volgende stap: controleer de verzonden payload, download daarna een label of wacht op webhook/track & trace als deze test een echte order heeft aangemaakt."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:312
+msgid "Volgende stap: controleer de foutdetails en pas orderdata, API-key, timeWindow of payload aan voordat je opnieuw test."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:317
+msgid "SooCool errors"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:327
+msgid "Tijdslot niet toegestaan"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:328
+msgid "SooCool heeft deze aanvraag bereikt, maar het gekozen start- en eindtijdslot valt buiten de afspraak voor deze API-key. Gebruik het afgesproken bezorgvenster in de SooCool instellingen of vraag SooCool welk timeWindow voor deze testomgeving is toegestaan."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:333
+msgid "Verzonden payload"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:333
+msgid "SooCool response"
+msgstr ""
+
+#: src/Admin/BulkSyncActions.php:47
+msgid "Send to SooCool"
+msgstr ""
+
+#. translators: %d: number of orders queued for background sync to SooCool.
+#: src/Admin/BulkSyncActions.php:127
+#, php-format
+msgid "%d order queued for background sync to SooCool."
+msgid_plural "%d orders queued for background sync to SooCool."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of orders sent to SooCool.
+#: src/Admin/BulkSyncActions.php:145
+#, php-format
+msgid "%d order sent to SooCool."
+msgid_plural "%d orders sent to SooCool."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of orders that could not be sent.
+#: src/Admin/BulkSyncActions.php:152
+#, php-format
+msgid "%d order could not be sent; check its SooCool notes."
+msgid_plural "%d orders could not be sent; check their SooCool notes."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of orders still waiting to be sent.
+#: src/Admin/BulkSyncActions.php:160
+#, php-format
+msgid "%d order remaining; run the bulk action again to continue."
+msgid_plural "%d orders remaining; run the bulk action again to continue."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/DummyOrderFactory.php:15
+msgid "WooCommerce orderklassen zijn niet beschikbaar voor de dummy testorder."
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:29
+msgid "This will cancel the linked order at SooCool. Continue only if fulfilment should be stopped."
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:31
+msgid "This will update the existing SooCool order with the current WooCommerce order data. Continue only if the fulfilment data should change."
+msgstr ""
+
+#: src/Admin/OrderListColumn.php:113
+msgid "SooCool: all"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:45
+msgid "SooCool order ID"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:45
+msgid "Not linked yet"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:47
+msgid "Track & trace code"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:50
+msgid "SooCool good IDs"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:55
+msgid "Open track & trace"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:59
+msgid "Last error"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:63
+msgid "Labels"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:68
+msgid "Download order label"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:75
+msgid "Download good labels"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:79
+msgid "Use the order action “SooCool: create/send order” before downloading labels."
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:26
+#: src/Admin/OrderStatusPresenter.php:39
+msgid "Synced"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:27
+#: src/Admin/OrderStatusPresenter.php:38
+msgid "Pending"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:28
+#: src/Admin/OrderStatusPresenter.php:41
+msgid "Failed"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:29
+#: src/Admin/OrderStatusPresenter.php:40
+msgid "Cancelled"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:30
+#: src/Admin/OrderStatusPresenter.php:42
+msgid "Not synced"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:43
+msgid "Unknown"
+msgstr ""
+
+#: src/Admin/PrivacyPolicy.php:26
+msgid "SooCool for WooCommerce can send WooCommerce order, delivery, pickup, recipient and label data to the configured SooCool transport API when an order is manually or automatically synchronized."
+msgstr ""
+
+#: src/Admin/PrivacyPolicy.php:27
+msgid "Depending on your settings and order contents, this can include recipient name, shipping or billing address, postcode, city, email address, phone number, order reference, package details, delivery instructions, tracking data and shipping label references."
+msgstr ""
+
+#: src/Admin/PrivacyPolicy.php:28
+msgid "The plugin stores API connection settings and a webhook secret in WordPress options. API keys and webhook secrets are masked in the admin interface and should not be shared in logs, screenshots or support exports."
+msgstr ""
+
+#: src/Admin/PrivacyPolicy.php:29
+msgid "The site owner remains responsible for documenting the SooCool transport service, the legal basis for shipment processing and any retention periods in the site privacy policy."
+msgstr ""
+
+#: src/Api/ApiClient.php:35
+msgid "Missing SooCool order reference."
+msgstr ""
+
+#: src/Api/ApiClient.php:68
+msgid "Missing valid SooCool order IDs for label download."
+msgstr ""
+
+#: src/Api/ApiClient.php:79
+msgid "Missing valid SooCool good IDs for label download."
+msgstr ""
+
+#: src/Api/ApiClient.php:93
+msgid "Missing valid numeric SooCool order ID."
+msgstr ""
+
+#: src/Api/ApiClient.php:108
+msgid "Missing or invalid SooCool API key. Paste and save the API key again."
+msgstr ""
+
+#: src/Api/ApiClient.php:130
+msgid "Could not encode SooCool payload."
+msgstr ""
+
+#: src/Api/ApiClient.php:146
+msgid "Could not connect to the SooCool API. Please try again or check the SooCool logs."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:15
+msgid "SooCool rejected the request. Check the order data and SooCool logs."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:16
+msgid "SooCool authentication failed. Check the configured API key."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:17
+msgid "The requested SooCool resource could not be found."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:18
+msgid "SooCool could not generate the label because a precondition failed. Check the SooCool logs and order data."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:19
+msgid "SooCool rate limit reached. Please try again later."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:20
+msgid "SooCool is temporarily unavailable. Please try again later."
+msgstr ""
+
+#. translators: %d: HTTP status code.
+#: src/Api/ApiErrorMapper.php:23
+#, php-format
+msgid "SooCool API returned HTTP %d. Check the SooCool logs for details."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:16
+msgid "SooCool order reference is missing."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:28
+msgid "SooCool webhook block is present but incomplete. Provide a HTTPS webhook.webhookUrl and webhook.webhookUpdates, or remove the webhook block."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:34
+msgid "SooCool payload must contain at least one task."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:43
+msgid "Every SooCool task must be an object."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:48
+msgid "SooCool taskType must be delivery or pickup."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:65
+msgid "SooCool payload must contain at least one delivery task."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:71
+msgid "SooCool delivery date must be later than the pickup date when a pickup task is used."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:80
+msgid "SooCool task timeWindow is missing."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:86
+msgid "SooCool timeWindow must contain a startTime and endTime."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:92
+msgid "SooCool timeWindow endTime must be later than startTime."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:101
+msgid "SooCool task address is missing."
+msgstr ""
+
+#. translators: %s: SooCool address field name.
+#: src/Domain/OrderPayloadValidator.php:109
+#, php-format
+msgid "SooCool address field %s is missing."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:120
+msgid "SooCool task contactInfo is missing."
+msgstr ""
+
+msgid "SooCool task contactInfo must contain at least an email address, phone number or mobile number."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:124
+#: src/Domain/OrderPayloadValidator.php:128
+msgid "SooCool task contactInfo must contain at least an email address or mobile number."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:138
+msgid "Every SooCool task must reference at least one good."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:144
+msgid "SooCool task goods must be a list of non-zero good IDs."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:148
+msgid "SooCool task references a good that is not in the goods list."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:159
+msgid "SooCool payload must contain at least one good."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:165
+msgid "Every SooCool good must be an object."
+msgstr ""
+
+#. translators: %s: SooCool field name.
+#: src/Domain/OrderPayloadValidator.php:173
+#, php-format
+msgid "SooCool good field %s is missing."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:182
+msgid "SooCool goodId must be a non-zero integer."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:186
+msgid "SooCool good IDs must be unique."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:206
+msgid "SooCool good dimensions must be an object when provided."
+msgstr ""
+
+#. translators: %s: SooCool field name.
+#: src/Domain/OrderPayloadValidator.php:214
+#, php-format
+msgid "SooCool good dimensions.%s must be a positive integer."
+msgstr ""
+
+#. translators: %s: SooCool field name.
+#: src/Domain/OrderPayloadValidator.php:230
+#, php-format
+msgid "SooCool good %s must be a positive integer."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:243
+msgid "SooCool good transportRequirements must contain at least one value when provided."
+msgstr ""
+
+#: src/Domain/ShippingLabelService.php:22
+#: src/Domain/ShippingLabelService.php:32
+msgid "This order has no valid numeric SooCool order ID yet."
+msgstr ""
+
+#: src/Domain/ShippingLabelService.php:50
+msgid "One or more selected orders are invalid for SooCool label download."
+msgstr ""
+
+#: src/Domain/ShippingLabelService.php:55
+msgid "One or more selected orders do not have a valid numeric SooCool order ID yet."
+msgstr ""
+
+#: src/Domain/ShippingLabelService.php:62
+msgid "No selected orders have a valid numeric SooCool order ID yet."
+msgstr ""
+
+#: src/Domain/TaskFactory.php:71
+msgid "Pickup settings are incomplete. Complete the pickup address before sending orders to SooCool."
+msgstr ""
+
+#: src/Domain/TaskFactory.php:80
+msgid "Pickup contact is incomplete. Add a pickup email address, phone number or valid Dutch mobile number in the SooCool settings."
+msgstr ""
+
+#: src/Domain/TaskFactory.php:204
+msgid "recipient name"
+msgstr ""
+
+#: src/Domain/TaskFactory.php:207
+msgid "street name"
+msgstr ""
+
+#: src/Domain/TaskFactory.php:210
+msgid "house number"
+msgstr ""
+
+#: src/Domain/TaskFactory.php:213
+msgid "postcode"
+msgstr ""
+
+#: src/Domain/TaskFactory.php:216
+msgid "city"
+msgstr ""
+
+#: src/Domain/TaskFactory.php:219
+msgid "country"
+msgstr ""
+
+#: src/Domain/TaskFactory.php:222
+msgid "email, phone number or valid Dutch mobile number"
+msgstr ""
+
+#. translators: %s: comma-separated list of missing WooCommerce address fields.
+#: src/Domain/TaskFactory.php:234
+#, php-format
+msgid "Delivery address is incomplete. Missing WooCommerce field(s): %s. Complete the shipping or billing address before sending this order to SooCool."
+msgstr ""
+
+#: src/Domain/TaskFactory.php:320
+msgid "SooCool task time could not be generated."
 msgstr ""
 
 #: src/Infrastructure/Requirements.php:23
 msgid "SooCool for WooCommerce requires WooCommerce to be active."
 msgstr ""
 
-#: assets/build/admin.js:299
-msgid "SooCool for WooCommerce settings"
-msgstr ""
-
-#: src/Api/ApiClient.php:153
-msgid "SooCool is temporarily unavailable. Please try again later."
-msgstr ""
-
-#: src/WooCommerce/ShippingLabelActions.php:43
-msgid "SooCool label download failed. Check the SooCool logs for details."
-msgstr ""
-
-#: src/WooCommerce/OrderActions.php:103
-msgid "SooCool order ID:"
-msgstr ""
-
-#: src/Domain/OrderPayloadBuilder.php:39
-msgid "SooCool order reference is missing."
-msgstr ""
-
-#: src/Domain/OrderPayloadBuilder.php:65
-msgid "SooCool payload must contain at least one delivery task."
-msgstr ""
-
-#: src/Domain/OrderPayloadBuilder.php:78
-msgid "SooCool payload must contain at least one good."
-msgstr ""
-
-#: src/Domain/OrderPayloadBuilder.php:44
-msgid "SooCool payload must contain at least one task."
-msgstr ""
-
-#: assets/build/admin.js:163
-msgid "SooCool production API URL"
-msgstr ""
-
-#: src/Api/ApiClient.php:152
-msgid "SooCool rate limit reached. Please try again later."
-msgstr ""
-
-#: src/Api/ApiClient.php:148
-msgid "SooCool rejected the request. Check the order data and SooCool logs."
-msgstr ""
-
-#: assets/build/admin.js:299
-msgid "SooCool settings"
-msgstr ""
-
-#: src/WooCommerce/OrderActions.php:101
-msgid "SooCool status:"
-msgstr ""
-
-#: src/Rest/OrderSyncController.php:118 src/WooCommerce/OrderActions.php:70
-msgid "SooCool sync failed. Check the SooCool logs for details."
-msgstr ""
-
-#: src/WooCommerce/OrderActions.php:75
-msgid "SooCool sync failed: %s"
-msgstr ""
-
-#: src/WooCommerce/OrderActions.php:42
-msgid "SooCool sync skipped because this order is already synced."
-msgstr ""
-
-#: assets/build/admin.js:162
-msgid "SooCool test API URL"
-msgstr ""
-
-#: src/WooCommerce/OrderActions.php:58
-msgid "SooCool validation failed: %s"
-msgstr ""
-
-#: assets/build/admin.js:217
-msgid "SooCool webhook URL"
-msgstr ""
-
-#: assets/build/admin.js:215
-msgid "SooCool packagingType"
-msgstr ""
-
-#: assets/build/admin.js:167
-msgid "Test connection"
-msgstr ""
-
-#: assets/build/admin.js:138
-msgid "Testing connection…"
-msgstr ""
-
-#: src/Api/ApiClient.php:150
-msgid "The requested SooCool resource could not be found."
-msgstr ""
-
-#: src/Domain/ShippingLabelService.php:22
-msgid "This order has no valid numeric SooCool order ID yet."
-msgstr ""
-
-#: assets/build/admin.js:262
-msgid "Time"
-msgstr ""
-
-#: assets/build/admin.js:163
-msgid "Use the official production API host unless SooCool provides a different approved host."
-msgstr ""
-
-#: assets/build/admin.js:168
-msgid "Use the test environment first. Keep API keys out of Git, screenshots and support tickets."
-msgstr ""
-
-#: assets/build/admin.js:286
-msgid "Use these logs for troubleshooting only. Use WooCommerce order notes and the SooCool portal for final operational checks."
-msgstr ""
-
-#: assets/build/admin.js:220
-msgid "When pickup is enabled, SooCool receives two tasks: one pickup task with the pickup window above and one delivery task with the configured delivery window."
-msgstr ""
-
-#: assets/build/admin.js:183
-msgid "WooCommerce order reference prefix"
-msgstr ""
-
-#: src/WooCommerce/ShippingLabelActions.php:24
-msgid "You are not allowed to download this label."
-msgstr ""
-
-
 #: src/Rest/ConnectionController.php:43
-msgid "Open SooCool test portal"
+#: src/Rest/ConnectionController.php:54
+#: assets/build/admin.js:204
+msgid "Connection successful."
 msgstr ""
 
-msgid "Use the test environment first. Keep API keys and portal credentials out of Git, screenshots, plugin files and support tickets."
+#: src/Rest/ConnectionController.php:68
+msgid "Connection failed. Check the SooCool API key and base URL."
 msgstr ""
 
-msgid "Enable this when SooCool collects packages from you. The order will then be sent with both a pickup task and a delivery task."
+#: src/Rest/ConnectionController.php:77
+msgid "Connection test failed unexpectedly. Check the SooCool logs and PHP error log for details."
 msgstr ""
 
-msgid "When SooCool collects packages from you, keep pickup enabled. SooCool receives two tasks: one pickup task with the pickup window above and one delivery task with the configured delivery window."
+#: src/Rest/MaintenanceController.php:52
+msgid "No failed SooCool orders to resync."
 msgstr ""
 
-msgid "Existing SooCool order found by order reference. WooCommerce order linked without creating a duplicate SooCool order."
+#. translators: %d: number of orders queued for background resync.
+#: src/Rest/MaintenanceController.php:69
+#, php-format
+msgid "%d failed order queued for background resync."
+msgid_plural "%d failed orders queued for background resync."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: processed count, 2: remaining count.
+#: src/Rest/MaintenanceController.php:92
+#, php-format
+msgid "Resynced %1$d failed orders now. %2$d remaining; run again to continue."
 msgstr ""
 
-msgid "Missing SooCool order reference."
+#: src/Rest/OrderSyncController.php:62
+#: src/WooCommerce/ShippingLabelActions.php:130
+msgid "Order not found."
 msgstr ""
 
-msgid "Missing valid SooCool order IDs for label download."
-msgstr ""
-
-msgid "No selected orders have a valid numeric SooCool order ID yet."
-msgstr ""
-
-msgid "SooCool bulk label download failed. Check the SooCool logs for details."
-msgstr ""
-
-msgid "An API key is saved and shown as dots. Select the field and paste a new key only when you want to replace it."
-msgstr ""
-
-msgid "The API key is loaded from the SOOCOOL_API_KEY constant. The field is shown as dots and cannot reveal the key."
-msgstr ""
-
-msgid "Missing or invalid SooCool API key. Paste and save the API key again."
-msgstr ""
-
-msgid "The saved API key is invalid or still contains a masked value. Paste the real SooCool API key and save again."
-msgstr ""
-
-msgid "API key is saved."
-msgstr ""
-
-msgid "No valid API key is saved."
-msgstr ""
-
-#: src/Rest/OrderSyncController.php:85
-msgid "SooCool sync is already running for this order. Try again in a moment."
-msgstr ""
-
-#: src/WooCommerce/OrderActions.php:51
-msgid "SooCool sync skipped because another sync is already running for this order."
-msgstr ""
-
-#: src/Admin/AdminMenu.php
-msgid "Vorige"
-msgstr ""
-
-#: src/Admin/AdminMenu.php
-msgid "Deze API-Test verstuurt één delivery task. Pickup + delivery test je via een echte WooCommerce order met pickup ingeschakeld."
-msgstr ""
-
-#: src/WooCommerce/ShippingLabelActions.php
-msgid "Download SooCool labels"
-msgstr ""
-
-msgid "SooCool task contactInfo.phone is intentionally not sent. Use email and a valid mobile number instead."
-msgstr ""
-
-#: src/Domain/TaskFactory.php
-msgid "recipient name"
-msgstr ""
-
-#: src/Domain/TaskFactory.php
-msgid "street name"
-msgstr ""
-
-#: src/Domain/TaskFactory.php
-msgid "house number"
-msgstr ""
-
-#: src/Domain/TaskFactory.php
-msgid "postcode"
-msgstr ""
-
-#: src/Domain/TaskFactory.php
-msgid "city"
-msgstr ""
-
-#: src/Domain/TaskFactory.php
-msgid "Delivery address is incomplete. Missing WooCommerce field(s): %s. Complete the shipping or billing address before sending this order to SooCool."
-msgstr ""
-
-msgid "Pickup contact is incomplete. Add a pickup email address or a valid Dutch mobile number in the SooCool settings."
-msgstr ""
-
-msgid "email or valid Dutch mobile number"
-msgstr ""
-
-msgid "SooCool delivery tasks must use the exact 08:00-18:00 delivery window for this connection."
-msgstr ""
-
+#: src/Rest/OrderSyncController.php:75
 msgid "Manual resubmission is disabled in the SooCool settings."
 msgstr ""
 
+#: src/Rest/OrderSyncController.php:84
+msgid "Order is already synced with SooCool."
+msgstr ""
+
+#: src/Rest/OrderSyncController.php:95
+msgid "SooCool sync is already running for this order. Try again in a moment."
+msgstr ""
+
+#: src/Rest/OrderSyncController.php:108
+#: src/WooCommerce/OrderActions.php:92
+msgid "Existing SooCool order found by order reference. WooCommerce order linked without creating a duplicate SooCool order."
+msgstr ""
+
+#: src/Rest/OrderSyncController.php:115
+msgid "Existing SooCool order found by order reference. No duplicate SooCool order was created."
+msgstr ""
+
+#: src/Rest/OrderSyncController.php:124
+#: src/WooCommerce/OrderActions.php:100
+msgid "SooCool did not return a valid order ID."
+msgstr ""
+
+#: src/Rest/OrderSyncController.php:155
+#: src/WooCommerce/OrderActions.php:114
+msgid "SooCool sync failed unexpectedly. Check the SooCool logs and PHP error log for details."
+msgstr ""
+
+#: src/Rest/OrderSyncController.php:186
+#: src/WooCommerce/OrderActions.php:240
+msgid "SooCool sync failed. Check the SooCool logs for details."
+msgstr ""
+
+#: src/Rest/SettingsController.php:48
+msgid "Invalid settings payload."
+msgstr ""
+
+#: src/Rest/SettingsController.php:70
+msgid "Delivery days offset must be at least 1 when pickup tasks are enabled."
+msgstr ""
+
+#: src/Rest/SettingsController.php:73
+msgid "Delivery date offset must be later than the pickup date offset when pickup tasks are enabled."
+msgstr ""
+
+#: src/Rest/SettingsController.php:76
+#: src/Rest/SettingsController.php:299
+msgid "Pickup window end time must be later than the pickup window start time."
+msgstr ""
+
+#: src/Rest/SettingsController.php:79
+#: src/Rest/SettingsController.php:305
+msgid "Delivery window end time must be later than the delivery window start time."
+msgstr ""
+
+#: src/Rest/SettingsController.php:337
+msgid "SooCool delivery tasks must use the exact 08:00-18:00 delivery window for this connection."
+msgstr ""
+
+#: src/Rest/WebhookAuthenticator.php:24
+msgid "Invalid SooCool webhook token."
+msgstr ""
+
+#: src/Rest/WebhookController.php:49
+msgid "SooCool webhook payload is too large."
+msgstr ""
+
+#: src/Rest/WebhookController.php:54
+msgid "Invalid SooCool webhook payload."
+msgstr ""
+
+#: src/Rest/WebhookController.php:70
+msgid "SooCool webhook order not found."
+msgstr ""
+
+#. translators: %s: SooCool status.
+#: src/Rest/WebhookController.php:134
+#, php-format
+msgid "status %s"
+msgstr ""
+
+#. translators: %s: tracking code.
+#: src/Rest/WebhookController.php:141
+#, php-format
+msgid "tracking %s"
+msgstr ""
+
+#: src/Rest/WebhookController.php:147
+msgid "SooCool webhook received."
+msgstr ""
+
+#. translators: %s: safe webhook summary.
+#: src/Rest/WebhookController.php:150
+#, php-format
+msgid "SooCool webhook received: %s."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:61
+msgid "SooCool: create/send order"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:62
+msgid "SooCool: refresh status"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:63
+msgid "SooCool: update existing order"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:64
+msgid "SooCool: cancel order"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:75
+msgid "SooCool sync skipped because this order is already synced."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:81
+msgid "SooCool sync skipped because another sync is already running for this order."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:103
+msgid "Result: order sent to SooCool. Next step: download the label or wait for the track & trace webhook."
+msgstr ""
+
+#. translators: %s: Validation error message returned while building the SooCool order payload.
+#: src/WooCommerce/OrderActions.php:108
+#, php-format
+msgid "SooCool validation failed: %s"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:129
+msgid "SooCool update skipped because this WooCommerce order is not linked to a SooCool order ID yet."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:137
+msgid "Result: existing SooCool order updated. Next step: refresh the status or check the SooCool dashboard if fulfilment already started."
+msgstr ""
+
+#. translators: %s: Validation error message returned while building the SooCool order payload.
+#: src/WooCommerce/OrderActions.php:142
+#, php-format
+msgid "SooCool update validation failed: %s"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:148
+msgid "SooCool update failed unexpectedly. Check the SooCool logs and PHP error log for details."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:161
+msgid "SooCool refresh skipped because this WooCommerce order is not linked to a SooCool order ID."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:169
+msgid "SooCool did not return a valid order response."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:180
+msgid "Result: SooCool status refreshed and local status/tracking data updated."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:180
+msgid "Result: SooCool status refreshed. No status or tracking changes were returned."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:186
+msgid "SooCool refresh failed unexpectedly. Check the SooCool logs and PHP error log for details."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:199
+msgid "SooCool cancel skipped because this WooCommerce order is not linked to a SooCool order ID."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:206
+msgid "Result: SooCool order cancelled. Next step: verify fulfilment status in SooCool before refunding or changing the WooCommerce order status."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:212
+msgid "SooCool cancel failed unexpectedly. Check the SooCool logs and PHP error log for details."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:228
+msgid "SooCool action skipped because the current user cannot manage WooCommerce."
+msgstr ""
+
+#. translators: %s: safe SooCool API error summary.
+#: src/WooCommerce/OrderActions.php:245
+#, php-format
+msgid "SooCool sync failed: %s"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:253
+msgid "SooCool update failed. Check the SooCool logs for details."
+msgstr ""
+
+#. translators: %s: safe SooCool API error summary.
+#: src/WooCommerce/OrderActions.php:258
+#, php-format
+msgid "SooCool update failed: %s"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:266
+msgid "SooCool refresh failed. Check the SooCool logs for details."
+msgstr ""
+
+#. translators: %s: safe SooCool API error summary.
+#: src/WooCommerce/OrderActions.php:271
+#, php-format
+msgid "SooCool refresh failed: %s"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:279
+msgid "SooCool cancel failed. Check the SooCool logs for details."
+msgstr ""
+
+#. translators: %s: safe SooCool API error summary.
+#: src/WooCommerce/OrderActions.php:284
+#, php-format
+msgid "SooCool cancel failed: %s"
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:32
+msgid "Download SooCool order labels"
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:33
+msgid "Download SooCool good labels"
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:56
+msgid "You are not allowed to download this label."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:86
+msgid "No valid SooCool good IDs selected for label download."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:92
+msgid "SooCool bulk good label download failed. Check the SooCool logs for details."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:103
+msgid "No valid orders selected for SooCool label download."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:110
+msgid "One or more selected orders could not be found for SooCool label download."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:118
+msgid "SooCool bulk label download failed. Check the SooCool logs for details."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:137
+msgid "SooCool label download failed. Check the SooCool logs for details."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:190
+msgid "SooCool did not return a valid PDF label."
+msgstr ""
+
+#: assets/build/admin.js:48
+msgid "Loading settings..."
+msgstr ""
+
+#: assets/build/admin.js:60
+msgid "Saving..."
+msgstr ""
+
+#: assets/build/admin.js:60
+msgid "Save settings"
+msgstr ""
+
+#: assets/build/admin.js:73
+msgid "Copy failed; select and copy manually."
+msgstr ""
+
+#: assets/build/admin.js:74
+msgid "Could not load the webhook token."
+msgstr ""
+
+#: assets/build/admin.js:75
+msgid "Generate a new webhook token? The current token stops working until SooCool is updated with the new one."
+msgstr ""
+
+#: assets/build/admin.js:75
+msgid "New webhook token generated. Update it in SooCool now."
+msgstr ""
+
+#: assets/build/admin.js:75
+msgid "Could not regenerate the webhook token."
+msgstr ""
+
+#: assets/build/admin.js:77
+msgid "Webhook (track & trace callbacks)"
+msgstr ""
+
+#: assets/build/admin.js:78
+msgid "Configure SooCool to call this URL and send the token in the header below. The token is secret and is only shown here on request."
+msgstr ""
+
+#: assets/build/admin.js:80
+msgid "Webhook URL"
+msgstr ""
+
+#: assets/build/admin.js:81
+msgid "Header name"
+msgstr ""
+
+#: assets/build/admin.js:84
+msgid "Webhook URL copied."
+msgstr ""
+
+#: assets/build/admin.js:84
+msgid "Copy URL"
+msgstr ""
+
+#: assets/build/admin.js:85
+msgid "Refresh token"
+msgstr ""
+
+#: assets/build/admin.js:85
+msgid "Show token"
+msgstr ""
+
+#: assets/build/admin.js:86
+msgid "Regenerate token"
+msgstr ""
+
+#: assets/build/admin.js:89
+msgid "Webhook token"
+msgstr ""
+
+#: assets/build/admin.js:90
+msgid "Webhook token copied."
+msgstr ""
+
+#: assets/build/admin.js:90
+msgid "Copy token"
+msgstr ""
+
+#: assets/build/admin.js:98
+msgid "Resync started."
+msgstr ""
+
+#: assets/build/admin.js:98
+msgid "Could not start the resync."
+msgstr ""
+
+#: assets/build/admin.js:99
+msgid "Resync failed orders"
+msgstr ""
+
+#: assets/build/admin.js:171
+msgid "Settings saved."
+msgstr ""
+
+#: assets/build/admin.js:177
+msgid "Could not load SooCool settings."
+msgstr ""
+
+#: assets/build/admin.js:189
+msgid "The saved API key is invalid or still contains a masked value. Paste the real SooCool API key and save again."
+msgstr ""
+
+#: assets/build/admin.js:196
+msgid "Saving settings before testing…"
+msgstr ""
+
+#: assets/build/admin.js:200
+msgid "Testing connection…"
+msgstr ""
+
+#: assets/build/admin.js:210
+msgid "Connection failed. Check API key and base URL."
+msgstr ""
+
+#: assets/build/admin.js:216
+msgid "Required"
+msgstr ""
+
+#: assets/build/admin.js:216
+msgid "Connect WooCommerce to the correct SooCool API environment before sending orders."
+msgstr ""
+
+#: assets/build/admin.js:221
+msgid "SooCool environment"
+msgstr ""
+
+#: assets/build/admin.js:222
+msgid "SooCool API key"
+msgstr ""
+
+#: assets/build/admin.js:222
+msgid "An API key is saved and shown as dots. Click the field to clear the dots, then paste a new key only when you want to replace it."
+msgstr ""
+
+#: assets/build/admin.js:222
+msgid "Paste the X-API-Key value for the selected SooCool environment."
+msgstr ""
+
+#: assets/build/admin.js:223
+msgid "SooCool test API URL"
+msgstr ""
+
+#: assets/build/admin.js:223
+msgid "Only official SooCool API hosts are accepted by default."
+msgstr ""
+
+#: assets/build/admin.js:224
+msgid "SooCool production API URL"
+msgstr ""
+
+#: assets/build/admin.js:224
+msgid "Use the official production API host unless SooCool provides a different approved host."
+msgstr ""
+
+#: assets/build/admin.js:229
+msgid "Could not save settings. Check the entered values."
+msgstr ""
+
+#: assets/build/admin.js:229
+msgid "API settings saved."
+msgstr ""
+
+#: assets/build/admin.js:229
+msgid "Test connection"
+msgstr ""
+
+#: assets/build/admin.js:229
+msgid "Open SooCool test portal"
+msgstr ""
+
+#: assets/build/admin.js:234
+msgid "Could not load mapping settings."
+msgstr ""
+
+#: assets/build/admin.js:238
+msgid "Orders"
+msgstr ""
+
+#: assets/build/admin.js:238
+msgid "Configure pickup details, delivery scheduling and fallback goods details used for SooCool orders."
+msgstr ""
+
+#: assets/build/admin.js:242
+msgid "Create pickup task before delivery"
+msgstr ""
+
+#: assets/build/admin.js:242
 msgid "Keep this enabled when SooCool collects packages from you. The order is then sent with both a pickup task and a delivery task."
 msgstr ""
 
+#: assets/build/admin.js:243
+msgid "WooCommerce order reference prefix"
+msgstr ""
+
+#: assets/build/admin.js:243
+msgid "Optional prefix added before the WooCommerce order number, for example TEST-."
+msgstr ""
+
+#: assets/build/admin.js:247
+msgid "Pickup location"
+msgstr ""
+
+#: assets/build/admin.js:249
+msgid "Pickup company"
+msgstr ""
+
+#: assets/build/admin.js:250
+msgid "Pickup contact name"
+msgstr ""
+
+#: assets/build/admin.js:251
+msgid "Pickup email"
+msgstr ""
+
+#: assets/build/admin.js:252
+msgid "Pickup phone/mobile"
+msgstr ""
+
+#: assets/build/admin.js:253
+msgid "Pickup street"
+msgstr ""
+
+#: assets/build/admin.js:254
+msgid "Pickup house number"
+msgstr ""
+
+#: assets/build/admin.js:255
+msgid "Pickup postal code"
+msgstr ""
+
+#: assets/build/admin.js:256
+msgid "Pickup city"
+msgstr ""
+
+#: assets/build/admin.js:257
+msgid "Pickup country code"
+msgstr ""
+
+#: assets/build/admin.js:261
+msgid "Scheduling & goods"
+msgstr ""
+
+#: assets/build/admin.js:263
+msgid "Pickup date offset in days"
+msgstr ""
+
+#: assets/build/admin.js:264
+msgid "Delivery date offset in days"
+msgstr ""
+
+#: assets/build/admin.js:265
+msgid "Pickup window starts"
+msgstr ""
+
+#: assets/build/admin.js:266
+msgid "Pickup window ends"
+msgstr ""
+
+#: assets/build/admin.js:267
+msgid "Delivery window starts"
+msgstr ""
+
+#: assets/build/admin.js:267
+#: assets/build/admin.js:268
 msgid "SooCool requires delivery tasks to use exactly 08:00-18:00 for this connection."
 msgstr ""
 
+#: assets/build/admin.js:268
+msgid "Delivery window ends"
+msgstr ""
+
+#: assets/build/admin.js:271
+msgid "Fallback goods contents"
+msgstr ""
+
+#: assets/build/admin.js:272
+msgid "SooCool packagingType"
+msgstr ""
+
+#: assets/build/admin.js:272
+msgid "Default: box. Change this when SooCool expects a different packagingType value."
+msgstr ""
+
+#: assets/build/admin.js:273
+msgid "Transport requirement"
+msgstr ""
+
+#: assets/build/admin.js:273
+msgid "Sent as goods[].transportRequirements. Default: cooled."
+msgstr ""
+
+#: assets/build/admin.js:273
+msgid "Cooled"
+msgstr ""
+
+#: assets/build/admin.js:273
+msgid "Frozen"
+msgstr ""
+
+#: assets/build/admin.js:273
+msgid "Ambient"
+msgstr ""
+
+#: assets/build/admin.js:274
+msgid "Package width"
+msgstr ""
+
+#: assets/build/admin.js:274
+msgid "Sent as goods[].dimensions.width."
+msgstr ""
+
+#: assets/build/admin.js:275
+msgid "Package depth"
+msgstr ""
+
+#: assets/build/admin.js:275
+msgid "Sent as goods[].dimensions.depth."
+msgstr ""
+
+#: assets/build/admin.js:276
+msgid "Package height"
+msgstr ""
+
+#: assets/build/admin.js:276
+msgid "Sent as goods[].dimensions.height."
+msgstr ""
+
+#: assets/build/admin.js:277
+msgid "Package weight"
+msgstr ""
+
+#: assets/build/admin.js:277
+msgid "Sent as goods[].weight."
+msgstr ""
+
+#: assets/build/admin.js:279
+msgid "SooCool webhook URL"
+msgstr ""
+
+#: assets/build/admin.js:279
+msgid "Optional callback URL sent with the SooCool order. Leave empty to use the plugin's header-protected webhook receiver when the site uses HTTPS. Configure X-SooCool-Webhook-Token in SooCool when supported."
+msgstr ""
+
+#: assets/build/admin.js:283
 msgid "When SooCool collects packages from you, keep pickup enabled. SooCool receives two tasks: one pickup task with the agreed pickup window and one delivery task with the fixed 08:00-18:00 delivery window."
+msgstr ""
+
+#: assets/build/admin.js:284
+msgid "Could not save mapping settings. Check required pickup and delivery fields."
+msgstr ""
+
+#: assets/build/admin.js:284
+msgid "Pickup & delivery settings saved."
+msgstr ""
+
+#: assets/build/admin.js:284
+msgid "Save pickup & delivery"
+msgstr ""
+
+#: assets/build/admin.js:289
+msgid "Could not load automation settings."
+msgstr ""
+
+#: assets/build/admin.js:293
+msgid "Optional"
+msgstr ""
+
+#: assets/build/admin.js:293
+msgid "Automatic sending is off by default. Keep manual sync available during staging."
+msgstr ""
+
+#: assets/build/admin.js:298
+msgid "Automatically send eligible orders to SooCool"
+msgstr ""
+
+#: assets/build/admin.js:298
+msgid "Automatically submits matching WooCommerce orders when they reach the selected status."
+msgstr ""
+
+#: assets/build/admin.js:299
+msgid "Allow manual resubmission of synced orders"
+msgstr ""
+
+#: assets/build/admin.js:299
+msgid "Keep disabled unless SooCool asks for a replacement order or a staging retest."
+msgstr ""
+
+#: assets/build/admin.js:300
+msgid "Order status for automatic sending"
+msgstr ""
+
+#: assets/build/admin.js:300
+msgid "Processing"
+msgstr ""
+
+#: assets/build/admin.js:300
+msgid "Completed"
+msgstr ""
+
+#: assets/build/admin.js:300
+msgid "On hold"
+msgstr ""
+
+#: assets/build/admin.js:301
+msgid "Log retention limit"
+msgstr ""
+
+#: assets/build/admin.js:305
+msgid "Maintenance"
+msgstr ""
+
+#: assets/build/admin.js:306
+msgid "Re-send every order whose last SooCool sync failed. Large batches run in the background via Action Scheduler."
+msgstr ""
+
+#: assets/build/admin.js:309
+msgid "Manual sending remains available from the WooCommerce order screen."
+msgstr ""
+
+#: assets/build/admin.js:310
+msgid "Could not save automation settings."
+msgstr ""
+
+#: assets/build/admin.js:310
+msgid "Automation settings saved."
+msgstr ""
+
+#: assets/build/admin.js:310
+msgid "Save automation"
+msgstr ""
+
+#: assets/build/admin.js:315
+msgid "Could not load label settings."
+msgstr ""
+
+#: assets/build/admin.js:318
+msgid "PDF"
+msgstr ""
+
+#: assets/build/admin.js:318
+msgid "Choose the default PDF format used when downloading SooCool shipping labels from an order."
+msgstr ""
+
+#: assets/build/admin.js:321
+msgid "Default label format"
+msgstr ""
+
+#: assets/build/admin.js:321
+msgid "A6 single label"
+msgstr ""
+
+#: assets/build/admin.js:321
+msgid "Collated A4 sheet"
+msgstr ""
+
+#: assets/build/admin.js:322
+msgid "Could not save label settings."
+msgstr ""
+
+#: assets/build/admin.js:322
+msgid "Shipping label settings saved."
+msgstr ""
+
+#: assets/build/admin.js:322
+msgid "Save shipping label settings"
+msgstr ""
+
+#: assets/build/admin.js:327
+msgid "SooCool activity logs"
+msgstr ""
+
+#: assets/build/admin.js:328
+msgid "Time"
+msgstr ""
+
+#: assets/build/admin.js:328
+msgid "Level"
+msgstr ""
+
+#: assets/build/admin.js:328
+msgid "Message"
+msgstr ""
+
+#: assets/build/admin.js:328
+msgid "Details"
+msgstr ""
+
+#: assets/build/admin.js:329
+msgid "No logs yet."
+msgstr ""
+
+#: assets/build/admin.js:346
+msgid "Logs refreshed."
+msgstr ""
+
+#: assets/build/admin.js:346
+msgid "Could not load logs."
+msgstr ""
+
+#: assets/build/admin.js:347
+msgid "Logs cleared."
+msgstr ""
+
+#: assets/build/admin.js:347
+msgid "Could not clear logs."
+msgstr ""
+
+#: assets/build/admin.js:349
+msgid "Sanitized"
+msgstr ""
+
+#: assets/build/admin.js:349
+msgid "Recent sanitized SooCool API activity. Secrets and full payload bodies are not stored."
+msgstr ""
+
+#: assets/build/admin.js:350
+msgid "Loading logs…"
+msgstr ""
+
+#: assets/build/admin.js:352
+msgid "Use these logs for troubleshooting only. Use WooCommerce order notes and the SooCool portal for final operational checks."
+msgstr ""
+
+#: assets/build/admin.js:353
+msgid "Refresh"
+msgstr ""
+
+#: assets/build/admin.js:353
+msgid "Clear logs"
+msgstr ""
+
+#: assets/build/admin.js:373
+msgid "SooCool for WooCommerce settings"
+msgstr ""
+
+#: assets/build/admin.js:375
+msgid "SooCool settings"
+msgstr ""
+
+#: generated-cleanup
+msgid "Good labels"
+msgstr ""
+
+#: generated-cleanup
+msgid "No SooCool good IDs found for the selected orders."
+msgstr ""
+
+#: generated-cleanup
+msgid "One or more requested SooCool good IDs do not belong to this order."
+msgstr ""
+
+#: generated-cleanup
+msgid "Order label"
+msgstr ""
+
+#: generated-cleanup
+msgid "SooCool bulk order label download failed. Check the SooCool logs for details."
+msgstr ""
+
+#: generated-cleanup
+msgid "SooCool good label download failed. Check the SooCool logs for details."
+msgstr ""
+
+#: generated-cleanup
+msgid "SooCool label download could not start because output was already sent."
+msgstr ""
+
+#: generated-cleanup
+msgid "The requested SooCool good ID does not belong to this order."
+msgstr ""
+
+#: generated-cleanup
+msgid "These downloads use the selected label output setting."
+msgstr ""
+
+#: generated-cleanup
+msgid "Use the WooCommerce bulk action or an order-specific SooCool label link for label downloads."
+msgstr ""
+
+#: assets/build/admin.js
+msgid "Configure SooCool to call this URL and send the token in the X-SooCool-Webhook-Token header. Query-token URLs are available only when the explicit fallback filter is enabled."
+msgstr ""
+
+#: assets/build/admin.js
+msgid "Only enable this when pickup tasks are agreed with SooCool. The API documentation says pickup tasks should only be used in consultation."
+msgstr ""
+
+#: assets/build/admin.js
+msgid "Optional callback URL sent with the SooCool order. Leave empty to use the plugin receiver. Header-token authentication is preferred; query-token URLs require the explicit fallback filter."
+msgstr ""
+
+#: assets/build/admin.js
+msgid "Pickup is optional. Keep it disabled unless SooCool has agreed that your account should send pickup tasks. Delivery-only orders still include the required delivery task and goods."
+msgstr ""
+
+msgid "Select 50 or fewer orders for one SooCool label download."
+msgstr ""
+
+msgid "Select 50 or fewer SooCool good IDs for one label download."
+msgstr ""
+
+msgid "The selected orders contain more than 50 SooCool good IDs. Select fewer orders and try again."
+msgstr ""
+
+msgid "Select 50 or fewer orders for one SooCool bulk send. You selected %d order."
+msgstr ""
+
+msgid "Select 50 or fewer orders for one SooCool bulk send. You selected %d orders."
 msgstr ""

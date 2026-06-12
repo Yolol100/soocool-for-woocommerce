@@ -21,7 +21,7 @@ final class OptionRepository {
 			'test_base_url'              => 'https://api.staging.soocool.nl',
 			'production_base_url'        => 'https://api.soocool.nl',
 			'api_key'                    => '',
-			'enable_pickup'              => true,
+			'enable_pickup'              => false,
 			'order_reference_prefix'     => '',
 			'pickup_company'             => get_bloginfo( 'name' ),
 			'pickup_contact_name'        => '',
@@ -37,7 +37,7 @@ final class OptionRepository {
 			'pickup_time_to'             => '18:00',
 			'delivery_time_from'         => '08:00',
 			'delivery_time_to'           => '18:00',
-			'delivery_days_offset'       => 2,
+			'delivery_days_offset'       => 1,
 			'auto_submit_enabled'        => false,
 			'auto_submit_status'         => 'processing',
 			'allow_resubmit'             => false,
@@ -132,7 +132,7 @@ final class OptionRepository {
 		$clean['environment']         = $this->one_of( $settings['environment'] ?? $current['environment'], array( 'test', 'production' ), 'test' );
 		$clean['test_base_url']       = $this->sanitize_url( (string) ( $settings['test_base_url'] ?? $current['test_base_url'] ), (string) $defaults['test_base_url'] );
 		$clean['production_base_url'] = $this->sanitize_url( (string) ( $settings['production_base_url'] ?? $current['production_base_url'] ), (string) $defaults['production_base_url'] );
-		$clean['api_key']             = $this->sanitize_secret( $settings['api_key'] ?? null, (string) $current['api_key'] );
+		$clean['api_key']             = $this->api_key_is_managed_by_constant() ? (string) $current['api_key'] : $this->sanitize_secret( $settings['api_key'] ?? null, (string) $current['api_key'] );
 
 		$clean['enable_pickup']          = $this->to_bool( $settings['enable_pickup'] ?? $current['enable_pickup'] );
 		$clean['order_reference_prefix'] = sanitize_key( (string) ( $settings['order_reference_prefix'] ?? $current['order_reference_prefix'] ) );
@@ -226,8 +226,10 @@ final class OptionRepository {
 		$settings['api_key_status']   = $this->api_key_status();
 		$settings['api_key_masked']   = $this->masked_api_key();
 		$settings['api_key']          = $settings['api_key_present'] ? $settings['api_key_masked'] : '';
-		$settings['generated_webhook_url'] = $this->generated_webhook_url();
-		$settings['effective_webhook_url'] = $this->effective_webhook_url();
+		$settings['generated_webhook_url']        = $this->generated_webhook_url();
+		$settings['webhook_header_name']          = 'X-SooCool-Webhook-Token';
+		$settings['query_token_fallback_enabled'] = $this->query_token_fallback_enabled();
+		$settings['effective_webhook_url']        = $this->effective_webhook_url();
 		unset( $settings['webhook_secret'] );
 		return $settings;
 	}
@@ -251,11 +253,30 @@ final class OptionRepository {
 		return $secret;
 	}
 
+	/**
+	 * Force a brand-new webhook secret and persist it. Returns the new secret so
+	 * the operator can reconfigure SooCool with the rotated token.
+	 */
+	public function regenerate_webhook_secret(): string {
+		$settings                   = $this->all();
+		$secret                     = $this->generate_webhook_secret();
+		$settings['webhook_secret'] = $secret;
+		update_option( self::OPTION_NAME, $this->sanitize_settings( $settings, $this->defaults() ), false );
+
+		return $secret;
+	}
+
 	public function generated_webhook_url(): string {
+		$url = rest_url( 'soocool/v1/webhook' );
+
+		return esc_url_raw( $url );
+	}
+
+	public function legacy_webhook_url(): string {
 		$url = add_query_arg(
 			'token',
 			$this->webhook_secret(),
-			rest_url( 'soocool/v1/webhook' )
+			$this->generated_webhook_url()
 		);
 
 		return esc_url_raw( $url );
@@ -268,8 +289,21 @@ final class OptionRepository {
 			return $custom;
 		}
 
-		$generated = $this->generated_webhook_url();
+		$generated = $this->query_token_fallback_enabled() ? $this->legacy_webhook_url() : $this->generated_webhook_url();
 		return str_starts_with( $generated, 'https://' ) ? $generated : '';
+	}
+
+	public function query_token_fallback_enabled(): bool {
+		/**
+		 * Controls whether generated webhook URLs include the shared token as a query
+		 * parameter. Header-token authentication is the safer default because URL
+		 * tokens can end up in logs, browser history, analytics or screenshots. Enable
+		 * this fallback only when the remote SooCool callback configuration cannot send
+		 * the X-SooCool-Webhook-Token header.
+		 *
+		 * @param bool $enabled Default false.
+		 */
+		return (bool) apply_filters( 'soocool_allow_query_token_webhook_url', false );
 	}
 
 	private function sanitize_webhook_secret( mixed $value ): string {
@@ -283,6 +317,10 @@ final class OptionRepository {
 		}
 
 		return bin2hex( random_bytes( 24 ) );
+	}
+
+	public function api_key_is_managed_by_constant(): bool {
+		return '' !== $this->normalized_constant_api_key();
 	}
 
 	public function api_key_source(): string {

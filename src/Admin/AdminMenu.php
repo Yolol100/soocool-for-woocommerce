@@ -25,7 +25,9 @@ final class AdminMenu {
 	public function __construct(
 		private readonly ApiClient $client,
 		private readonly OptionRepository $options,
-		private readonly OrderPayloadBuilder $builder
+		private readonly OrderPayloadBuilder $builder,
+		private readonly DummyOrderFactory $dummy_orders,
+		private readonly DebugRedactor $redactor
 	) {}
 
 	public function register(): void {
@@ -177,8 +179,8 @@ final class AdminMenu {
 
 		try {
 			$mode = sanitize_key( (string) ( $values['test_mode'] ?? 'real' ) );
-			if ( 'dummy' === $mode || $this->uses_dummy_order( $values ) ) {
-				$payload = $this->builder->build( $this->dummy_woocommerce_order() );
+			if ( 'dummy' === $mode ) {
+				$payload = $this->builder->build( $this->dummy_orders->create() );
 				$mode    = 'dummy_woocommerce_order';
 			} else {
 				if ( ! $this->has_woocommerce_order_id( $values ) ) {
@@ -203,8 +205,8 @@ final class AdminMenu {
 					'status'  => $response->status_code(),
 					'message' => __( 'SooCool heeft de testaanvraag geaccepteerd.', 'soocool-for-woocommerce' ),
 					'mode'    => $mode,
-					'payload' => $this->redact_debug_data( $payload ),
-					'body'    => $this->redact_debug_data( $response->body() ),
+					'payload' => $this->redactor->redact( $payload ),
+					'body'    => $this->redactor->redact( $response->body() ),
 				)
 			);
 		} catch ( PayloadValidationException|\InvalidArgumentException $exception ) {
@@ -212,9 +214,9 @@ final class AdminMenu {
 		} catch ( ApiException $exception ) {
 			$result['status']  = $exception->status_code();
 			$result['message'] = sanitize_text_field( $exception->getMessage() );
-			$result['errors']  = $this->redact_error_list( $exception->errors() );
+			$result['errors']  = $this->redactor->redact_error_list( $exception->errors() );
 			if ( isset( $payload ) && is_array( $payload ) ) {
-				$result['payload'] = $this->redact_debug_data( $payload );
+				$result['payload'] = $this->redactor->redact( $payload );
 			}
 		} catch ( \Throwable $exception ) {
 			$result['message'] = __( 'De handmatige SooCool test is mislukt. Controleer de logs voor details.', 'soocool-for-woocommerce' );
@@ -230,7 +232,6 @@ final class AdminMenu {
 		return array(
 			'woocommerce_order_id' => '',
 			'test_mode'            => 'real',
-			'use_dummy_order'      => '',
 		);
 	}
 
@@ -248,7 +249,8 @@ final class AdminMenu {
 		$defaults = $this->default_form_values();
 		$values   = array();
 		foreach ( $defaults as $key => $default ) {
-			$raw            = isset( $_POST[ $key ] ) ? wp_unslash( $_POST[ $key ] ) : $default; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			// Nonce is verified in handle_manual_test_order() before this helper reads submitted values.
+			$raw            = isset( $_POST[ $key ] ) ? wp_unslash( $_POST[ $key ] ) : $default; // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			$values[ $key ] = is_scalar( $raw ) ? sanitize_text_field( (string) $raw ) : $default;
 		}
 
@@ -258,70 +260,6 @@ final class AdminMenu {
 	/** @param array<string, string> $values */
 	private function has_woocommerce_order_id( array $values ): bool {
 		return 0 < absint( $values['woocommerce_order_id'] ?? 0 );
-	}
-
-	/** @param array<string, string> $values */
-	private function uses_dummy_order( array $values ): bool {
-		return '1' === (string) ( $values['use_dummy_order'] ?? '' );
-	}
-
-	private function dummy_woocommerce_order(): \WC_Order {
-		if ( ! class_exists( '\WC_Order' ) || ! class_exists( '\WC_Order_Item_Product' ) ) {
-			throw new \InvalidArgumentException( esc_html__( 'WooCommerce orderklassen zijn niet beschikbaar voor de dummy testorder.', 'soocool-for-woocommerce' ) );
-		}
-
-		$order = new \WC_Order();
-		if ( method_exists( $order, 'set_id' ) ) {
-			$order->set_id( 999999 );
-		}
-		$order->set_currency( get_woocommerce_currency() ?: 'EUR' );
-		$order->set_status( 'processing' );
-		$order->set_billing_first_name( 'SooCool' );
-		$order->set_billing_last_name( 'Testklant' );
-		$order->set_billing_company( 'Testbedrijf B.V.' );
-		$order->set_billing_address_1( 'Keizersgracht 123A' );
-		$order->set_billing_postcode( '1015CJ' );
-		$order->set_billing_city( 'Amsterdam' );
-		$order->set_billing_country( 'NL' );
-		$order->set_billing_email( 'testklant@example.com' );
-		$order->set_billing_phone( '+31612345678' );
-		$order->set_shipping_first_name( 'SooCool' );
-		$order->set_shipping_last_name( 'Testklant' );
-		$order->set_shipping_company( 'Testbedrijf B.V.' );
-		$order->set_shipping_address_1( 'Keizersgracht 123A' );
-		$order->set_shipping_postcode( '1015CJ' );
-		$order->set_shipping_city( 'Amsterdam' );
-		$order->set_shipping_country( 'NL' );
-		$order->set_customer_note( 'Dummy testorder: gekoeld afleveren bij de hoofdingang.' );
-
-		foreach ( $this->dummy_order_items() as $item_data ) {
-			$item = new \WC_Order_Item_Product();
-			$item->set_name( $item_data['name'] );
-			$item->set_quantity( $item_data['quantity'] );
-			$item->set_subtotal( $item_data['subtotal'] );
-			$item->set_total( $item_data['total'] );
-			$order->add_item( $item );
-		}
-
-		return $order;
-	}
-
-	/** @return array<int, array{name:string, quantity:int, subtotal:string, total:string}> */
-	private function dummy_order_items(): array {
-		return array(
-			array(
-				'name'     => 'SooCool dummy maaltijdbox gekoeld',
-				'quantity' => 2,
-				'subtotal' => '39.90',
-				'total'    => '39.90',
-			),
-			array(
-				'name'     => 'SooCool dummy dessertpakket',
-				'quantity' => 1,
-				'subtotal' => '12.50',
-				'total'    => '12.50',
-			),
-		);
 	}
 
 	private function consume_result(): array {
@@ -334,94 +272,6 @@ final class AdminMenu {
 
 	private function result_transient_key(): string {
 		return self::RESULT_TRANSIENT . get_current_user_id();
-	}
-
-	private function redact_debug_data( mixed $value ): mixed {
-		if ( is_array( $value ) ) {
-			$redacted = array();
-			foreach ( $value as $key => $item ) {
-				$key_string = is_scalar( $key ) ? (string) $key : '';
-				if ( $this->is_sensitive_debug_key( $key_string ) ) {
-					$redacted[ $key ] = '[redacted]';
-					continue;
-				}
-				$redacted[ $key ] = $this->redact_debug_data( $item );
-			}
-
-			return $redacted;
-		}
-
-		return is_string( $value ) ? $this->redact_debug_string( $value ) : $value;
-	}
-
-	private function is_sensitive_debug_key( string $key ): bool {
-		$key = strtolower( $key );
-
-		return in_array(
-			$key,
-			array(
-				'email',
-				'phone',
-				'mobile',
-				'person',
-				'firstname',
-				'first_name',
-				'lastname',
-				'last_name',
-				'name',
-				'contactname',
-				'contact_name',
-				'street',
-				'housenumber',
-				'house_number',
-				'address',
-				'postcode',
-				'post_code',
-				'postalcode',
-				'postal_code',
-				'city',
-				'company',
-				'api_key',
-				'apikey',
-				'token',
-				'authorization',
-			),
-			true
-		);
-	}
-
-	/** @param array<int, string> $errors @return array<int, string> */
-	private function redact_error_list( array $errors ): array {
-		$redacted = array();
-		foreach ( $errors as $error ) {
-			if ( is_scalar( $error ) ) {
-				$value = sanitize_text_field( (string) $error );
-				if ( '' !== $value ) {
-					$redacted[] = $this->redact_debug_string( $value );
-				}
-			}
-		}
-
-		return $redacted;
-	}
-
-	private function redact_debug_string( string $value ): string {
-		$value = sanitize_text_field( $value );
-
-		$api_key = $this->options->api_key();
-		if ( '' !== $api_key ) {
-			$value = str_replace( $api_key, '[redacted]', $value );
-		}
-
-		$secret = $this->options->existing_webhook_secret();
-		if ( '' !== $secret ) {
-			$value = str_replace( $secret, '[redacted]', $value );
-		}
-
-		$value = preg_replace( '/([?&]token=)[^&\s]+/i', '$1[redacted]', $value ) ?? $value;
-		$value = preg_replace( '/(x-api-key\s*[:=]\s*)[^\s,;]+/i', '$1[redacted]', $value ) ?? $value;
-
-		return $value;
 	}
 
 	/** @param array<string, mixed> $settings */
@@ -497,9 +347,6 @@ final class AdminMenu {
 
 	private function text_row( string $name, string $label, string $value, string $description = '' ): void {
 		$field_class = 'soocool-manual-field';
-		if ( 'orderReference' === $name ) {
-			$field_class .= ' is-full';
-		}
 		?>
 		<div class="<?php echo esc_attr( $field_class ); ?>">
 			<label for="<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $label ); ?></label>

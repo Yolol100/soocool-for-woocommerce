@@ -767,6 +767,13 @@
   max-width: none;
 }
 
+.soocool-shell .soocool-field-grid.two > .soocool-field-full,
+.soocool-shell .soocool-field-grid.three > .soocool-field-full {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: none;
+}
+
 /* Delivery time window: inside the grid, subtle, no overflow. */
 .soocool-shell .soocool-fixed-window {
   grid-column: 1 / -1;
@@ -1410,4 +1417,78 @@
   .soocool-shell .soocool-inline-controls {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* AI-PATCH: admin UI polish for maintenance action and toggle alignment. */
+.soocool-danger-fill.components-button.is-secondary {
+  color: var(--soocool-surface);
+  background: var(--soocool-accent);
+  border-color: var(--soocool-accent);
+  box-shadow: none;
+}
+
+.soocool-danger-fill.components-button.is-secondary:hover,
+.soocool-danger-fill.components-button.is-secondary:focus {
+  color: var(--soocool-surface);
+  background: var(--soocool-accent-dark);
+  border-color: var(--soocool-accent-dark);
+  box-shadow: 0 0 0 1px rgba(191, 4, 19, 0.2);
+}
+
+.soocool-shell .components-toggle-control .components-form-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  line-height: 1;
+}
+
+.soocool-shell .components-toggle-control .components-form-toggle__track {
+  position: relative;
+}
+
+.soocool-shell .components-toggle-control .components-form-toggle__thumb {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.soocool-shell .components-toggle-control .components-form-toggle.is-checked .components-form-toggle__thumb {
+  transform: translate(16px, -50%);
+}
+
+/* Order screen label actions */
+.soocool-order-action-group__title {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.soocool-order-button-stack {
+  display: grid;
+  gap: 7px;
+}
+
+.soocool-order-button-stack .soocool-order-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 34px;
+  line-height: 1.35;
+  text-align: center;
+  text-decoration: none;
+}
+
+.soocool-order-action-help {
+  margin: 8px 0 0;
+}
+
+.soocool-list-label-actions {
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.soocool-list-label-actions a {
+  white-space: nowrap;
 }

@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *   - taskType    : "delivery" | "pickup"
  *   - timeWindow  : { startTime, endTime } (ISO-8601)
  *   - address     : { person, street, houseNumber, postCode, city, country }
- *   - contactInfo : { email, mobile } at task level. Phone is intentionally not sent because SooCool staging validates phone strictly.
+ *   - contactInfo : { email, phone, mobile } at task level, matching the SooCool API examples.
  *   - goods       : array of good IDs from the goods manifest
  *   - instructions: optional string
  */
@@ -77,7 +77,7 @@ final class TaskFactory {
 			sanitize_text_field( (string) $settings['pickup_phone'] )
 		);
 		if ( array() === $contact_info ) {
-			throw new PayloadValidationException( esc_html__( 'Pickup contact is incomplete. Add a pickup email address or a valid Dutch mobile number in the SooCool settings.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'Pickup contact is incomplete. Add a pickup email address, phone number or valid Dutch mobile number in the SooCool settings.', 'soocool-for-woocommerce' ) );
 		}
 
 		$task = array(
@@ -112,7 +112,8 @@ final class TaskFactory {
 
 		$missing_fields = $this->delivery_address_missing_fields( $order, $address, (string) $postal_code, (string) $city, (string) $country, (string) $recipient_name );
 		if ( array() !== $missing_fields ) {
-			throw new PayloadValidationException( $this->delivery_address_error_message( $missing_fields ) );
+			$message = $this->delivery_address_error_message( $missing_fields );
+			throw new PayloadValidationException( esc_html( $message ) );
 		}
 
 		$time_from    = ! empty( $settings['delivery_time_from'] ) ? (string) $settings['delivery_time_from'] : self::DELIVERY_TIME_FROM;
@@ -149,16 +150,16 @@ final class TaskFactory {
 		);
 
 		/**
-		 * Filters the SooCool task contactInfo (email, mobile). Phone values are stripped before sending to SooCool.
+		 * Filters the SooCool task contactInfo. SooCool API 1.2.1 examples allow
+		 * email, phone and mobile. Phone-like values are normalized before sending.
 		 *
 		 * @param array<string, string> $info
 		 * @param WC_Order             $order
 		 */
 		$info = apply_filters( 'soocool_task_contact_info', $info, $order );
 		$info = is_array( $info ) ? $info : array();
-		unset( $info['phone'], $info['phoneNumber'] );
 
-		return $this->compact( $info );
+		return $this->sanitize_contact_info( $info );
 	}
 
 	/** @return array<string, string> */
@@ -166,13 +167,40 @@ final class TaskFactory {
 		$phone = $this->normalize_phone_number( $phone );
 		$info  = array( 'email' => sanitize_email( $email ) );
 
-		// SooCool staging rejects some phone values through a strict oneOf schema.
-		// Only send confirmed Dutch mobile numbers as contactInfo.mobile.
+		if ( '' !== $phone && $this->looks_like_phone_number( $phone ) ) {
+			$info['phone'] = $phone;
+		}
+
 		if ( '' !== $phone && $this->looks_like_mobile( $phone ) ) {
 			$info['mobile'] = $phone;
 		}
 
 		return $this->compact( $info );
+	}
+
+	/** @param array<string, mixed> $info @return array<string, string> */
+	private function sanitize_contact_info( array $info ): array {
+		$clean = array();
+
+		if ( isset( $info['email'] ) ) {
+			$clean['email'] = sanitize_email( (string) $info['email'] );
+		}
+
+		foreach ( array( 'phone', 'mobile' ) as $key ) {
+			if ( ! isset( $info[ $key ] ) ) {
+				continue;
+			}
+
+			$phone = $this->normalize_phone_number( sanitize_text_field( (string) $info[ $key ] ) );
+			if ( 'mobile' === $key && ! $this->looks_like_mobile( $phone ) ) {
+				continue;
+			}
+			if ( '' !== $phone && $this->looks_like_phone_number( $phone ) ) {
+				$clean[ $key ] = $phone;
+			}
+		}
+
+		return $this->compact( $clean );
 	}
 
 	private function normalize_phone_number( string $phone ): string {
@@ -191,6 +219,11 @@ final class TaskFactory {
 		$normalized = ltrim( $normalized, '+' );
 
 		return 1 === preg_match( '/^(?:31|0)6\d{8}$/', $normalized );
+	}
+
+	private function looks_like_phone_number( string $phone ): bool {
+		$normalized = (string) preg_replace( '/[^\d+]/', '', $phone );
+		return 1 === preg_match( '/^\+?\d{10,15}$/', $normalized );
 	}
 
 	/**
@@ -219,7 +252,7 @@ final class TaskFactory {
 			$fields[] = __( 'country', 'soocool-for-woocommerce' );
 		}
 		if ( array() === $this->delivery_contact_info( $order ) ) {
-			$fields[] = __( 'email or valid Dutch mobile number', 'soocool-for-woocommerce' );
+			$fields[] = __( 'email, phone number or valid Dutch mobile number', 'soocool-for-woocommerce' );
 		}
 
 		return $fields;
@@ -227,7 +260,7 @@ final class TaskFactory {
 
 	/** @param array<int, string> $missing_fields */
 	private function delivery_address_error_message( array $missing_fields ): string {
-		$fields = implode( ', ', array_map( 'sanitize_text_field', $missing_fields ) );
+		$fields = esc_html( implode( ', ', array_map( 'sanitize_text_field', $missing_fields ) ) );
 
 		return sprintf(
 			/* translators: %s: comma-separated list of missing WooCommerce address fields. */

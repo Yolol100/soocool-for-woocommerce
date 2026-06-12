@@ -2,9 +2,9 @@
 Contributors: webactueel
 Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.4.14
+Stable tag: 0.4.47
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -24,7 +24,7 @@ Main features:
 * Manual WooCommerce order action to submit an order to SooCool.
 * Optional automatic order submission when an order reaches a configured WooCommerce status.
 * Optional pickup plus delivery task support for collection workflows; delivery-only is the safe default.
-* Configurable delivery time window for delivery tasks.
+* Fixed 08:00-18:00 delivery time window for delivery tasks, matching the confirmed SooCool connection requirements.
 * Configurable pickup address and pickup time window.
 * WooCommerce HPOS compatible order metadata handling.
 * A6 and Collated A4 SooCool shipping label downloads.
@@ -42,7 +42,7 @@ Official API hosts used by the plugin:
 
 The plugin sends the configured API key in the `X-API-Key` header. The API key is not intentionally exposed in the WordPress admin UI, REST responses, frontend markup or logs.
 
-Data sent to SooCool can include WooCommerce order reference, billing/shipping name, address, country, email address, mobile phone number, pickup address, package/goods description, pickup and delivery dates, pickup time window and the configured delivery time window.
+Data sent to SooCool can include WooCommerce order reference, billing/shipping name, address, country, email address, phone/mobile number, pickup address, package/goods description, pickup and delivery dates, pickup time window and the fixed 08:00-18:00 delivery time window.
 
 Data is sent only for configured SooCool actions. No tracking, advertising or unrelated external assets are loaded by this plugin.
 
@@ -50,7 +50,7 @@ Please review SooCool's own service terms, data processing terms and privacy inf
 
 = Source and build notes =
 
-This release package contains the runtime PHP source, built admin assets and documentation needed to install the plugin. The admin JavaScript and CSS in `assets/build` are human-readable release assets.
+This release package contains the runtime PHP source, readable built admin assets, production minified admin assets and documentation needed to install the plugin. The plugin loads `.min` admin assets by default and falls back to the readable `admin.js` and `admin.css` files when `SCRIPT_DEBUG` is enabled.
 
 For WordPress.org submission, the development source repository and build tooling should be made publicly available or included with the submitted package, so reviewers can reproduce the built assets.
 
@@ -90,7 +90,9 @@ The plugin supports the SooCool order-level shipping label formats `a6` and `col
 
 = How is the webhook secured? =
 
-The webhook receiver requires the stored SooCool webhook token. The generated webhook URL includes this token because SooCool receives a plain callback URL. If your SooCool account supports custom webhook headers, prefer sending the same token in the `X-SooCool-Webhook-Token` header and configure a custom webhook URL without a query token.
+The webhook receiver requires the stored SooCool webhook token. The generated webhook URL no longer includes the token by default; configure SooCool to send the token via the `X-SooCool-Webhook-Token` header where supported.
+
+For legacy callback systems that cannot send custom headers, a developer can explicitly re-enable query-token webhook URLs with the `soocool_allow_query_token_webhook_url` filter. Only use that fallback when header authentication is not available, because URL tokens may appear in logs, browser history, analytics or screenshots.
 
 == Privacy ==
 
@@ -106,351 +108,50 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 
 == Changelog ==
 
-= 0.4.14 =
+= 0.4.47 =
 
-* Keep the release version at 0.4.14 while adding production/staging hardening for the Haknes pickup workflow.
-* Default new installs to pickup + delivery tasks and force delivery tasks to the SooCool-confirmed 08:00-18:00 delivery window.
-* Avoid mixed shipping/billing delivery addresses and report missing order fields more clearly before sending to SooCool.
-* Respect the manual resubmission setting in the REST sync endpoint and add same-version admin asset cache-busting.
-* Keeps the SooCool payload contract, webhook authentication, HPOS lookup and logging redaction unchanged.
+* Fixed stale README webhook and delivery-window documentation to match current plugin behavior.
 
-= 0.4.13 =
+= 0.4.30 =
+* Fixed release packaging so the zip extracts to the canonical `soocool-for-woocommerce/` plugin folder instead of an internal working folder name.
+* Corrected README delivery-window wording to match the fixed 08:00-18:00 delivery behavior.
+* Aligned release metadata for 0.4.30.
 
-* Clean up admin CSS by folding the full-width field overrides into the main SooCool admin layout rules.
-* Remove obsolete conflicting desktop grid and compact single-field CSS overrides while keeping settings fields full width.
-* Add an early admin JS page/dependency guard for safer settings-app startup.
+= 0.4.29 =
+* Fixed the WooCommerce bulk "Send to SooCool" action so selections above 50 orders fail with a clear admin notice instead of silently processing only the first 50 orders.
 
-= 0.4.12 =
+= 0.4.28 =
+* Harden label download limits so bulk order-label downloads no longer silently truncate selections above 50 orders.
+* Harden good-label downloads so requested `good_ids` are validated before any 50-item limit is applied.
+* Bulk good-label downloads now fail clearly when selected orders contain more than 50 SooCool good IDs.
 
-* Bughunt hardening: keep SooCool `traceId` visible in sanitized logs so backend incidents can be reported to SooCool without exposing secrets.
-* Bughunt hardening: include the numeric SooCool `orderId` in sanitized webhook not-found logs for safer debugging.
-* Kept webhook payload, `contactInfo.phone` blocking, HPOS lookup and full-width admin fields unchanged.
+= 0.4.27 =
+* Added an early runtime PHP-version guard before booting the service container, preventing fatal errors if the plugin remains active after a server is downgraded below PHP 8.1.
 
-= 0.4.11 =
+= 0.4.26 =
+* Disabled unused unbound admin-post bulk label download requests; label downloads now use order-specific links or verified WooCommerce bulk actions.
+* Removed unused notice-suppression bookkeeping.
+* Release metadata and translation template coverage aligned for 0.4.26.
 
-* Conservative cleanup release for release polish.
-* Improved delivery address validation feedback for incomplete WooCommerce order addresses.
-* Removed duplicate blank-line polish in PHP files.
-* Kept webhook payload, `contactInfo.phone` blocking, HPOS lookup and full-width admin fields unchanged.
+= 0.4.25 =
+* Harden direct good-label downloads so requested good IDs must belong to the current WooCommerce order.
+* Hide metabox label buttons for users without `manage_woocommerce`.
 
-= 0.4.10 =
+= 0.4.24 =
+* Harden direct good-label links so requested good IDs are verified against the selected WooCommerce order.
+* Add explicit label-download handler returns and sanitize REST validation messages consistently.
 
-* Make the SooCool admin settings UI full-width: cards, rows, inputs, selects, time and number controls now use the full panel width instead of compact desktop columns.
-* Bump the built admin asset version so WordPress serves the updated CSS after plugin upload updates.
+= 0.4.23 =
+* Load SooCool admin CSS on WooCommerce HPOS and legacy order screens so order metabox buttons and order-list label links render with the intended compact styling.
+* Keep the React/settings JavaScript limited to the SooCool settings page while allowing CSS on the manual test and order screens.
 
-= 0.4.9 =
+= 0.4.22 =
+* Improved the SooCool order meta box label controls and added direct order-label and good-label links to the orders list.
+* Split bulk label download into separate order-label and good-label actions and fixed the HPOS/legacy "link expired" redirect flow.
 
-* Fix fatal manual API-test redaction bug by adding missing debug string/error-list redaction helpers.
-* Keep manual API-test output redacted for API keys, webhook tokens and token query strings.
-* Remove duplicate internal API-key normalization call.
+= 0.4.21 =
+* Hardened webhook authentication defaults so generated URLs prefer the `X-SooCool-Webhook-Token` header and query-token URLs require an explicit fallback filter.
+* Added no-store cache headers to webhook-token reveal/regeneration responses.
 
-* Hardened webhook token extraction so generated `?token=...` webhook URLs authenticate correctly when webhook token headers are absent.
-* Build generated webhook URLs with `add_query_arg()` after `rest_url()` for safer plain-permalink handling.
-* Use an explicit WooCommerce order meta query for webhook order lookup.
-
-= 0.4.7 =
-* Made the `webhook` block optional in outgoing order payloads to match the SooCool OpenAPI 1.2.1 contract (only `orderReference`, `tasks` and `goods` are required). Orders could previously not be created on installs without a public HTTPS callback.
-* The webhook is still sent automatically when an HTTPS URL is available, and its shape is validated when present.
-* Use the "SooCool: refresh status" order action to pull track & trace when no webhook is configured.
-
-= 0.4.6 =
-* Fixed refresh/status parsing so nested SooCool task fields such as taskState and trackAndTraceLink are detected in GET /order/{orderId} responses.
-* Prevent product barcodes from being stored as track & trace codes during webhook/refresh parsing.
-* Keep `trackAndTraceLink` as the track & trace URL source while treating goods barcodes only as package identifiers.
-
-= 0.4.4 =
-* Added `trackAndTraceLink` support for webhook/refresh tracking URL extraction.
-* Store the original orderReference separately for fallback webhook lookup.
-* Clarified that pickup needs email or a mobile number when pickup is enabled.
-* Hardened contactInfo output by omitting `phone` from outgoing create/update payloads and only sending confirmed Dutch mobile numbers as `mobile`.
-
-= 0.4.2 =
-* Fixed SooCool webhookUpdates enum values to `task_state` and `planned_time`.
-* Removed root-level `webhookUpdates` compatibility alias from outgoing payloads.
-* Maintains the simplified API-Test flow: real WooCommerce order or non-saved testorder.
-
-= 0.3.99 =
-* Fixed Dutch mobile detection after normalization so +316, 316 and 06 numbers map to contactInfo.mobile for SooCool validation.
-
-= 0.3.97 =
-* Made API-Test mode cards clickable.
-* Reduced closed advanced accordion spacing.
-* Improved focus/hover states for API-Test mode cards.
-* Improved WooCommerce order action labels for safer fulfilment decisions.
-* Added confirmation prompts for SooCool update and cancel order actions.
-* Reworked the API-Test page into recommended, quick and advanced modes with clearer next-step feedback.
-* Improved the SooCool order metabox with scan-friendly status badges, grouped labels and clearer empty states.
-* Added admin CSS for the UX hardening changes.
-
-= 0.3.94 =
-* Added a visible "Refresh from SooCool" WooCommerce order action using `GET /order/{orderId}`.
-* Store positive SooCool good IDs from API responses when available.
-* Added an order metabox button for downloading stored SooCool good labels via `goodIds`.
-* Keeps manual refresh timestamps separate from real webhook receipt timestamps.
-* Documented header-based webhook token preference when SooCool supports custom headers.
-
-= 0.3.93 =
-* Stored the sent WooCommerce/SooCool order reference as fallback when the API response omits `ourReference`.
-* Prevented duplicated `soocool_` status prefixes when webhook payloads already include the plugin status prefix.
-
-= 0.3.92 =
-* Hardened the webhook permission check so public webhook requests do not generate/write a secret.
-* Added a WooCommerce order action to update linked orders at SooCool.
-* Added support for bulk good-label downloads through `/shipping-label?goodIds=`.
-* Improved nested webhook track & trace extraction.
-* Cleaned duplicate changelog metadata.
-
-= 0.3.91 =
-* API-Test uitgebreid met dummy WooCommerce testordergegevens die dezelfde payloadbuilder gebruiken als echte orders.
-* Add token-protected SooCool webhook receiver for order status and track & trace updates.
-* Add WooCommerce order action to cancel linked orders at SooCool.
-* Harden API-Test Extra JSON so core orderReference/tasks/goods cannot be overwritten.
-* Redact provider error details before showing them in admin/order context.
-
-= 0.3.88 =
-* Added a "Download SooCool labels" bulk action to the WooCommerce orders list (HPOS and legacy) using the documented `/shipping-label?orderIds=` endpoint; the bulk download handler existed but was previously unreachable from the UI.
-* Fixed a PHP 8.1+ deprecation by registering the hidden API-Test page with an empty-string parent instead of `null`.
-* Order sync now treats a 404 from the SooCool order-reference search as "no existing order" instead of failing the whole sync.
-* The auto-submit status hook now reuses the order object WooCommerce passes instead of refetching it.
-* Retry logging no longer logs a retry attempt that will not happen on the final request attempt.
-* Hardened the admin style version against `filemtime()` failures and removed an ineffective `FILTER_NULL_ON_FAILURE` flag on a raw filter input.
-* Uninstall now also removes leftover per-order sync lock options and manual API-Test result transients.
-* Bumped Tested up to WordPress 6.9 and rechecked PHP syntax for all plugin files.
-
-= 0.3.87 =
-* Fixed duplicate dropdown-arrow rendering by consolidating the SooCool admin SelectControl arrow styling into one scoped mechanism.
-* Rechecked PHP syntax, admin JS syntax, CSS parse, security greps and ZIP integrity after the patch.
-
-= 0.3.86 =
-* Release version bump to 0.3.86.
-* Avoid storing manual API-Test form values in the transient response state because the response screen no longer reuses them and the fields may contain contact/address data.
-* Rechecked PHP syntax, admin JS syntax, CSS parse and ZIP integrity after the patch.
-
-= 0.3.85 =
-* Restored visible dropdown arrows in the scoped SooCool admin UI without adding `!important` or broad WordPress admin overrides.
-
-= 0.3.84 =
-* Release-ready packaging: package now installs under the `soocool-for-woocommerce/` root folder.
-* Release metadata aligned across plugin header, `SOOCOOL_VERSION`, assets, readme and POT.
-* Clarified the external service description so it only describes active connection, order submission, order lookup and label download flows.
-* Rechecked PHP syntax, admin JS syntax, CSS parse, REST/admin security greps, credential exposure, HPOS storage patterns and ZIP integrity.
-
-= 0.3.83 =
-* CSS/JS audit: removed unnecessary `!important` flags from scoped admin CSS.
-* Consolidated duplicate select, full-width panel and card-layout overrides without changing plugin behavior.
-* Rechecked PHP syntax, admin JS syntax, CSS parse, asset enqueue scope and ZIP integrity.
-
-= 0.3.82 =
-* Move the API-Test tab between Shipping labels and Activity logs.
-
-= 0.3.81 =
-* Cleanup: API-Test taskType is fixed to delivery in the UI, matching the single-task manual test and SooCool requirement for at least one delivery task.
-
-= 0.3.80 =
-* Style the API-Test Vorige button like the existing red SooCool primary buttons.
-
-= 0.3.77 =
-* Hide the API-Test form after a response and show a Vorige button to return to the form.
-
-= 0.3.76 =
-* Migrate legacy 09:00-17:00 test delivery windows to the SooCool-confirmed staging delivery window 08:00-18:00.
-* Keep API keys and portal credentials out of plugin code; credentials remain setting-based.
-
-= 0.3.75 =
-* Styles the manual API-test page with the main SooCool admin design system.
-* Removes the old fictitious WooCommerce test-order button from the React settings screen.
-
-= 0.3.72 =
-* Combines the manual API-contract files with the existing fixed plugin instead of blindly replacing working code.
-* Keeps package width, depth, height and weight settings active as fallback values while preferring product dimensions/weight when available.
-* Keeps manual API-test debug redaction active and uses settings-based default goods values in the manual test form.
-* Keeps pickup/delivery date ordering safe when pickup is enabled, and adds mobile contact mapping/filter support for delivery tasks.
-* Re-ran PHP syntax checks, targeted compatibility greps and ZIP integrity after the patch.
-
-= 0.3.71 =
-* Saves package width, depth, height and weight from the REST settings endpoint so configured package values are used in SooCool order payloads.
-* Redacts personal/contact/address fields from manual API-test debug output before storing or rendering the transient result.
-* Adds a short per-order sync lock around REST and WooCommerce order-action submissions to reduce duplicate create-order requests from concurrent triggers.
-* Re-ran PHP syntax checks and ZIP integrity after the patch.
-
-= 0.3.70 =
-* Builds SooCool create-order payloads with nested task timeWindow/address/contactInfo and task-level goods ID references.
-* Sends root goods with negative create-request goodId values, dimensions, weight and transportRequirements.
-* Shows SooCool errors[] details in test-order and sync responses instead of only a generic rejection.
-* Adds package dimension, weight and transport requirement settings; normalizes NL postcodes without spaces.
-* Re-ran PHP syntax, JS syntax, payload harnesses, version consistency and ZIP integrity after the patch.
-
-= 0.3.66 =
-* Removes an unreachable duplicate return in API URL sanitizing.
-* Makes direct option sanitizing fall back to the official SooCool hosts instead of preserving old/corrupt API URL values.
-* Re-ran PHP syntax, JS syntax, REST/admin security, version consistency and ZIP integrity checks after the patch.
-
-= 0.3.60 =
-* Adds pre-sanitization REST settings validation so invalid pickup or delivery time windows are rejected instead of silently reset.
-* Consolidates duplicate readme changelog and upgrade-notice entries.
-* Updates release metadata after a full file-by-file audit pass.
-
-= 0.3.59 =
-* Hardens the manual API test contract check so Extra JSON must still leave at least one delivery task, and pickup tasks must start before delivery tasks.
-* Updates stale documentation text about the delivery window.
-
-= 0.3.58 =
-* Prevents automatic retries for non-idempotent write requests such as POST /order to reduce duplicate-order risk on temporary gateway failures.
-* Revalidates the final generated test-order payload after overriding the order reference.
-* Includes the privacy and source/build disclosure files referenced from the README.
-* Removes stale fixed-delivery-window wording from runtime documentation.
-
-= 0.3.57 =
-* Avoid WordPress local timestamp double-offset edge cases when building SooCool task dates and manual test defaults.
-* Treats every `order_ids` label request as a bulk-label endpoint request, even when one ID is provided.
-* Re-checks the generated SooCool test order reference after overriding the payload reference.
-* Rechecked PHP syntax, admin JS syntax, ZIP integrity and release metadata after the patch.
-
-= 0.3.55 =
-
-* Fixed multiple-label requests so `orderIds` remains comma-separated as documented by SooCool.
-* Rechecked PHP syntax, admin JS syntax, ZIP integrity and release metadata after the patch.
-
-= 0.3.52 =
-
-* Catches unexpected runtime failures in the REST order sync endpoint so admin UI calls return a safe error response instead of a fatal error.
-* Catches unexpected runtime failures in the REST connection test endpoint.
-* Requires `goods[].goodId` to be a non-zero integer; create-order payloads use negative IDs that are referenced by each task `goods` array.
-* Removes query strings such as `orderReference` from API log path context.
-* Keeps manual API test `taskType` limited to `delivery` or `pickup` after Extra JSON merging.
-
-= 0.3.49 =
-
-* Uses the configurable delivery time window in the admin UI and REST settings.
-* Rejects invalid delivery windows where the end time is not later than the start time.
-* Adds a configurable `packaging_type` setting for `goods[].packagingType`.
-* Validates the final manual API-test payload after Extra JSON merging.
-
-= 0.3.48 =
-
-* Preserves configured delivery time windows instead of resetting them to 08:00-18:00 on save.
-* Formats SooCool `startTime` and `endTime` with the WordPress site timezone offset instead of forcing UTC output.
-* Rejects manual and automatic payloads where `endTime` is not later than `startTime`.
-* Keeps the automatic WooCommerce order payload aligned with the SooCool `/order` contract: root `orderReference`, `tasks[]` and `goods[]`.
-
-= 0.3.46 =
-
-* Added a separate **SooCool > API-Test** admin page.
-* Aligned the manual test payload with the documented SooCool `/order` shape: root `orderReference`, `tasks[]` and `goods[]`.
-* Shows success/failure, HTTP status, API errors, sent payload and SooCool response after testing.
-
-= 0.3.42 =
-
-* Added a secured admin test-order flow for creating a fictitious WooCommerce order and sending it to the SooCool test API.
-* Blocked test-order creation when Production is selected.
-* Added duplicate-prevention to the REST order sync endpoint by checking SooCool order references before create.
-* Removed API-key edge fragments from stored logs.
-
-= 0.3.41 =
-* Consolidated duplicate readme changelog and upgrade-notice entries.
-* Bumped release metadata to 0.3.41 with no API, WooCommerce, HPOS, order sync, label or settings behavior changes.
-
-= 0.3.40 =
-* Show HTTP 200 `/ping` responses as a normal successful connection toast, even when the response body differs from the documented sample.
-* Keep the non-sample ping body as internal/debug context only.
-
-= 0.3.39 =
-* Moved settings save/API-key status feedback out of inline page notices and into toast notifications only.
-
-= 0.3.38 =
-* Reject masked, redacted or corrupt API key values before sending requests to SooCool.
-* Add safe API-key diagnostics: source, status, length, first/last four characters, host and header name.
-* Show clear admin notices for saved, missing or invalid/masked API key state.
-
-= 0.3.36 =
-* Added orderReference preflight lookup before POST /order to prevent duplicate SooCool orders.
-* Added client support for good-specific and multiple order label endpoints.
-* Added safe SooCool test portal link in test mode without storing portal credentials in the plugin.
-* Clarified that pickup flows send both pickup and delivery tasks.
-* Normalized outgoing address, contact and goods fields before API submission.
-* Kept authenticated HTTP 200 `/ping` responses successful while surfacing contract warnings for non-sample bodies.
-
-= 0.3.32 =
-* Set plugin author to Webactueel and packaged the release under the correct `soocool-for-woocommerce` slug.
-* Fixed WordPress.org/Plugin Check release hygiene issues, including version metadata, textdomain packaging, production markdown exclusions and i18n template generation.
-* Hardened public API error handling, log scrubbing and `/ping` contract validation.
-* Added WordPress.org-style `readme.txt`.
-* Added explicit external service and privacy disclosure.
-* Added source/build route notes for public submission readiness.
-* Clarified what customer/order data can be sent to the SooCool API.
-
-= 0.3.31 =
-* Improved connection-test UI messaging and API error extraction.
-* Preserved HTTP 200 `/ping` as successful while surfacing contract warnings separately.
-* Added settings validation for pickup/delivery date offsets and pickup time-window order.
-
-== Upgrade Notice ==
-
-= 0.3.88 =
-Bug-fix and compliance release: bulk label download in the orders list, 404-safe order sync, PHP 8.1+ deprecation fix and uninstall cleanup. Verify order sync and label downloads on staging after update.
-
-= 0.3.87 =
-Dropdown-arrow polish update. Recheck the SooCool admin settings dropdowns after update.
-
-= 0.3.86 =
-Release polish update. Reinstall/update on staging first, then verify API-Test, WooCommerce order sync and label downloads.
-
-= 0.3.85 =
-Dropdown arrow visibility fix for the SooCool admin UI. Recheck key settings dropdowns after update.
-
-= 0.3.83 =
-Admin CSS/JS cleanup release. No API or WooCommerce behavior changes expected; visually recheck the SooCool admin tabs and API-Test page after update.
-
-= 0.3.82 =
-API-Test appears between Shipping labels and Activity logs in the SooCool tab navigation.
-
-= 0.3.81 =
-Safe cleanup release. API-Test remains a delivery-task staging tool; pickup + delivery is tested through normal WooCommerce order sync with pickup enabled.
-
-= 0.3.80 =
-The API-Test Vorige button now uses the same primary button styling as the rest of the plugin.
-
-= 0.3.77 =
-After an API-Test response, only the response/payload panels and a Vorige button are shown. Use Vorige to return to the editable form.
-
-= 0.3.76 =
-Delivery test windows saved by older builds as 09:00-17:00 are migrated to 08:00-18:00 for the SooCool staging agreement.
-
-= 0.3.75 =
-API-Test page polish: order reference field is full width and menu wording is shortened. The old fictitious WooCommerce test-order button was removed from the settings screen; use API-Test for staging validation.
-
-= 0.3.72 =
-Re-test staging order sync and the API-Test. This release merges the API-contract file improvements while preserving package fallback settings, debug redaction and duplicate-sync protection.
-
-= 0.3.71 =
-Re-save SooCool settings and re-test staging order sync. Package dimension/weight settings now persist through the REST settings endpoint.
-
-= 0.3.70 =
-Re-save SooCool settings, then re-test the staging order flow. The payload now follows the nested SooCool create-order contract and exposes SooCool field errors directly.
-
-= 0.3.66 =
-API base URL sanitizing is stricter for old/corrupt saved options. Re-save settings and test the SooCool staging API before production use.
-
-= 0.3.60 =
-Invalid pickup or delivery time windows are now rejected instead of silently reset. Re-save settings and test the SooCool staging API before production use.
-
-= 0.3.59 =
-Manual API-test contract validation is stricter. Re-test manual payloads that use Extra JSON before production use.
-
-= 0.3.58 =
-Reduces duplicate-order risk by avoiding automatic retries for write requests and revalidates generated test-order payloads. Re-test SooCool staging order sync before production use.
-
-= 0.3.57 =
-Fixes label nonce handling, hardens the test order reference check and avoids local timestamp double-offset edge cases. Re-test the SooCool staging API, order sync and label downloads before production use.
-
-= 0.3.41 =
-Release metadata cleanup only. Re-test the SooCool staging API, HPOS order sync, duplicate orderReference handling and label downloads before production use.
-
-= 0.3.40 =
-Connection tests now show a simple success message for authenticated HTTP 200 `/ping` responses.
-
-= 0.3.38 =
-Re-save the SooCool API key after upgrading if the connection test previously returned a missing X-API-Key 401 error.
-
-= 0.3.36 =
-Re-test the SooCool staging API, HPOS order sync, duplicate orderReference handling and label downloads before production use.
+= 0.4.20 =
+* Final release QA pass and metadata consistency cleanup.
