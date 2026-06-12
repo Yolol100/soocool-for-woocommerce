@@ -36,20 +36,112 @@ final class WebhookPayloadExtractor {
 	public function update_data( array $payload ): array {
 		return array(
 			'status'        => $this->status_from_payload( $payload ),
-			'tracking_code' => $this->extract_text( $payload, array( 'trackingCode', 'trackAndTrace', 'trackingNumber', 'tracking' ) ),
-			'tracking_url'  => $this->extract_url( $payload, array( 'trackingUrl', 'trackAndTraceUrl', 'trackAndTraceLink', 'traceUrl' ) ),
+			'tracking_code' => $this->extract_tracking_text( $payload, array( 'trackingCode', 'trackAndTrace', 'trackingNumber', 'tracking' ), array( 'code', 'trackingCode', 'trackingNumber', 'trackAndTrace' ) ),
+			'tracking_url'  => $this->extract_tracking_url( $payload, array( 'trackingUrl', 'trackAndTraceUrl', 'trackAndTraceLink', 'traceUrl' ), array( 'url', 'trackingUrl', 'trackAndTraceUrl', 'trackAndTraceLink', 'traceUrl' ) ),
 		);
 	}
 
 
 	/** @param array<string, mixed> $payload */
 	private function status_from_payload( array $payload ): string {
-		$cancelled = $this->deep_value( $payload, 'cancelled' );
-		if ( true === $cancelled || ( is_scalar( $cancelled ) && ( 'true' === strtolower( trim( (string) $cancelled ) ) || '1' === trim( (string) $cancelled ) ) ) ) {
-			return 'soocool_cancelled';
+		foreach ( $this->status_containers( $payload ) as $container ) {
+			$cancelled = $container['cancelled'] ?? null;
+			if ( true === $cancelled || ( is_scalar( $cancelled ) && ( 'true' === strtolower( trim( (string) $cancelled ) ) || '1' === trim( (string) $cancelled ) ) ) ) {
+				return 'soocool_cancelled';
+			}
 		}
 
-		return $this->normalize_status( $this->extract_text( $payload, array( 'status', 'orderStatus', 'state', 'taskState' ) ) );
+		foreach ( $this->status_containers( $payload ) as $container ) {
+			foreach ( array( 'status', 'orderStatus', 'state', 'taskState' ) as $key ) {
+				if ( isset( $container[ $key ] ) && is_scalar( $container[ $key ] ) && '' !== trim( (string) $container[ $key ] ) ) {
+					return $this->normalize_status( sanitize_text_field( (string) $container[ $key ] ) );
+				}
+			}
+		}
+
+		return '';
+	}
+
+	/** @param array<string, mixed> $payload @return array<int, array<string, mixed>> */
+	private function status_containers( array $payload ): array {
+		$containers = array( $payload );
+		foreach ( array( 'order', 'data' ) as $key ) {
+			if ( isset( $payload[ $key ] ) && is_array( $payload[ $key ] ) ) {
+				$containers[] = $payload[ $key ];
+			}
+		}
+
+		if ( isset( $payload['data'] ) && is_array( $payload['data'] ) ) {
+			foreach ( array( 'order' ) as $key ) {
+				if ( isset( $payload['data'][ $key ] ) && is_array( $payload['data'][ $key ] ) ) {
+					$containers[] = $payload['data'][ $key ];
+				}
+			}
+		}
+
+		return $containers;
+	}
+
+
+	/** @param array<string, mixed> $payload @param array<int, string> $direct_keys @param array<int, string> $nested_keys */
+	private function extract_tracking_text( array $payload, array $direct_keys, array $nested_keys ): string {
+		$value = $this->extract_text( $payload, $direct_keys );
+		if ( '' !== $value ) {
+			return $value;
+		}
+
+		foreach ( $this->tracking_containers( $payload ) as $container ) {
+			foreach ( $nested_keys as $key ) {
+				if ( isset( $container[ $key ] ) && is_scalar( $container[ $key ] ) && '' !== trim( (string) $container[ $key ] ) ) {
+					return sanitize_text_field( (string) $container[ $key ] );
+				}
+			}
+		}
+
+		return '';
+	}
+
+	/** @param array<string, mixed> $payload @param array<int, string> $direct_keys @param array<int, string> $nested_keys */
+	private function extract_tracking_url( array $payload, array $direct_keys, array $nested_keys ): string {
+		$value = $this->extract_url( $payload, $direct_keys );
+		if ( '' !== $value ) {
+			return $value;
+		}
+
+		foreach ( $this->tracking_containers( $payload ) as $container ) {
+			foreach ( $nested_keys as $key ) {
+				if ( isset( $container[ $key ] ) && is_scalar( $container[ $key ] ) && '' !== trim( (string) $container[ $key ] ) ) {
+					$url = esc_url_raw( (string) $container[ $key ] );
+					if ( false !== wp_http_validate_url( $url ) ) {
+						return $url;
+					}
+				}
+			}
+		}
+
+		return '';
+	}
+
+	/** @param array<string, mixed> $payload @return array<int, array<string, mixed>> */
+	private function tracking_containers( array $payload, int $depth = 0 ): array {
+		if ( $depth > self::MAX_NESTING_DEPTH ) {
+			return array();
+		}
+
+		$containers = array();
+		foreach ( array( 'tracking', 'trackAndTrace', 'shipment' ) as $key ) {
+			if ( isset( $payload[ $key ] ) && is_array( $payload[ $key ] ) ) {
+				$containers[] = $payload[ $key ];
+			}
+		}
+
+		foreach ( $payload as $value ) {
+			if ( is_array( $value ) ) {
+				$containers = array_merge( $containers, $this->tracking_containers( $value, $depth + 1 ) );
+			}
+		}
+
+		return $containers;
 	}
 
 	/** @param array<string, mixed> $payload */

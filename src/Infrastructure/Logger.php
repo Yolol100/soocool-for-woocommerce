@@ -30,10 +30,15 @@ final class Logger {
 	}
 
 	/** @return array<int, array<string, mixed>> */
-	public function recent(): array {
+	public function recent( int $limit = 0, int $offset = 0 ): array {
 		$logs = get_option( self::OPTION_NAME, array() );
 		if ( ! is_array( $logs ) ) {
 			return array();
+		}
+
+		$offset = max( 0, $offset );
+		if ( 0 < $offset || 0 < $limit ) {
+			$logs = array_slice( $logs, $offset, 0 < $limit ? $limit : null );
 		}
 
 		return array_map(
@@ -50,6 +55,12 @@ final class Logger {
 			},
 			$logs
 		);
+	}
+
+	public function count(): int {
+		$logs = get_option( self::OPTION_NAME, array() );
+
+		return is_array( $logs ) ? count( $logs ) : 0;
 	}
 
 	public function clear(): void {

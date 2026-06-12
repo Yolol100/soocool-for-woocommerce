@@ -12,6 +12,7 @@ use SooCool\WooCommerce\Admin\PrivacyPolicy;
 use SooCool\WooCommerce\Infrastructure\Requirements;
 use SooCool\WooCommerce\Rest\ConnectionController;
 use SooCool\WooCommerce\Rest\LogsController;
+use SooCool\WooCommerce\Rest\ManualTestController;
 use SooCool\WooCommerce\Rest\OrderSyncController;
 use SooCool\WooCommerce\Rest\SettingsController;
 use SooCool\WooCommerce\Rest\WebhookController;
@@ -51,13 +52,13 @@ final class Plugin {
 
 		$admin_menu = $provider->get( AdminMenu::class );
 		add_action( 'admin_menu', array( $admin_menu, 'register' ) );
-		$admin_menu->register_post_handlers();
 		add_action( 'admin_enqueue_scripts', array( $provider->get( Assets::class ), 'enqueue' ) );
 		$provider->get( AdminNoticeSuppressor::class )->register();
 		add_action( 'admin_init', array( $provider->get( PrivacyPolicy::class ), 'register' ) );
 		add_action( 'rest_api_init', array( $provider->get( SettingsController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( ConnectionController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( LogsController::class ), 'register_routes' ) );
+		add_action( 'rest_api_init', array( $provider->get( ManualTestController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( OrderSyncController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( WebhookController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( WebhookSecretController::class ), 'register_routes' ) );

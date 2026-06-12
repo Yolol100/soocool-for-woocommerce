@@ -40,7 +40,8 @@
   function getSettings(){ return api('/soocool/v1/settings'); }
   function saveSettings(settings){ return api('/soocool/v1/settings', 'POST', cleanPayload(settings)); }
   function testConnection(){ return api('/soocool/v1/connection/test', 'POST'); }
-  function getLogs(){ return api('/soocool/v1/logs'); }
+  function runManualTest(data){ return api('/soocool/v1/manual-test/order', 'POST', data); }
+  function getLogs(limit, offset){ return api('/soocool/v1/logs?limit=' + encodeURIComponent(limit || 50) + '&offset=' + encodeURIComponent(offset || 0)); }
   function clearLogs(){ return api('/soocool/v1/logs', 'DELETE'); }
   function getWebhookSecret(){ return api('/soocool/v1/webhook/secret'); }
   function regenWebhookSecret(){ return api('/soocool/v1/webhook/secret', 'POST'); }
@@ -90,7 +91,7 @@
   function Card(props){ return el('div', { className: 'soocool-settings-card' + (props.soft ? ' is-soft' : '') }, props.children); }
   function SaveButton(props){ return el(c.Button, { variant: 'primary', isBusy: props.isSaving, disabled: props.isSaving, onClick: props.onClick, className: 'soocool-primary-action' }, props.isSaving ? __('Saving...', 'soocool-for-woocommerce') : (props.children || __('Save settings', 'soocool-for-woocommerce'))); }
   function Status(props){ return el('div', { className: 'soocool-status is-' + props.tone, role: 'status' }, el('span', { 'aria-hidden': true }, props.tone === 'success' ? '✓' : props.tone === 'error' ? '!' : '•'), el('span', null, props.message)); }
-  function Note(props){ return el('div', { className: 'soocool-note' }, props.children); }
+  function Note(props){ return el('div', { className: props.className ? 'soocool-note ' + props.className : 'soocool-note' }, props.children); }
   function WebhookCard(props){
     var settings = props.settings || {};
     var secretState = useState('');
@@ -358,6 +359,112 @@
     );
   }
 
+
+  function JsonCard(props){
+    var value = typeof props.value === 'undefined' ? null : props.value;
+    return el(Card, null,
+      el('h3', null, props.title),
+      el('pre', null, JSON.stringify(value, null, 2))
+    );
+  }
+
+  function ApiTestScreen(){
+    var s = useSettings(__('Could not load API-test settings.', 'soocool-for-woocommerce'));
+    var modeState = useState('real');
+    var mode = modeState[0];
+    var setMode = modeState[1];
+    var orderIdState = useState('');
+    var orderId = orderIdState[0];
+    var setOrderId = orderIdState[1];
+    var resultState = useState(null);
+    var result = resultState[0];
+    var setResult = resultState[1];
+    var busyState = useState(false);
+    var busy = busyState[0];
+    var setBusy = busyState[1];
+    var errorState = useState('');
+    var errorMessage = errorState[0];
+    var setErrorMessage = errorState[1];
+    var settings = s.settings || {};
+
+    if (s.loading) {
+      return el(FieldGroup, { title: __('SooCool API-Test', 'soocool-for-woocommerce'), badge: __('API-Test', 'soocool-for-woocommerce'), description: __('Kies één test: stuur een echte WooCommerce order of gebruik een veilige testorder. De plugin bouwt dezelfde SooCool orderpayload als de normale order-sync.', 'soocool-for-woocommerce') },
+        el(Loading, { message: __('Loading API-test settings…', 'soocool-for-woocommerce') })
+      );
+    }
+
+    if (s.errorMessage) {
+      return el(FieldGroup, { title: __('SooCool API-Test', 'soocool-for-woocommerce'), badge: __('API-Test', 'soocool-for-woocommerce'), description: __('Kies één test: stuur een echte WooCommerce order of gebruik een veilige testorder. De plugin bouwt dezelfde SooCool orderpayload als de normale order-sync.', 'soocool-for-woocommerce') },
+        el(ErrorNotice, { message: s.errorMessage })
+      );
+    }
+
+    function submit(){
+      if (busy) { return; }
+      setBusy(true);
+      setErrorMessage('');
+      setResult(null);
+      runManualTest({ test_mode: mode, woocommerce_order_id: Number(orderId || 0) }).then(function(response){
+        setResult(response || {});
+        if (response && response.success) {
+          emitToast(__('API-test completed.', 'soocool-for-woocommerce'), 'success');
+        } else {
+          emitToast(__('API-test returned an error. Review the result details.', 'soocool-for-woocommerce'), 'error');
+        }
+      }).catch(function(){
+        var message = __('Could not run the API-test.', 'soocool-for-woocommerce');
+        setErrorMessage(message);
+        emitToast(message, 'error');
+      }).finally(function(){ setBusy(false); });
+    }
+
+    function reset(){
+      setResult(null);
+      setErrorMessage('');
+      setMode('real');
+      setOrderId('');
+    }
+
+    return el(FieldGroup, { title: __('SooCool API-Test', 'soocool-for-woocommerce'), badge: __('API-Test', 'soocool-for-woocommerce'), description: __('Kies één test: stuur een echte WooCommerce order of gebruik een veilige testorder. De plugin bouwt dezelfde SooCool orderpayload als de normale order-sync.', 'soocool-for-woocommerce') },
+      errorMessage ? el(ErrorNotice, { message: errorMessage }) : null,
+      el(Note, { className: 'soocool-manual-environment-note' },
+        el('strong', null, __('Actieve SooCool-omgeving:', 'soocool-for-woocommerce')), ' ',
+        el('span', null, settings.environment || __('Niet ingesteld', 'soocool-for-woocommerce')),
+        (settings.effective_base_url || settings.api_base_url) ? el('span', { className: 'soocool-env-url' }, settings.effective_base_url || settings.api_base_url) : null
+      ),
+      result ? el('div', { className: 'soocool-status ' + (result.success ? 'is-success' : 'is-error') + ' soocool-manual-result', role: 'status' },
+        el('div', null,
+          el('strong', null, result.success ? __('Resultaat: testorder verstuurd naar SooCool', 'soocool-for-woocommerce') : __('Resultaat: testorder niet verstuurd', 'soocool-for-woocommerce')),
+          typeof result.status !== 'undefined' ? el('span', null, 'HTTP status: ' + String(result.status)) : null,
+          result.message ? el('p', null, el('strong', null, __('Details:', 'soocool-for-woocommerce')), ' ', result.message) : null,
+          result.mode ? el('span', null, __('Testmodus:', 'soocool-for-woocommerce') + ' ' + String(result.mode)) : null
+        ),
+        el('p', { className: 'soocool-next-step' }, result.success ? __('Volgende stap: controleer de verzonden payload, download daarna een label of wacht op webhook/track & trace als deze test een echte order heeft aangemaakt.', 'soocool-for-woocommerce') : __('Volgende stap: controleer de foutdetails en pas orderdata, API-key, timeWindow of payload aan voordat je opnieuw test.', 'soocool-for-woocommerce'))
+      ) : el(Card, null,
+        el('h3', null, __('Welke order wil je testen?', 'soocool-for-woocommerce')),
+        el('p', { className: 'soocool-field-help' }, __('Gebruik bij voorkeur een echte WooCommerce order. Kies testorder alleen om snel te controleren of de SooCool API de standaardpayload accepteert.', 'soocool-for-woocommerce')),
+        el('div', { className: 'soocool-test-choice-list', role: 'radiogroup', 'aria-label': __('Type API-test', 'soocool-for-woocommerce') },
+          el('label', { className: 'soocool-test-choice', htmlFor: 'soocool_test_mode_real' },
+            el('input', { type: 'radio', name: 'test_mode', id: 'soocool_test_mode_real', value: 'real', checked: mode === 'real', onChange: function(){ setMode('real'); } }),
+            el('span', null, el('strong', null, __('Echte WooCommerce order', 'soocool-for-woocommerce')), __('Vul hieronder een WooCommerce order-ID in. Dit is de beste stagingtest.', 'soocool-for-woocommerce'))
+          ),
+          el('label', { className: 'soocool-test-choice', htmlFor: 'soocool_test_mode_dummy' },
+            el('input', { type: 'radio', name: 'test_mode', id: 'soocool_test_mode_dummy', value: 'dummy', checked: mode === 'dummy', onChange: function(){ setMode('dummy'); } }),
+            el('span', null, el('strong', null, __('Testorder', 'soocool-for-woocommerce')), __('Gebruikt een niet-opgeslagen dummy WooCommerce order. Er wordt geen order in WordPress aangemaakt.', 'soocool-for-woocommerce'))
+          )
+        ),
+        el('div', { className: 'soocool-field-grid two soocool-real-order-fields' },
+          el(c.TextControl, { type: 'number', min: 1, label: __('WooCommerce order-ID', 'soocool-for-woocommerce'), help: __('Alleen nodig bij “Echte WooCommerce order”. De plugin haalt deze order op via wc_get_order() en bouwt de normale SooCool payload.', 'soocool-for-woocommerce'), value: orderId, disabled: mode !== 'real', onChange: function(v){ setOrderId(v); } })
+        ),
+        el('div', { className: 'soocool-actions' }, el(c.Button, { variant: 'primary', className: 'soocool-manual-submit soocool-primary-action', isBusy: busy, disabled: busy || (mode === 'real' && !Number(orderId || 0)), onClick: submit }, busy ? __('API-test running…', 'soocool-for-woocommerce') : __('Start API-test naar SooCool', 'soocool-for-woocommerce')))
+      ),
+      result && result.errors && result.errors.length ? el(Card, null, el('h3', null, __('SooCool errors', 'soocool-for-woocommerce')), el('ul', { className: 'soocool-manual-errors' }, result.errors.map(function(error, index){ return el('li', { key: index }, String(error)); }))) : null,
+      result && typeof result.payload !== 'undefined' ? el(JsonCard, { title: __('Verzonden payload', 'soocool-for-woocommerce'), value: result.payload }) : null,
+      result && typeof result.body !== 'undefined' ? el(JsonCard, { title: __('SooCool response', 'soocool-for-woocommerce'), value: result.body }) : null,
+      result ? el('div', { className: 'soocool-actions' }, el(c.Button, { variant: 'primary', className: 'soocool-primary-action', onClick: reset }, __('Nieuwe API-test starten', 'soocool-for-woocommerce'))) : null
+    );
+  }
+
   function LogsTable(props){
     return el('div', { className: 'soocool-table-wrap' }, el('table', { className: 'widefat striped soocool-logs', 'aria-label': __('SooCool activity logs', 'soocool-for-woocommerce') },
       el('thead', null, el('tr', null, el('th', { scope: 'col' }, __('Time', 'soocool-for-woocommerce')), el('th', { scope: 'col' }, __('Level', 'soocool-for-woocommerce')), el('th', { scope: 'col' }, __('Message', 'soocool-for-woocommerce')), el('th', { scope: 'col' }, __('Details', 'soocool-for-woocommerce')))),
@@ -369,7 +476,7 @@
     var logsState = useState([]);
     var logs = logsState[0];
     var setLogs = logsState[1];
-    var loadingState = useState(true);
+    var loadingState = useState(false);
     var loading = loadingState[0];
     var setLoading = loadingState[1];
     var busyState = useState(false);
@@ -378,15 +485,70 @@
     var errorState = useState('');
     var errorMessage = errorState[0];
     var setErrorMessage = errorState[1];
-    function refresh(){ setBusy(true); setErrorMessage(''); getLogs().then(function(next){ setLogs(next); if (!loading) { emitToast(__('Logs refreshed.', 'soocool-for-woocommerce'), 'success'); } }).catch(function(){ var message = __('Could not load logs.', 'soocool-for-woocommerce'); setErrorMessage(message); emitToast(message, 'error'); }).finally(function(){ setBusy(false); setLoading(false); }); }
-    function clear(){ if (busy) { return; } setBusy(true); setErrorMessage(''); clearLogs().then(function(){ setLogs([]); emitToast(__('Logs cleared.', 'soocool-for-woocommerce'), 'success'); }).catch(function(){ var message = __('Could not clear logs.', 'soocool-for-woocommerce'); setErrorMessage(message); emitToast(message, 'error'); }).finally(function(){ setBusy(false); }); }
+    var loadedState = useState(false);
+    var loaded = loadedState[0];
+    var setLoaded = loadedState[1];
+    var hasMoreState = useState(false);
+    var hasMore = hasMoreState[0];
+    var setHasMore = hasMoreState[1];
+    var totalState = useState(0);
+    var total = totalState[0];
+    var setTotal = totalState[1];
+    var pageSize = 50;
+    function normalize(response){
+      if (Array.isArray(response)) {
+        return { items: response, total: response.length, has_more: false };
+      }
+      response = response || {};
+      return { items: Array.isArray(response.items) ? response.items : [], total: Number(response.total || 0), has_more: !!response.has_more };
+    }
+    function refresh(){
+      setBusy(true);
+      setLoading(!loaded);
+      setErrorMessage('');
+      getLogs(pageSize, 0).then(function(response){
+        var next = normalize(response);
+        setLogs(next.items);
+        setTotal(next.total);
+        setHasMore(next.has_more);
+        if (loaded) { emitToast(__('Logs refreshed.', 'soocool-for-woocommerce'), 'success'); }
+      }).catch(function(){
+        var message = __('Could not load logs.', 'soocool-for-woocommerce');
+        setErrorMessage(message);
+        emitToast(message, 'error');
+      }).finally(function(){
+        setBusy(false);
+        setLoading(false);
+        setLoaded(true);
+      });
+    }
+    function loadMore(){
+      if (busy || !hasMore) { return; }
+      setBusy(true);
+      setErrorMessage('');
+      getLogs(pageSize, logs.length).then(function(response){
+        var next = normalize(response);
+        setLogs(logs.concat(next.items));
+        setTotal(next.total);
+        setHasMore(next.has_more);
+      }).catch(function(){
+        var message = __('Could not load more logs.', 'soocool-for-woocommerce');
+        setErrorMessage(message);
+        emitToast(message, 'error');
+      }).finally(function(){ setBusy(false); });
+    }
+    function clear(){ if (busy) { return; } setBusy(true); setErrorMessage(''); clearLogs().then(function(){ setLogs([]); setTotal(0); setHasMore(false); emitToast(__('Logs cleared.', 'soocool-for-woocommerce'), 'success'); }).catch(function(){ var message = __('Could not clear logs.', 'soocool-for-woocommerce'); setErrorMessage(message); emitToast(message, 'error'); }).finally(function(){ setBusy(false); }); }
     useEffect(function(){ refresh(); }, []);
     return el(FieldGroup, { title: __('Activity logs', 'soocool-for-woocommerce'), badge: __('Sanitized', 'soocool-for-woocommerce'), description: __('Recent sanitized SooCool API activity. Secrets and full payload bodies are not stored.', 'soocool-for-woocommerce') },
-      loading ? el(Loading, { message: __('Loading logs…', 'soocool-for-woocommerce') }) : null,
       errorMessage ? el(ErrorNotice, { message: errorMessage }) : null,
       el(Note, null, __('Use these logs for troubleshooting only. Use WooCommerce order notes and the SooCool portal for final operational checks.', 'soocool-for-woocommerce')),
-      el('div', { className: 'soocool-actions' }, el(c.Button, { variant: 'secondary', isBusy: busy, disabled: busy, onClick: refresh }, __('Refresh', 'soocool-for-woocommerce')), el(c.Button, { variant: 'secondary', className: 'soocool-danger-action', disabled: busy || !logs.length, onClick: clear }, __('Clear logs', 'soocool-for-woocommerce'))),
-      el(LogsTable, { logs: logs })
+      el('div', { className: 'soocool-actions' }, el(c.Button, { variant: 'secondary', isBusy: busy && loaded, disabled: busy, onClick: refresh }, __('Refresh', 'soocool-for-woocommerce')), el(c.Button, { variant: 'secondary', className: 'soocool-danger-action', disabled: busy || !logs.length, onClick: clear }, __('Clear logs', 'soocool-for-woocommerce'))),
+      loading ? el(Loading, { message: __('Loading the latest 50 logs…', 'soocool-for-woocommerce') }) : null,
+      !loading ? el(LogsTable, { logs: logs }) : null,
+      !loading && (total > 0 || hasMore) ? el('div', { className: 'soocool-log-footer' },
+        el('p', { className: 'soocool-field-help soocool-log-count' }, String(logs.length) + ' / ' + String(total || logs.length) + ' ' + __('logs shown.', 'soocool-for-woocommerce')),
+        hasMore ? el(c.Button, { variant: 'primary', className: 'soocool-primary-action soocool-load-more', isBusy: busy, disabled: busy, onClick: loadMore }, __('Load more', 'soocool-for-woocommerce')) : null
+      ) : null
     );
   }
 
@@ -395,28 +557,39 @@
     { name: 'mapping', title: __('Pickup & delivery', 'soocool-for-woocommerce') },
     { name: 'automation', title: __('Automation', 'soocool-for-woocommerce') },
     { name: 'labels', title: __('Shipping labels', 'soocool-for-woocommerce') },
-    { name: 'api_test', title: __('API-Test', 'soocool-for-woocommerce'), url: (window.sooCoolAdmin && window.sooCoolAdmin.manualTestUrl) ? window.sooCoolAdmin.manualTestUrl : 'admin.php?page=soocool-manual-order-test' },
+    { name: 'api_test', title: __('API-Test', 'soocool-for-woocommerce') },
     { name: 'logs', title: __('Activity logs', 'soocool-for-woocommerce') }
   ];
-  function activeFromHash(){ var hash = (window.location.hash || '').replace('#', ''); return ['mapping', 'automation', 'labels', 'logs'].indexOf(hash) !== -1 ? hash : 'connection'; }
-  function renderTabContent(active){ if (active === 'mapping') { return el(MappingScreen); } if (active === 'automation') { return el(AutomationScreen); } if (active === 'labels') { return el(LabelsScreen); } if (active === 'logs') { return el(LogsScreen); } return el(ConnectionScreen); }
+  function activeFromHash(){ var hash = (window.location.hash || '').replace('#', ''); return ['connection', 'mapping', 'automation', 'labels', 'api_test', 'logs'].indexOf(hash) !== -1 ? hash : 'connection'; }
+  function renderTabContent(active){ if (active === 'mapping') { return el(MappingScreen); } if (active === 'automation') { return el(AutomationScreen); } if (active === 'labels') { return el(LabelsScreen); } if (active === 'api_test') { return el(ApiTestScreen); } if (active === 'logs') { return el(LogsScreen); } return el(ConnectionScreen); }
   function App(){
     var activeState = useState(activeFromHash());
     var active = activeState[0];
     var setActive = activeState[1];
-    function selectTab(name){ setActive(name); if (name === 'connection') { history.replaceState(null, '', window.location.pathname + window.location.search); } else { history.replaceState(null, '', '#' + name); } }
+    useEffect(function(){
+      function onHashChange(){ setActive(activeFromHash()); }
+      window.addEventListener('hashchange', onHashChange);
+      return function(){ window.removeEventListener('hashchange', onHashChange); };
+    }, []);
+    function selectTab(name){ setActive(name); if (name === 'connection') { window.history.replaceState(null, '', window.location.pathname + window.location.search); } else { window.history.replaceState(null, '', '#' + name); } }
     return el('main', { className: 'soocool-shell', 'aria-label': __('SooCool for WooCommerce settings', 'soocool-for-woocommerce') },
       el(ToastHost),
       el('section', { className: 'soocool-panel soocool-tabs', 'aria-label': __('SooCool settings', 'soocool-for-woocommerce') },
         el('div', { className: 'components-tab-panel__tabs', role: 'tablist', 'aria-label': __('SooCool settings sections', 'soocool-for-woocommerce') },
           tabs.map(function(tab){
-            if (tab.url) {
-              return el('a', { key: tab.name, className: 'components-button soocool-tab soocool-tab-link', href: tab.url }, tab.title);
-            }
-            return el(c.Button, { key: tab.name, className: 'soocool-tab' + (active === tab.name ? ' is-active' : ''), onClick: function(){ selectTab(tab.name); } }, tab.title);
+            var selected = active === tab.name;
+            return el(c.Button, { key: tab.name, role: 'tab', id: 'soocool-tab-' + tab.name, 'aria-selected': selected, 'aria-controls': 'soocool-panel-' + tab.name, tabIndex: selected ? 0 : -1, className: 'soocool-tab' + (selected ? ' is-active' : ''), onClick: function(){ selectTab(tab.name); }, onKeyDown: function(event){
+              var index = tabs.findIndex(function(item){ return item.name === tab.name; });
+              var nextIndex = index;
+              if (event.key === 'ArrowRight') { nextIndex = (index + 1) % tabs.length; }
+              if (event.key === 'ArrowLeft') { nextIndex = (index - 1 + tabs.length) % tabs.length; }
+              if (event.key === 'Home') { nextIndex = 0; }
+              if (event.key === 'End') { nextIndex = tabs.length - 1; }
+              if (nextIndex !== index) { event.preventDefault(); selectTab(tabs[nextIndex].name); setTimeout(function(){ var next = document.getElementById('soocool-tab-' + tabs[nextIndex].name); if (next && next.focus) { next.focus(); } }, 0); }
+            } }, tab.title);
           })
         ),
-        el('div', { className: 'components-tab-panel__tab-content' }, renderTabContent(active))
+        el('div', { className: 'components-tab-panel__tab-content', role: 'tabpanel', id: 'soocool-panel-' + active, 'aria-labelledby': 'soocool-tab-' + active }, renderTabContent(active))
       )
     );
   }

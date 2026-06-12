@@ -92,11 +92,12 @@ final class ApiErrorMapper {
 
 	private function redact_error_string( string $value ): string {
 		$patterns = array(
-			'/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i' => '[redacted-api-key]',
+			'/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i' => '[redacted-api-key]',
 			'/([A-Z0-9._%+\-]+)@([A-Z0-9.\-]+\.[A-Z]{2,})/i' => '[redacted-email]',
 			'/\b(?:\+?\d[\d\s().\-]{7,}\d)\b/' => '[redacted-phone]',
 			'/\b\d{4}\s?[A-Z]{2}\b/i' => '[redacted-postcode]',
-			'/\b(?:api[_ -]?key|x-api-key|authorization|bearer|token|secret|password)\s*[:=]\s*[^\s,;]+/i' => '[redacted-secret]',
+			'/\b(?:api[_ -]?key|x-api-key|authorization|token|secret|password)\s*[:=]\s*(?:Bearer\s+)?[^\s,;]+/i' => '[redacted-secret]',
+			'/\bBearer\s+[^\s,;]+/i' => '[redacted-secret]',
 		);
 
 		foreach ( $patterns as $pattern => $replacement ) {

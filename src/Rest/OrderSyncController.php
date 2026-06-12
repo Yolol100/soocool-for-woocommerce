@@ -175,13 +175,30 @@ final class OrderSyncController extends AbstractRestController {
 	}
 
 	private function public_api_error_message( ApiException $exception ): string {
-		$message = sanitize_text_field( $exception->getMessage() );
-		$errors  = array_map( 'sanitize_text_field', $exception->errors() );
+		$message = $this->redact_public_error_text( $exception->getMessage() );
+		$errors  = array_map( array( $this, 'redact_public_error_text' ), $exception->errors() );
 		$errors  = array_values( array_filter( $errors, static fn ( string $error ): bool => '' !== $error ) );
 		if ( $errors ) {
 			$message .= ' (' . implode( '; ', $errors ) . ')';
 		}
 
 		return '' !== $message ? $message : __( 'SooCool sync failed. Check the SooCool logs for details.', 'soocool-for-woocommerce' );
+	}
+
+	private function redact_public_error_text( string $value ): string {
+		$patterns = array(
+			'/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i' => '[redacted-api-key]',
+			'/([A-Z0-9._%+\-]+)@([A-Z0-9.\-]+\.[A-Z]{2,})/i' => '[redacted-email]',
+			'/\b(?:\+?\d[\d\s().\-]{7,}\d)\b/' => '[redacted-phone]',
+			'/\b\d{4}\s?[A-Z]{2}\b/i' => '[redacted-postcode]',
+			'/\b(?:api[_ -]?key|x-api-key|authorization|token|secret|password)\s*[:=]\s*(?:Bearer\s+)?[^\s,;]+/i' => '[redacted-secret]',
+			'/\bBearer\s+[^\s,;]+/i' => '[redacted-secret]',
+		);
+
+		foreach ( $patterns as $pattern => $replacement ) {
+			$value = preg_replace( $pattern, $replacement, $value ) ?? $value;
+		}
+
+		return trim( sanitize_text_field( $value ) );
 	}
 }

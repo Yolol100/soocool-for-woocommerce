@@ -12,10 +12,9 @@ final class Assets {
 
 	public function enqueue( string $hook ): void {
 		$is_settings_page = 'toplevel_page_' . AdminMenu::PAGE_SLUG === $hook;
-		$is_manual_page   = str_ends_with( $hook, '_page_' . AdminMenu::MANUAL_TEST_PAGE_SLUG ) || 'admin_page_' . AdminMenu::MANUAL_TEST_PAGE_SLUG === $hook;
 		$is_order_screen  = $this->is_order_screen( $hook );
 
-		if ( ! $is_settings_page && ! $is_manual_page && ! $is_order_screen ) {
+		if ( ! $is_settings_page && ! $is_order_screen ) {
 			return;
 		}
 
@@ -41,7 +40,7 @@ final class Assets {
 
 		if ( '' !== $style_file && is_readable( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $style_file ) ) {
 			$style_mtime        = filemtime( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $style_file );
-			$style_dependencies = $is_settings_page || $is_manual_page ? array( 'wp-components' ) : array();
+			$style_dependencies = $is_settings_page ? array( 'wp-components' ) : array();
 
 			wp_enqueue_style(
 				'soocool-admin',
@@ -74,9 +73,8 @@ final class Assets {
 			'soocool-admin',
 			'window.sooCoolAdmin=' . wp_json_encode(
 				array(
-					'restUrl'       => esc_url_raw( rest_url( 'soocool/v1' ) ),
-					'nonce'         => wp_create_nonce( 'wp_rest' ),
-					'manualTestUrl' => esc_url_raw( admin_url( 'admin.php?page=' . AdminMenu::MANUAL_TEST_PAGE_SLUG ) ),
+					'restUrl' => esc_url_raw( rest_url( 'soocool/v1' ) ),
+					'nonce'   => wp_create_nonce( 'wp_rest' ),
 				)
 			) . ';',
 			'before'

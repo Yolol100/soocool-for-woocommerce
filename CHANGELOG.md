@@ -1,6 +1,8 @@
 ## 0.4.51 - 2026-06-12
 
 - Admin UI: "Resync failed orders" button now uses the same red danger styling as the other destructive action buttons.
+- Hardened API error redaction before remote error details are reused in REST responses or saved order meta.
+- Restricted webhook/API status extraction to explicit order-level response containers to avoid unrelated nested fields changing SooCool sync status.
 
 ## 0.4.50 - 2026-06-12
 
@@ -104,7 +106,7 @@
 ## 0.4.16
 
 - Bulk "Send to SooCool" uses the normal send route rather than force-resync, so already synced orders respect the resubmission setting.
-- Webhook token-query fallback is enabled by default for generated webhook URLs.
+- Historical 0.4.16 behavior: generated webhook URLs included a token-query fallback for compatibility. Current releases keep query-token fallback disabled by default unless explicitly enabled.
 - `cancelled: true` from SooCool is normalized to the local cancelled status.
 - New installs default to delivery-only unless pickup is explicitly enabled.
 - Removed dead `app.*` admin asset fallback and regenerated production admin assets.

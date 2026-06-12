@@ -28,12 +28,7 @@ final class AdminNoticeSuppressor {
 	}
 
 	private function is_soocool_screen( \WP_Screen $screen ): bool {
-		$ids = array(
-			'toplevel_page_' . AdminMenu::PAGE_SLUG,
-			'admin_page_' . AdminMenu::MANUAL_TEST_PAGE_SLUG,
-		);
-
-		return in_array( $screen->id, $ids, true ) || str_ends_with( $screen->id, '_page_' . AdminMenu::MANUAL_TEST_PAGE_SLUG );
+		return 'toplevel_page_' . AdminMenu::PAGE_SLUG === $screen->id;
 	}
 
 	private function remove_foreign_callbacks( string $hook_name ): void {

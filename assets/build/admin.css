@@ -5,7 +5,6 @@
  */
 
 .soocool-shell,
-.soocool-manual-test-page,
 #soocool-order-status,
 .soocool-list-label-actions {
   --soocool-color-text: #171717;
@@ -41,10 +40,6 @@
 .soocool-shell *,
 .soocool-shell *::before,
 .soocool-shell *::after,
-.soocool-manual-test-page,
-.soocool-manual-test-page *,
-.soocool-manual-test-page *::before,
-.soocool-manual-test-page *::after,
 #soocool-order-status,
 #soocool-order-status *,
 #soocool-order-status *::before,
@@ -87,10 +82,7 @@
 .soocool-card-header > div,
 .soocool-fields,
 .soocool-settings-card,
-.soocool-form-grid,
-.soocool-card-grid,
 .soocool-field-grid,
-.soocool-inline-controls,
 .soocool-shell .components-base-control,
 .soocool-shell .components-input-control,
 .soocool-shell .components-select-control,
@@ -109,8 +101,7 @@
   line-height: 1.25;
 }
 
-.soocool-card h3,
-.soocool-section-title {
+.soocool-card h3 {
   margin: 0;
   color: var(--soocool-color-text);
   font-size: 14px;
@@ -153,7 +144,6 @@
 }
 
 .soocool-settings-card.is-soft,
-.soocool-fixed-window,
 .soocool-note,
 .soocool-status {
   background: var(--soocool-color-surface-soft);
@@ -175,37 +165,22 @@
   content: '';
 }
 
-.soocool-form-grid,
-.soocool-card-grid,
 .soocool-field-grid,
-.soocool-inline-controls,
-.soocool-test-mode-list,
 .soocool-test-choice-list,
 .soocool-order-card,
 .soocool-order-meta-list,
 .soocool-order-meta-row,
-.soocool-order-button-stack,
-.soocool-manual-form,
-.soocool-simple-test-card {
+.soocool-order-button-stack {
   display: grid;
 }
 
-.soocool-form-grid,
-.soocool-card-grid,
-.soocool-field-grid,
-.soocool-inline-controls {
+.soocool-field-grid {
   gap: 18px;
   align-items: start;
 }
 
-.soocool-form-grid,
-.soocool-field-grid.two,
-.soocool-inline-controls {
+.soocool-field-grid.two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.soocool-card-grid {
-  grid-template-columns: repeat(2, minmax(360px, 1fr));
 }
 
 .soocool-mapping-split {
@@ -236,19 +211,11 @@
   align-content: start;
 }
 
-.soocool-field-grid.three {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
 
 .soocool-field-full,
 .soocool-field-grid.two > :only-child,
-.soocool-field-grid.three > .soocool-field-full,
 .soocool-card .soocool-field-grid.two > .components-select-control:only-child,
-.soocool-card .soocool-field-grid.two > .components-base-control:only-child,
-.soocool-fixed-window,
-.soocool-manual-field.is-full,
-.soocool-field-grid.two > .soocool-manual-field.is-full,
-.soocool-field-grid.three > .soocool-manual-field.is-full {
+.soocool-card .soocool-field-grid.two > .components-base-control:only-child {
   grid-column: 1 / -1;
   width: 100%;
   max-width: none;
@@ -257,7 +224,6 @@
 .soocool-compact-row,
 .soocool-actions,
 .soocool-inline-status,
-.soocool-manual-environment,
 .soocool-order-card__header {
   display: flex;
   flex-wrap: wrap;
@@ -265,8 +231,7 @@
 
 .soocool-compact-row,
 .soocool-actions,
-.soocool-inline-status,
-.soocool-manual-environment {
+.soocool-inline-status {
   align-items: center;
 }
 
@@ -299,7 +264,7 @@
   border-bottom: 1px solid var(--soocool-color-border);
 }
 
-.soocool-tabs .components-tab-panel__tabs :where(.components-button, .soocool-tab-link) {
+.soocool-tabs .components-tab-panel__tabs .components-button {
   min-height: 40px;
   padding: 0 16px;
   color: var(--soocool-color-text-soft);
@@ -311,8 +276,8 @@
   font-weight: 500;
 }
 
-.soocool-tabs .components-tab-panel__tabs :where(.components-button, .soocool-tab-link):hover,
-.soocool-tabs .components-tab-panel__tabs :where(.components-button, .soocool-tab-link):focus {
+.soocool-tabs .components-tab-panel__tabs .components-button:hover,
+.soocool-tabs .components-tab-panel__tabs .components-button:focus {
   color: var(--soocool-color-accent);
   text-decoration: none;
   background: var(--soocool-color-panel);
@@ -320,18 +285,12 @@
   box-shadow: none;
 }
 
-.soocool-tabs .components-tab-panel__tabs :where(.components-button.is-active, .soocool-tab-link.is-active),
-.soocool-tabs .components-tab-panel__tabs :where(.components-button.is-active, .soocool-tab-link.is-active):hover,
-.soocool-tabs .components-tab-panel__tabs :where(.components-button.is-active, .soocool-tab-link.is-active):focus {
+.soocool-tabs .components-tab-panel__tabs .components-button.is-active,
+.soocool-tabs .components-tab-panel__tabs .components-button.is-active:hover,
+.soocool-tabs .components-tab-panel__tabs .components-button.is-active:focus {
   color: var(--soocool-color-surface);
   background: var(--soocool-color-text);
   border-color: var(--soocool-color-text);
-}
-
-.soocool-tab-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .soocool-tabs .components-tab-panel__tab-content {
@@ -349,8 +308,6 @@
 }
 
 .soocool-shell :where(.components-base-control__label, .components-input-control__label, .components-select-control__label, .components-toggle-control .components-toggle-control__label, label.components-input-control__label),
-.soocool-manual-field label,
-.soocool-fixed-window__label,
 .soocool-order-action-group__title {
   display: block;
   margin: 0 0 8px;
@@ -362,8 +319,7 @@
   text-transform: none;
 }
 
-.soocool-shell :where(input[type='text'], input[type='url'], input[type='email'], input[type='password'], input[type='number'], input[type='time'], input[type='datetime-local'], textarea, select, .components-text-control__input, .components-input-control__input, .components-select-control__input),
-.soocool-manual-test-page :where(input[type='text'], input[type='url'], input[type='email'], input[type='password'], input[type='number'], input[type='time'], textarea, select) {
+.soocool-shell :where(input[type='text'], input[type='url'], input[type='email'], input[type='password'], input[type='number'], input[type='time'], input[type='datetime-local'], textarea, select, .components-text-control__input, .components-input-control__input, .components-select-control__input) {
   display: block;
   width: 100%;
   max-width: none;
@@ -380,13 +336,11 @@
   transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
 }
 
-.soocool-shell :where(input, textarea, select, .components-text-control__input, .components-input-control__input, .components-select-control__input):hover,
-.soocool-manual-test-page :where(input, textarea, select):hover {
+.soocool-shell :where(input, textarea, select, .components-text-control__input, .components-input-control__input, .components-select-control__input):hover {
   border-color: var(--soocool-color-text);
 }
 
-.soocool-shell :where(input, textarea, select, .components-text-control__input, .components-input-control__input, .components-select-control__input):focus,
-.soocool-manual-test-page :where(input, textarea, select):focus {
+.soocool-shell :where(input, textarea, select, .components-text-control__input, .components-input-control__input, .components-select-control__input):focus {
   border-color: var(--soocool-color-accent);
   box-shadow: var(--soocool-shadow-focus);
   outline: none;
@@ -472,32 +426,11 @@
   margin: 8px 0 0;
 }
 
-.soocool-fixed-window,
 .soocool-note,
 .soocool-status {
   padding: 12px 14px;
   border: 1px solid rgba(217, 162, 115, 0.45);
   border-radius: var(--soocool-radius-sm);
-}
-
-.soocool-fixed-window {
-  display: grid;
-  gap: var(--soocool-space-xs);
-  min-height: 0;
-  margin: 0;
-}
-
-.soocool-fixed-window strong {
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.soocool-fixed-window span:last-child {
-  max-width: 760px;
-  color: var(--soocool-color-muted);
-  font-size: 12px;
-  line-height: 1.45;
 }
 
 .soocool-shell .components-toggle-control {
@@ -554,7 +487,7 @@
   transform: translate(16px, -50%);
 }
 
-.soocool-shell :where(.components-button, .components-button:hover, .components-button:focus, .components-button:active, .components-button.is-active, .soocool-tab-link, .soocool-tab-link:hover, .soocool-tab-link:focus, .soocool-tab-link:active) {
+.soocool-shell :where(.components-button, .components-button:hover, .components-button:focus, .components-button:active, .components-button.is-active) {
   text-decoration: none;
 }
 
@@ -570,8 +503,7 @@
 
 .soocool-primary-action.components-button,
 .soocool-shell .components-button.is-secondary,
-.soocool-danger-action.components-button,
-.soocool-manual-submit.button.button-primary {
+.soocool-danger-action.components-button {
   min-height: 38px;
   padding: 0 16px;
   border-radius: var(--soocool-radius-xs);
@@ -579,8 +511,7 @@
   font-weight: 500;
 }
 
-.soocool-primary-action.components-button.is-primary,
-.soocool-manual-submit.button.button-primary {
+.soocool-primary-action.components-button.is-primary {
   color: var(--soocool-color-surface);
   background: var(--soocool-color-accent);
   border-color: var(--soocool-color-accent);
@@ -594,13 +525,20 @@
 }
 
 .soocool-primary-action.components-button.is-primary:hover,
-.soocool-primary-action.components-button.is-primary:focus,
-.soocool-manual-submit.button.button-primary:hover,
-.soocool-manual-submit.button.button-primary:focus {
+.soocool-primary-action.components-button.is-primary:focus {
   color: var(--soocool-color-surface);
   background: var(--soocool-color-accent-dark);
   border-color: var(--soocool-color-accent-dark);
   box-shadow: 0 0 0 1px rgba(191, 4, 19, 0.2);
+}
+
+.soocool-primary-action.components-button.is-primary:disabled,
+.soocool-primary-action.components-button.is-primary[disabled] {
+  color: rgba(255, 255, 255, 0.72);
+  background: #d7868d;
+  border-color: #d7868d;
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .soocool-shell .soocool-danger-fill.components-button.is-secondary:hover,
@@ -772,36 +710,6 @@
   border-color: #111111;
 }
 
-.soocool-manual-test-page .soocool-card-header {
-  align-items: center;
-}
-
-.soocool-manual-form,
-.soocool-simple-test-card {
-  gap: var(--soocool-space-lg);
-}
-
-.soocool-manual-field {
-  min-width: 0;
-}
-
-.soocool-manual-test-page textarea.code,
-.soocool-manual-test-page textarea.large-text {
-  width: 100%;
-  min-height: 180px;
-  font-family: Consolas, Monaco, monospace;
-}
-
-.soocool-manual-submit.button.button-primary {
-  min-height: 42px;
-  padding: 0 18px;
-  font-weight: 600;
-}
-
-.soocool-manual-environment {
-  gap: 8px;
-}
-
 .soocool-manual-result {
   display: block;
 }
@@ -820,124 +728,6 @@
   padding-left: 18px;
 }
 
-.soocool-manual-json pre {
-  overflow: auto;
-  max-width: 100%;
-  max-height: 520px;
-  margin: 0;
-  padding: 14px 16px;
-  color: #f0f0f1;
-  white-space: pre-wrap;
-  background: #111827;
-  border-radius: var(--soocool-radius-sm);
-  font-family: Consolas, Monaco, monospace;
-  font-size: 12px;
-  line-height: 1.55;
-}
-
-.soocool-manual-back {
-  margin-top: var(--soocool-space-md);
-}
-
-.soocool-test-mode-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: var(--soocool-space-md) 0 20px;
-}
-
-.soocool-test-mode-card,
-.soocool-test-mode-section,
-.soocool-test-choice {
-  background: var(--soocool-color-surface);
-  border: 1px solid var(--soocool-color-border);
-  border-radius: 10px;
-}
-
-.soocool-test-mode-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--soocool-space-2xs);
-  width: 100%;
-  min-height: 82px;
-  margin: 0;
-  padding: 12px 14px;
-  color: inherit;
-  text-align: left;
-  appearance: none;
-  cursor: pointer;
-  font: inherit;
-  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease, background-color 120ms ease;
-}
-
-.soocool-test-mode-card strong,
-.soocool-test-mode-section h3 span {
-  color: var(--soocool-color-text);
-}
-
-.soocool-test-mode-card span {
-  color: var(--soocool-color-muted);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.soocool-test-mode-card.is-recommended,
-.soocool-test-mode-section.is-recommended,
-.soocool-test-mode-card:hover,
-.soocool-test-mode-card:focus-visible {
-  border-color: var(--soocool-color-info);
-}
-
-.soocool-test-mode-card:hover,
-.soocool-test-mode-card:focus-visible {
-  box-shadow: 0 0 0 1px var(--soocool-color-info);
-  outline: none;
-}
-
-.soocool-test-mode-card:active {
-  transform: translateY(1px);
-}
-
-.soocool-test-mode-card.is-advanced,
-.soocool-test-mode-section.is-advanced {
-  border-style: dashed;
-}
-
-.soocool-test-mode-section summary {
-  padding: 2px 0 12px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.soocool-test-mode-section summary:focus-visible {
-  border-radius: 4px;
-  outline: 2px solid var(--soocool-color-info);
-  outline-offset: 3px;
-}
-
-.soocool-test-mode-section.is-advanced:not([open]) {
-  display: block;
-  min-height: 0;
-  padding: 14px 18px;
-  box-shadow: none;
-}
-
-.soocool-test-mode-section.is-advanced:not([open]) summary {
-  margin: 0;
-  padding: 0;
-  line-height: 1.4;
-}
-
-.soocool-test-mode-section.is-advanced[open] {
-  gap: var(--soocool-space-md);
-}
-
-.soocool-test-mode-section.is-advanced[open] summary {
-  margin: 0 0 4px;
-  padding: 0 0 14px;
-  border-bottom: 1px solid var(--soocool-color-border);
-}
-
 .soocool-next-step {
   margin-top: var(--soocool-space-sm);
   padding-top: var(--soocool-space-sm);
@@ -951,6 +741,9 @@
 
 .soocool-test-choice {
   display: flex;
+  background: var(--soocool-color-surface);
+  border: 1px solid var(--soocool-color-border);
+  border-radius: 10px;
   gap: 12px;
   align-items: flex-start;
   padding: var(--soocool-space-md);
@@ -1081,15 +874,13 @@
 }
 
 .soocool-shell :focus-visible,
-.soocool-manual-test-page :focus-visible,
 #soocool-order-status :focus-visible {
   outline: 2px solid rgba(191, 4, 19, 0.55);
   outline-offset: 2px;
 }
 
 @media (max-width: 900px) {
-  .soocool-form-grid,
-  .soocool-card-grid {
+  .soocool-field-grid.two {
     grid-template-columns: 1fr;
   }
 
@@ -1115,7 +906,7 @@
     padding: var(--soocool-space-sm);
   }
 
-  .soocool-tabs .components-tab-panel__tabs :where(.components-button, .soocool-tab-link) {
+  .soocool-tabs .components-tab-panel__tabs .components-button {
     flex: 1 1 160px;
     justify-content: center;
   }
@@ -1134,9 +925,6 @@
   }
 
   .soocool-field-grid.two,
-  .soocool-field-grid.three,
-  .soocool-inline-controls,
-  .soocool-test-mode-list,
   .soocool-test-choice-list {
     grid-template-columns: 1fr;
   }
@@ -1154,9 +942,6 @@
   .soocool-shell *,
   .soocool-shell *::before,
   .soocool-shell *::after,
-  .soocool-manual-test-page *,
-  .soocool-manual-test-page *::before,
-  .soocool-manual-test-page *::after,
   #soocool-order-status *,
   #soocool-order-status *::before,
   #soocool-order-status *::after {
@@ -1165,4 +950,70 @@
     animation-duration: 0.01ms;
     animation-iteration-count: 1;
   }
+}
+
+/* API-test environment note and lazy log pagination. */
+.soocool-manual-environment-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+}
+
+.soocool-manual-environment-note .soocool-env-url {
+  color: var(--soocool-color-muted);
+  font-size: 12px;
+}
+
+.soocool-log-footer {
+  display: flex;
+  gap: var(--soocool-space-sm);
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: var(--soocool-space-sm);
+}
+
+.soocool-log-footer .soocool-log-count {
+  margin: 0;
+}
+
+.soocool-log-footer .soocool-load-more {
+  margin-left: auto;
+}
+
+@media (max-width: 782px) {
+  .soocool-log-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .soocool-log-footer .soocool-load-more {
+    align-self: flex-start;
+    margin-left: 0;
+  }
+}
+
+/* Keep all SooCool form controls visually consistent. */
+.soocool-shell .components-text-control__input,
+.soocool-shell .components-input-control__input,
+.soocool-shell .components-select-control__input,
+.soocool-shell input[type='text'],
+.soocool-shell input[type='url'],
+.soocool-shell input[type='email'],
+.soocool-shell input[type='password'],
+.soocool-shell input[type='number'],
+.soocool-shell input[type='time'],
+.soocool-shell input[type='datetime-local'],
+.soocool-shell textarea,
+.soocool-shell select {
+  border-radius: var(--soocool-radius-xs);
+}
+
+.soocool-shell .components-input-control__container,
+.soocool-shell .components-select-control .components-input-control__container,
+.soocool-shell .components-input-control__backdrop,
+.soocool-shell .components-select-control .components-input-control__backdrop {
+  border-radius: var(--soocool-radius-xs);
+  overflow: hidden;
 }

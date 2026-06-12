@@ -30,6 +30,7 @@ use SooCool\WooCommerce\Infrastructure\Requirements;
 use SooCool\WooCommerce\Infrastructure\SecretSanitizer;
 use SooCool\WooCommerce\Rest\ConnectionController;
 use SooCool\WooCommerce\Rest\LogsController;
+use SooCool\WooCommerce\Rest\ManualTestController;
 use SooCool\WooCommerce\Rest\OrderSyncController;
 use SooCool\WooCommerce\Rest\SettingsController;
 use SooCool\WooCommerce\Rest\WebhookAuthenticator;
@@ -79,7 +80,7 @@ final class ServiceProvider {
 			ShippingLabelService::class => new ShippingLabelService( $this->get( ApiClient::class ), $this->get( OrderMeta::class ) ),
 			DummyOrderFactory::class => new DummyOrderFactory(),
 			DebugRedactor::class => new DebugRedactor( $this->get( OptionRepository::class ) ),
-			AdminMenu::class => new AdminMenu( $this->get( ApiClient::class ), $this->get( OptionRepository::class ), $this->get( OrderPayloadBuilder::class ), $this->get( DummyOrderFactory::class ), $this->get( DebugRedactor::class ) ),
+			AdminMenu::class => new AdminMenu(),
 			Assets::class => new Assets(),
 			AdminNoticeSuppressor::class => new AdminNoticeSuppressor(),
 			Notices::class => new Notices( $this->get( Requirements::class ) ),
@@ -87,6 +88,7 @@ final class ServiceProvider {
 			SettingsController::class => new SettingsController( $this->get( OptionRepository::class ) ),
 			ConnectionController::class => new ConnectionController( $this->get( ApiClient::class ) ),
 			LogsController::class => new LogsController( $this->get( Logger::class ) ),
+			ManualTestController::class => new ManualTestController( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( DummyOrderFactory::class ), $this->get( DebugRedactor::class ), $this->get( Logger::class ) ),
 			OrderSyncController::class => new OrderSyncController( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ), $this->get( OrderSyncService::class ) ),
 			WebhookAuthenticator::class => new WebhookAuthenticator( $this->get( OptionRepository::class ) ),
 			WebhookPayloadExtractor::class => new WebhookPayloadExtractor(),

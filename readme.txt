@@ -152,7 +152,7 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 
 = 0.4.23 =
 * Load SooCool admin CSS on WooCommerce HPOS and legacy order screens so order metabox buttons and order-list label links render with the intended compact styling.
-* Keep the React/settings JavaScript limited to the SooCool settings page while allowing CSS on the manual test and order screens.
+* Keep the React/settings JavaScript limited to the SooCool settings page while allowing CSS on the SooCool settings and order screens.
 
 = 0.4.22 =
 * Improved the SooCool order meta box label controls and added direct order-label and good-label links to the orders list.

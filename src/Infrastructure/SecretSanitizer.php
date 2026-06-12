@@ -70,7 +70,8 @@ final class SecretSanitizer {
 			'/([A-Z0-9._%+\-]+)@([A-Z0-9.\-]+\.[A-Z]{2,})/i' => '[redacted-email]',
 			'/\b(?:\+?\d[\d\s().\-]{7,}\d)\b/' => '[redacted-phone]',
 			'/\b\d{4}\s?[A-Z]{2}\b/i' => '[redacted-postcode]',
-			'/\b(?:api[_ -]?key|x-api-key|authorization|bearer|token|secret|password)\s*[:=]\s*[^\s,;]+/i' => '[redacted-secret]',
+			'/\b(?:api[_ -]?key|x-api-key|authorization|token|secret|password)\s*[:=]\s*(?:Bearer\s+)?[^\s,;]+/i' => '[redacted-secret]',
+			'/\bBearer\s+[^\s,;]+/i' => '[redacted-secret]',
 		);
 
 		foreach ( $patterns as $pattern => $replacement ) {
