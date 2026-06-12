@@ -89,7 +89,7 @@ final class ShippingLabelActions {
 	}
 
 	private function requested_output(): string {
-		$requested_output = sanitize_key( (string) filter_input( INPUT_GET, 'output', FILTER_UNSAFE_RAW ) );
+		$requested_output = sanitize_key( $this->query_string( 'output' ) );
 		if ( '' === $requested_output ) {
 			$settings         = $this->options->all();
 			$requested_output = (string) $settings['label_output'];
@@ -100,7 +100,7 @@ final class ShippingLabelActions {
 
 
 	private function handle_order_good_download( string $output ): void {
-		$order_id = absint( filter_input( INPUT_GET, 'order_id', FILTER_VALIDATE_INT ) ?: 0 );
+		$order_id = $this->query_int( 'order_id' );
 		check_admin_referer( 'soocool_download_good_labels_' . $order_id );
 
 		$order = wc_get_order( $order_id );
@@ -194,14 +194,14 @@ final class ShippingLabelActions {
 	}
 
 	private function handle_single_label_download( string $output ): void {
-		$order_id = absint( filter_input( INPUT_GET, 'order_id', FILTER_VALIDATE_INT ) ?: 0 );
+		$order_id = $this->query_int( 'order_id' );
 		check_admin_referer( 'soocool_download_label_' . $order_id );
 		$order = wc_get_order( $order_id );
 		if ( ! $order instanceof WC_Order ) {
 			wp_die( esc_html__( 'Order not found.', 'soocool-for-woocommerce' ) );
 		}
 
-		$good_id = absint( filter_input( INPUT_GET, 'good_id', FILTER_VALIDATE_INT ) ?: 0 );
+		$good_id = $this->query_int( 'good_id' );
 		if ( $good_id > 0 && ! in_array( $good_id, $this->stored_good_ids( $order ), true ) ) {
 			wp_die( esc_html__( 'The requested SooCool good ID does not belong to this order.', 'soocool-for-woocommerce' ) );
 		}
@@ -222,12 +222,12 @@ final class ShippingLabelActions {
 	}
 
 	private function has_order_good_ids_request(): bool {
-		return null !== filter_input( INPUT_GET, 'good_ids', FILTER_UNSAFE_RAW ) && null !== filter_input( INPUT_GET, 'order_id', FILTER_VALIDATE_INT );
+		return $this->query_has( 'good_ids' ) && $this->query_int( 'order_id' ) > 0;
 	}
 
 	/** @return array<int, int> */
 	private function request_good_ids(): array {
-		$good_ids = sanitize_text_field( (string) filter_input( INPUT_GET, 'good_ids', FILTER_UNSAFE_RAW ) );
+		$good_ids = $this->query_string( 'good_ids' );
 		if ( '' === $good_ids ) {
 			return array();
 		}
@@ -245,8 +245,24 @@ final class ShippingLabelActions {
 	}
 
 	private function has_unbound_bulk_download_request(): bool {
-		return null !== filter_input( INPUT_GET, 'order_ids', FILTER_UNSAFE_RAW )
-			|| ( null !== filter_input( INPUT_GET, 'good_ids', FILTER_UNSAFE_RAW ) && null === filter_input( INPUT_GET, 'order_id', FILTER_VALIDATE_INT ) );
+		return $this->query_has( 'order_ids' )
+			|| ( $this->query_has( 'good_ids' ) && 0 === $this->query_int( 'order_id' ) );
+	}
+
+	private function query_has( string $key ): bool {
+		return isset( $_GET[ $key ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read only after capability and nonce gates.
+	}
+
+	private function query_string( string $key ): string {
+		if ( ! isset( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read only after capability and nonce gates.
+			return '';
+		}
+
+		return sanitize_text_field( wp_unslash( (string) $_GET[ $key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read only after capability and nonce gates.
+	}
+
+	private function query_int( string $key ): int {
+		return absint( $this->query_string( $key ) );
 	}
 
 	private function send_pdf( string $pdf, string $filename ): void {
@@ -255,13 +271,27 @@ final class ShippingLabelActions {
 		}
 
 		if ( headers_sent() ) {
-			wp_die( esc_html__( 'SooCool label download could not start because output was already sent.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'SooCool label download could not start because output was already sent.', 'soocool-for-woocommerce' ), '', array( 'response' => 500 ) );
 		}
 
+		while ( ob_get_level() > 0 ) {
+			$status = ob_get_status();
+			if ( ! is_array( $status ) || empty( $status['del'] ) ) {
+				break;
+			}
+			ob_end_clean();
+		}
+
+		$filename = sanitize_file_name( $filename );
+		if ( '' === $filename ) {
+			$filename = 'soocool-label.pdf';
+		}
+
+		status_header( 200 );
 		nocache_headers();
 		header( 'Content-Type: application/pdf' );
 		header( 'X-Content-Type-Options: nosniff' );
-		header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '"' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
 		header( 'Content-Length: ' . strlen( $pdf ) );
 		echo $pdf; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Binary PDF output.
 		exit;

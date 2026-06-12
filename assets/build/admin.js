@@ -273,44 +273,48 @@
         el(c.ToggleControl, { label: __('Create pickup task before delivery', 'soocool-for-woocommerce'), help: __('Only enable this when pickup tasks are agreed with SooCool. The API documentation says pickup tasks should only be used in consultation.', 'soocool-for-woocommerce'), checked: !!settings.enable_pickup, onChange: function(v){ upd('enable_pickup', v); } }),
         el(c.TextControl, { label: __('WooCommerce order reference prefix', 'soocool-for-woocommerce'), help: __('Optional prefix added before the WooCommerce order number, for example TEST-.', 'soocool-for-woocommerce'), value: settings.order_reference_prefix || '', onChange: function(v){ upd('order_reference_prefix', v); } })
       )),
-      el('div', { className: 'soocool-card-grid' },
-        el(Card, null,
-          el('h3', null, __('Pickup location', 'soocool-for-woocommerce')),
-          el('div', { className: 'soocool-field-grid two' },
-            el(c.TextControl, { label: __('Pickup company', 'soocool-for-woocommerce'), value: settings.pickup_company || '', onChange: function(v){ upd('pickup_company', v); } }),
-            el(c.TextControl, { label: __('Pickup contact name', 'soocool-for-woocommerce'), value: settings.pickup_contact_name || '', onChange: function(v){ upd('pickup_contact_name', v); } }),
-            el(c.TextControl, { type: 'email', label: __('Pickup email', 'soocool-for-woocommerce'), value: settings.pickup_email || '', onChange: function(v){ upd('pickup_email', v); } }),
-            el(c.TextControl, { label: __('Pickup phone/mobile', 'soocool-for-woocommerce'), value: settings.pickup_phone || '', onChange: function(v){ upd('pickup_phone', v); } }),
-            el(c.TextControl, { label: __('Pickup street', 'soocool-for-woocommerce'), value: settings.pickup_street || '', onChange: function(v){ upd('pickup_street', v); } }),
-            el(c.TextControl, { label: __('Pickup house number', 'soocool-for-woocommerce'), value: settings.pickup_house_number || '', onChange: function(v){ upd('pickup_house_number', v); } }),
-            el(c.TextControl, { label: __('Pickup postal code', 'soocool-for-woocommerce'), value: settings.pickup_postal_code || '', onChange: function(v){ upd('pickup_postal_code', v); } }),
-            el(c.TextControl, { label: __('Pickup city', 'soocool-for-woocommerce'), value: settings.pickup_city || '', onChange: function(v){ upd('pickup_city', v); } }),
-            el(c.TextControl, { className: 'soocool-field-full', label: __('Pickup country code', 'soocool-for-woocommerce'), value: settings.pickup_country || 'NL', onChange: function(v){ upd('pickup_country', v); } })
-          )
+      el('div', { className: 'soocool-mapping-split' },
+        el('div', { className: 'soocool-mapping-column soocool-mapping-column-left' },
+          el(Card, null,
+            el('h3', null, __('Pickup location', 'soocool-for-woocommerce')),
+            el('div', { className: 'soocool-field-grid two' },
+              el(c.TextControl, { label: __('Pickup company', 'soocool-for-woocommerce'), value: settings.pickup_company || '', onChange: function(v){ upd('pickup_company', v); } }),
+              el(c.TextControl, { label: __('Pickup contact name', 'soocool-for-woocommerce'), value: settings.pickup_contact_name || '', onChange: function(v){ upd('pickup_contact_name', v); } }),
+              el(c.TextControl, { type: 'email', label: __('Pickup email', 'soocool-for-woocommerce'), value: settings.pickup_email || '', onChange: function(v){ upd('pickup_email', v); } }),
+              el(c.TextControl, { label: __('Pickup phone/mobile', 'soocool-for-woocommerce'), value: settings.pickup_phone || '', onChange: function(v){ upd('pickup_phone', v); } }),
+              el(c.TextControl, { label: __('Pickup street', 'soocool-for-woocommerce'), value: settings.pickup_street || '', onChange: function(v){ upd('pickup_street', v); } }),
+              el(c.TextControl, { label: __('Pickup house number', 'soocool-for-woocommerce'), value: settings.pickup_house_number || '', onChange: function(v){ upd('pickup_house_number', v); } }),
+              el(c.TextControl, { label: __('Pickup postal code', 'soocool-for-woocommerce'), value: settings.pickup_postal_code || '', onChange: function(v){ upd('pickup_postal_code', v); } }),
+              el(c.TextControl, { label: __('Pickup city', 'soocool-for-woocommerce'), value: settings.pickup_city || '', onChange: function(v){ upd('pickup_city', v); } }),
+              el(c.TextControl, { className: 'soocool-field-full', label: __('Pickup country code', 'soocool-for-woocommerce'), value: settings.pickup_country || 'NL', onChange: function(v){ upd('pickup_country', v); } })
+            )
+          ),
+          el(WebhookCard, { settings: settings })
         ),
-        el(Card, null,
-          el('h3', null, __('Scheduling & goods', 'soocool-for-woocommerce')),
-          el('div', { className: 'soocool-field-grid two' },
-            el(c.TextControl, { type: 'number', min: 0, max: 30, label: __('Pickup date offset in days', 'soocool-for-woocommerce'), value: String(settings.pickup_days_offset == null ? 1 : settings.pickup_days_offset), onChange: function(v){ upd('pickup_days_offset', Number(v)); } }),
-            el(c.TextControl, { type: 'number', min: 0, max: 30, label: __('Delivery date offset in days', 'soocool-for-woocommerce'), value: String(settings.delivery_days_offset == null ? 2 : settings.delivery_days_offset), onChange: function(v){ upd('delivery_days_offset', Number(v)); } }),
-            el(c.TextControl, { type: 'time', label: __('Pickup window starts', 'soocool-for-woocommerce'), value: settings.pickup_time_from || '', onChange: function(v){ upd('pickup_time_from', v); } }),
-            el(c.TextControl, { type: 'time', label: __('Pickup window ends', 'soocool-for-woocommerce'), value: settings.pickup_time_to || '', onChange: function(v){ upd('pickup_time_to', v); } }),
-            el(c.TextControl, { type: 'time', label: __('Delivery window starts', 'soocool-for-woocommerce'), help: __('SooCool requires delivery tasks to use exactly 08:00-18:00 for this connection.', 'soocool-for-woocommerce'), value: '08:00', disabled: true, onChange: function(){} }),
-            el(c.TextControl, { type: 'time', label: __('Delivery window ends', 'soocool-for-woocommerce'), help: __('SooCool requires delivery tasks to use exactly 08:00-18:00 for this connection.', 'soocool-for-woocommerce'), value: '18:00', disabled: true, onChange: function(){} })
-          ),
-          el('div', { className: 'soocool-field-grid two' },
-            el(c.TextControl, { label: __('Fallback goods contents', 'soocool-for-woocommerce'), value: settings.goods_description_fallback || '', onChange: function(v){ upd('goods_description_fallback', v); } }),
-            el(c.TextControl, { label: __('SooCool packagingType', 'soocool-for-woocommerce'), help: __('Default: box. Change this when SooCool expects a different packagingType value.', 'soocool-for-woocommerce'), value: settings.packaging_type || 'box', onChange: function(v){ upd('packaging_type', v); } }),
-            el(c.SelectControl, { label: __('Transport requirement', 'soocool-for-woocommerce'), help: __('Sent as goods[].transportRequirements. Default: cooled.', 'soocool-for-woocommerce'), value: settings.temperature_regime || 'cooled', options: [{ label: __('Cooled', 'soocool-for-woocommerce'), value: 'cooled' }, { label: __('Frozen', 'soocool-for-woocommerce'), value: 'frozen' }, { label: __('Ambient', 'soocool-for-woocommerce'), value: 'ambient' }], onChange: function(v){ upd('temperature_regime', v); } }),
-            el(c.TextControl, { type: 'number', min: 1, label: __('Package width', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.width.', 'soocool-for-woocommerce'), value: String(settings.package_width == null ? 60 : settings.package_width), onChange: function(v){ upd('package_width', Number(v)); } }),
-            el(c.TextControl, { type: 'number', min: 1, label: __('Package depth', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.depth.', 'soocool-for-woocommerce'), value: String(settings.package_depth == null ? 40 : settings.package_depth), onChange: function(v){ upd('package_depth', Number(v)); } }),
-            el(c.TextControl, { type: 'number', min: 1, label: __('Package height', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.height.', 'soocool-for-woocommerce'), value: String(settings.package_height == null ? 11 : settings.package_height), onChange: function(v){ upd('package_height', Number(v)); } }),
-            el(c.TextControl, { className: 'soocool-field-full', type: 'number', min: 1, label: __('Package weight', 'soocool-for-woocommerce'), help: __('Sent as goods[].weight.', 'soocool-for-woocommerce'), value: String(settings.package_weight == null ? 1600 : settings.package_weight), onChange: function(v){ upd('package_weight', Number(v)); } })
-          ),
-          el(c.TextControl, { type: 'url', label: __('SooCool webhook URL', 'soocool-for-woocommerce'), help: __('Optional callback URL sent with the SooCool order. Leave empty to use the plugin receiver. Header-token authentication is preferred; query-token URLs require the explicit fallback filter.', 'soocool-for-woocommerce'), value: settings.webhook_url || '', onChange: function(v){ upd('webhook_url', v); } })
+        el('div', { className: 'soocool-mapping-column soocool-mapping-column-right' },
+          el(Card, null,
+            el('h3', null, __('Scheduling & goods', 'soocool-for-woocommerce')),
+            el('div', { className: 'soocool-field-grid two' },
+              el(c.TextControl, { type: 'number', min: 0, max: 30, label: __('Pickup date offset in days', 'soocool-for-woocommerce'), value: String(settings.pickup_days_offset == null ? 1 : settings.pickup_days_offset), onChange: function(v){ upd('pickup_days_offset', Number(v)); } }),
+              el(c.TextControl, { type: 'number', min: 0, max: 30, label: __('Delivery date offset in days', 'soocool-for-woocommerce'), value: String(settings.delivery_days_offset == null ? 2 : settings.delivery_days_offset), onChange: function(v){ upd('delivery_days_offset', Number(v)); } }),
+              el(c.TextControl, { type: 'time', label: __('Pickup window starts', 'soocool-for-woocommerce'), value: settings.pickup_time_from || '', onChange: function(v){ upd('pickup_time_from', v); } }),
+              el(c.TextControl, { type: 'time', label: __('Pickup window ends', 'soocool-for-woocommerce'), value: settings.pickup_time_to || '', onChange: function(v){ upd('pickup_time_to', v); } }),
+              el(c.TextControl, { type: 'time', label: __('Delivery window starts', 'soocool-for-woocommerce'), help: __('SooCool requires delivery tasks to use exactly 08:00-18:00 for this connection.', 'soocool-for-woocommerce'), value: '08:00', disabled: true, onChange: function(){} }),
+              el(c.TextControl, { type: 'time', label: __('Delivery window ends', 'soocool-for-woocommerce'), help: __('SooCool requires delivery tasks to use exactly 08:00-18:00 for this connection.', 'soocool-for-woocommerce'), value: '18:00', disabled: true, onChange: function(){} })
+            ),
+            el('div', { className: 'soocool-field-grid two' },
+              el(c.TextControl, { label: __('Fallback goods contents', 'soocool-for-woocommerce'), value: settings.goods_description_fallback || '', onChange: function(v){ upd('goods_description_fallback', v); } }),
+              el(c.TextControl, { label: __('SooCool packagingType', 'soocool-for-woocommerce'), help: __('Default: box. Change this when SooCool expects a different packagingType value.', 'soocool-for-woocommerce'), value: settings.packaging_type || 'box', onChange: function(v){ upd('packaging_type', v); } }),
+              el(c.SelectControl, { label: __('Transport requirement', 'soocool-for-woocommerce'), help: __('Sent as goods[].transportRequirements. Default: cooled.', 'soocool-for-woocommerce'), value: settings.temperature_regime || 'cooled', options: [{ label: __('Cooled', 'soocool-for-woocommerce'), value: 'cooled' }, { label: __('Frozen', 'soocool-for-woocommerce'), value: 'frozen' }, { label: __('Ambient', 'soocool-for-woocommerce'), value: 'ambient' }], onChange: function(v){ upd('temperature_regime', v); } }),
+              el(c.TextControl, { type: 'number', min: 1, label: __('Package width', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.width.', 'soocool-for-woocommerce'), value: String(settings.package_width == null ? 60 : settings.package_width), onChange: function(v){ upd('package_width', Number(v)); } }),
+              el(c.TextControl, { type: 'number', min: 1, label: __('Package depth', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.depth.', 'soocool-for-woocommerce'), value: String(settings.package_depth == null ? 40 : settings.package_depth), onChange: function(v){ upd('package_depth', Number(v)); } }),
+              el(c.TextControl, { type: 'number', min: 1, label: __('Package height', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.height.', 'soocool-for-woocommerce'), value: String(settings.package_height == null ? 11 : settings.package_height), onChange: function(v){ upd('package_height', Number(v)); } }),
+              el(c.TextControl, { className: 'soocool-field-full', type: 'number', min: 1, label: __('Package weight', 'soocool-for-woocommerce'), help: __('Sent as goods[].weight.', 'soocool-for-woocommerce'), value: String(settings.package_weight == null ? 1600 : settings.package_weight), onChange: function(v){ upd('package_weight', Number(v)); } })
+            ),
+            el(c.TextControl, { type: 'url', label: __('SooCool webhook URL', 'soocool-for-woocommerce'), help: __('Optional callback URL sent with the SooCool order. Leave empty to use the plugin receiver. Header-token authentication is preferred; query-token URLs require the explicit fallback filter.', 'soocool-for-woocommerce'), value: settings.webhook_url || '', onChange: function(v){ upd('webhook_url', v); } })
+          )
         )
       ),
-      el(WebhookCard, { settings: settings }),
       el(Note, null, __('Pickup is optional. Keep it disabled unless SooCool has agreed that your account should send pickup tasks. Delivery-only orders still include the required delivery task and goods.', 'soocool-for-woocommerce')),
       el('div', { className: 'soocool-actions' }, el(SaveButton, { isSaving: s.saving, onClick: function(){ s.save(__('Could not save mapping settings. Check required pickup and delivery fields.', 'soocool-for-woocommerce'), __('Pickup & delivery settings saved.', 'soocool-for-woocommerce')); } }, __('Save pickup & delivery', 'soocool-for-woocommerce')))
     );

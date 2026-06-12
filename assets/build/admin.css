@@ -208,6 +208,33 @@
   grid-template-columns: repeat(2, minmax(360px, 1fr));
 }
 
+.soocool-mapping-split {
+  display: flex;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.soocool-mapping-column {
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.soocool-mapping-column-left {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.soocool-mapping-column-right {
+  display: flex;
+}
+
+.soocool-mapping-column-left > .soocool-settings-card,
+.soocool-mapping-column-right > .soocool-settings-card {
+  width: 100%;
+  flex: 1 1 0;
+}
+
 .soocool-field-grid.three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -1049,6 +1076,17 @@
   .soocool-form-grid,
   .soocool-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .soocool-mapping-split,
+  .soocool-mapping-column-left,
+  .soocool-mapping-column-right {
+    display: grid;
+  }
+
+  .soocool-mapping-split,
+  .soocool-mapping-column-left {
+    gap: 18px;
   }
 }
 
