@@ -63,17 +63,24 @@ final class ShippingLabelActions {
 		$output        = $this->requested_output();
 		$order_ids_arg = implode( ',', $order_ids );
 
-		return wp_nonce_url(
-			add_query_arg(
-				array(
-					'action'               => self::BULK_LABEL_DOWNLOAD_ACTION,
-					'soocool_bulk_action'  => $action,
-					'order_ids'            => $order_ids_arg,
-					'output'               => $output,
-				),
-				admin_url( 'admin-post.php' )
+		$download_url = add_query_arg(
+			array(
+				'action'              => self::BULK_LABEL_DOWNLOAD_ACTION,
+				'soocool_bulk_action' => $action,
+				'order_ids'           => $order_ids_arg,
+				'output'              => $output,
 			),
-			$this->bulk_label_nonce_action_for_request( $action, $order_ids_arg, $output )
+			admin_url( 'admin-post.php' )
+		);
+
+		// Do not use wp_nonce_url() here. It HTML-escapes ampersands for output,
+		// while WooCommerce expects this filter to return a raw redirect URL.
+		// Returning an escaped URL makes query keys arrive as amp;order_ids etc.,
+		// which causes check_admin_referer() to fail with "link expired".
+		return add_query_arg(
+			'_wpnonce',
+			wp_create_nonce( $this->bulk_label_nonce_action_for_request( $action, $order_ids_arg, $output ) ),
+			$download_url
 		);
 	}
 

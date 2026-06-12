@@ -1,3 +1,7 @@
+## 0.4.53 - 2026-06-12
+
+- Fixed WooCommerce bulk label download redirects that could fail with a WordPress "link expired" nonce screen because the redirect URL contained HTML-escaped ampersands.
+
 ## 0.4.52 - 2026-06-12
 
 - Fixed WooCommerce bulk label downloads for both SooCool order labels and SooCool good labels by replacing the short-lived token redirect with a signed admin-post download URL containing the selected order IDs.
