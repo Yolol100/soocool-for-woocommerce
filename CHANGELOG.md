@@ -1,3 +1,12 @@
+## 0.4.53-patch - Security and release hardening
+
+- Require HMAC webhook signatures by default with timestamp validation and duplicate-delivery protection.
+- Restrict webhook status writes to an explicit allowlist, filterable with `soocool_allowed_webhook_statuses`.
+- Restore short-lived, single-use server-side tokens for bulk label downloads so selected order IDs are not exposed in the download URL.
+- Skip already scheduled Action Scheduler jobs for bulk send/resync flows.
+- Align the admin asset version with the plugin version.
+- Add explicit confirmation prompts before sending real WooCommerce orders to the active SooCool environment from the manual API test.
+
 ## 0.4.53 - 2026-06-12
 
 - Fixed WooCommerce bulk label download redirects that could fail with a WordPress "link expired" nonce screen because the redirect URL contained HTML-escaped ampersands.

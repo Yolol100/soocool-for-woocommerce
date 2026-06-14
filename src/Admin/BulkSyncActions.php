@@ -83,14 +83,17 @@ final class BulkSyncActions {
 		// on a slow SooCool API. Reuses the same background hook as the
 		// normal single-order send path, so already-synced orders still respect the resubmission setting.
 		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			$queued = 0;
 			foreach ( $order_ids as $order_id ) {
-				as_enqueue_async_action( OrderActions::SYNC_HOOK, array( $order_id ), 'soocool' );
+				if ( $this->enqueue_sync_once( (int) $order_id ) ) {
+					++$queued;
+				}
 			}
 
 			return add_query_arg(
 				array(
 					self::MODE_PARAM   => 'scheduled',
-					self::QUEUED_PARAM => $total,
+					self::QUEUED_PARAM => $queued,
 				),
 				$redirect_to
 			);
@@ -122,6 +125,16 @@ final class BulkSyncActions {
 		);
 	}
 
+	private function enqueue_sync_once( int $order_id ): bool {
+		$args = array( absint( $order_id ) );
+		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( OrderActions::SYNC_HOOK, $args, 'soocool' ) ) {
+			return false;
+		}
+
+		as_enqueue_async_action( OrderActions::SYNC_HOOK, $args, 'soocool' );
+		return true;
+	}
+
 	public function render_notice(): void {
 		$mode = isset( $_GET[ self::MODE_PARAM ] ) ? sanitize_key( wp_unslash( (string) $_GET[ self::MODE_PARAM ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect notice.
 
@@ -146,19 +159,17 @@ final class BulkSyncActions {
 
 		if ( 'scheduled' === $mode ) {
 			$queued = isset( $_GET[ self::QUEUED_PARAM ] ) ? absint( wp_unslash( $_GET[ self::QUEUED_PARAM ] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			if ( 0 === $queued ) {
-				return;
-			}
+			$message = 0 === $queued
+				? __( 'No new SooCool background sync jobs were queued. The selected orders are already scheduled.', 'soocool-for-woocommerce' )
+				: sprintf(
+					/* translators: %d: number of orders queued for background sync to SooCool. */
+					_n( '%d new order queued for background sync to SooCool. Already queued orders were skipped.', '%d new orders queued for background sync to SooCool. Already queued orders were skipped.', $queued, 'soocool-for-woocommerce' ),
+					$queued
+				);
 
 			printf(
 				'<div class="notice notice-info is-dismissible"><p>%s</p></div>',
-				esc_html(
-					sprintf(
-						/* translators: %d: number of orders queued for background sync to SooCool. */
-						_n( '%d order queued for background sync to SooCool.', '%d orders queued for background sync to SooCool.', $queued, 'soocool-for-woocommerce' ),
-						$queued
-					)
-				)
+				esc_html( $message )
 			);
 			return;
 		}

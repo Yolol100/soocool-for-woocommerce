@@ -102,15 +102,22 @@
     var setBusy = busyState[1];
     var url = settings.effective_webhook_url || settings.generated_webhook_url || '';
     var header = settings.webhook_header_name || 'X-SooCool-Webhook-Token';
+    var timestampHeader = settings.webhook_timestamp_header_name || 'X-SooCool-Webhook-Timestamp';
+    var signatureHeader = settings.webhook_signature_header_name || 'X-SooCool-Webhook-Signature';
+    var eventIdHeader = settings.webhook_event_id_header_name || 'X-SooCool-Webhook-Id';
     function copy(value, label){ copyText(value).then(function(){ emitToast(label, 'success'); }).catch(function(){ emitToast(__('Copy failed; select and copy manually.', 'soocool-for-woocommerce'), 'error'); }); }
     function reveal(){ if (busy) { return; } setBusy(true); getWebhookSecret().then(function(r){ setSecret(r && r.secret ? r.secret : ''); }).catch(function(){ emitToast(__('Could not load the webhook token.', 'soocool-for-woocommerce'), 'error'); }).finally(function(){ setBusy(false); }); }
     function regenerate(){ if (busy) { return; } if (!window.confirm(__('Generate a new webhook token? The current token stops working until SooCool is updated with the new one.', 'soocool-for-woocommerce'))) { return; } setBusy(true); regenWebhookSecret().then(function(r){ setSecret(r && r.secret ? r.secret : ''); emitToast(__('New webhook token generated. Update it in SooCool now.', 'soocool-for-woocommerce'), 'success'); }).catch(function(){ emitToast(__('Could not regenerate the webhook token.', 'soocool-for-woocommerce'), 'error'); }).finally(function(){ setBusy(false); }); }
     return el(Card, null,
       el('h3', null, __('Webhook (track & trace callbacks)', 'soocool-for-woocommerce')),
-      el('p', { className: 'soocool-field-help' }, __('Configure SooCool to call this URL and send the token in the X-SooCool-Webhook-Token header. Query-token URLs are available only when the explicit fallback filter is enabled.', 'soocool-for-woocommerce')),
+      el('p', { className: 'soocool-field-help' }, __('Configure SooCool to call this URL and send the token plus HMAC signature headers. Signature input is the timestamp, a dot and the raw body, keyed with the webhook token. Query-token URLs are available only when the explicit fallback filter is enabled.', 'soocool-for-woocommerce')),
       el('div', { className: 'soocool-field-grid two' },
         el(c.TextControl, { label: __('Webhook URL', 'soocool-for-woocommerce'), value: url, readOnly: true, onChange: function(){} }),
-        el(c.TextControl, { label: __('Header name', 'soocool-for-woocommerce'), value: header, readOnly: true, onChange: function(){} })
+        el(c.TextControl, { label: __('Token header', 'soocool-for-woocommerce'), value: header, readOnly: true, onChange: function(){} }),
+        el(c.TextControl, { label: __('Timestamp header', 'soocool-for-woocommerce'), value: timestampHeader, readOnly: true, onChange: function(){} }),
+        el(c.TextControl, { label: __('Signature header', 'soocool-for-woocommerce'), value: signatureHeader, readOnly: true, onChange: function(){} }),
+        el(c.TextControl, { label: __('Optional event ID header', 'soocool-for-woocommerce'), value: eventIdHeader, readOnly: true, onChange: function(){} }),
+        el(c.TextControl, { label: __('Signature formula', 'soocool-for-woocommerce'), value: 'hash_hmac(sha256, timestamp + "." + raw_body, webhook_token)', readOnly: true, onChange: function(){} })
       ),
       el('div', { className: 'soocool-actions' },
         el(c.Button, { variant: 'secondary', disabled: !url, onClick: function(){ copy(url, __('Webhook URL copied.', 'soocool-for-woocommerce')); } }, __('Copy URL', 'soocool-for-woocommerce')),
@@ -312,7 +319,7 @@
               el(c.TextControl, { type: 'number', min: 1, label: __('Package height', 'soocool-for-woocommerce'), help: __('Sent as goods[].dimensions.height.', 'soocool-for-woocommerce'), value: String(settings.package_height == null ? 11 : settings.package_height), onChange: function(v){ upd('package_height', Number(v)); } }),
               el(c.TextControl, { className: 'soocool-field-full', type: 'number', min: 1, label: __('Package weight', 'soocool-for-woocommerce'), help: __('Sent as goods[].weight.', 'soocool-for-woocommerce'), value: String(settings.package_weight == null ? 1600 : settings.package_weight), onChange: function(v){ upd('package_weight', Number(v)); } })
             ),
-            el(c.TextControl, { type: 'url', label: __('SooCool webhook URL', 'soocool-for-woocommerce'), help: __('Optional callback URL sent with the SooCool order. Leave empty to use the plugin receiver. Header-token authentication is preferred; query-token URLs require the explicit fallback filter.', 'soocool-for-woocommerce'), value: settings.webhook_url || '', onChange: function(v){ upd('webhook_url', v); } })
+            el(c.TextControl, { type: 'url', label: __('SooCool webhook URL', 'soocool-for-woocommerce'), help: __('Optional callback URL sent with the SooCool order. Leave empty to use the plugin receiver. Header token plus HMAC signature authentication is required by default; legacy fallbacks require explicit filters.', 'soocool-for-woocommerce'), value: settings.webhook_url || '', onChange: function(v){ upd('webhook_url', v); } })
           )
         )
       ),
@@ -401,6 +408,8 @@
 
     function submit(){
       if (busy) { return; }
+      if (mode === 'real' && !window.confirm(__('This sends the selected WooCommerce order to the active SooCool environment and can create or update a real SooCool order. Continue?', 'soocool-for-woocommerce'))) { return; }
+      if (mode === 'real' && settings.environment === 'production' && !window.confirm(__('Production environment is active. Only continue when this is an intentional production order test.', 'soocool-for-woocommerce'))) { return; }
       setBusy(true);
       setErrorMessage('');
       setResult(null);
@@ -442,7 +451,7 @@
         el('p', { className: 'soocool-next-step' }, result.success ? __('Volgende stap: controleer de verzonden payload, download daarna een label of wacht op webhook/track & trace als deze test een echte order heeft aangemaakt.', 'soocool-for-woocommerce') : __('Volgende stap: controleer de foutdetails en pas orderdata, API-key, timeWindow of payload aan voordat je opnieuw test.', 'soocool-for-woocommerce'))
       ) : el(Card, null,
         el('h3', null, __('Welke order wil je testen?', 'soocool-for-woocommerce')),
-        el('p', { className: 'soocool-field-help' }, __('Gebruik bij voorkeur een echte WooCommerce order. Kies testorder alleen om snel te controleren of de SooCool API de standaardpayload accepteert.', 'soocool-for-woocommerce')),
+        el('p', { className: 'soocool-field-help' }, __('Gebruik bij voorkeur staging. Een echte WooCommerce order wordt naar de actieve SooCool omgeving gestuurd en kan daar een echte order aanmaken of bijwerken.', 'soocool-for-woocommerce')),
         el('div', { className: 'soocool-test-choice-list', role: 'radiogroup', 'aria-label': __('Type API-test', 'soocool-for-woocommerce') },
           el('label', { className: 'soocool-test-choice', htmlFor: 'soocool_test_mode_real' },
             el('input', { type: 'radio', name: 'test_mode', id: 'soocool_test_mode_real', value: 'real', checked: mode === 'real', onChange: function(){ setMode('real'); } }),

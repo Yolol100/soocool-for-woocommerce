@@ -59,7 +59,7 @@ composer quality
 
 Do not commit API keys, portal passwords, `.env` files, production URLs with secrets, or exported logs containing customer data. Use the test environment first.
 
-The webhook receiver requires the stored SooCool webhook token. Generated webhook URLs do not include `?token=...` by default; configure SooCool to send the token via the `X-SooCool-Webhook-Token` header where supported. For legacy callback systems that cannot send custom headers, a developer can explicitly re-enable query-token webhook URLs with the `soocool_allow_query_token_webhook_url` filter.
+The webhook receiver requires the stored SooCool webhook token and, by default, HMAC verification headers. Configure SooCool to send `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp` and `X-SooCool-Webhook-Signature`. The signature is `hash_hmac('sha256', timestamp + '.' + raw_body, webhook_secret)` and may be sent as the hex digest or `sha256=<hex>`. `X-SooCool-Webhook-Id` is optional but recommended for duplicate-delivery protection. For legacy callback systems, a developer can explicitly disable required signatures with the `soocool_require_webhook_signature` filter and re-enable query-token URLs with the `soocool_allow_query_token_webhook_url` filter.
 
 ## Staging checklist
 
@@ -76,7 +76,7 @@ The webhook receiver requires the stored SooCool webhook token. Generated webhoo
 11. Confirm the delivery task uses the fixed 08:00-18:00 delivery window.
 12. Use **Refresh from SooCool** after the test order exists and confirm local status/tracking/good IDs update when SooCool returns them.
 13. Download both A6 and Collated A4 labels only after SooCool accepted the order.
-14. Test webhook success/failure and token rejection.
+14. Test webhook success/failure, token rejection, HMAC rejection, expired timestamp rejection and duplicate-delivery rejection.
 15. Keep automatic sync disabled until manual orders are accepted consistently.
 
 ## Quality checks

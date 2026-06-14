@@ -55,19 +55,22 @@ final class MaintenanceController extends AbstractRestController {
 		}
 
 		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			$queued = 0;
 			foreach ( $order_ids as $order_id ) {
-				as_enqueue_async_action( OrderActions::RESYNC_HOOK, array( $order_id ), 'soocool' );
+				if ( $this->enqueue_resync_once( (int) $order_id ) ) {
+					++$queued;
+				}
 			}
 
 			return new WP_REST_Response(
 				array(
 					'success' => true,
-					'queued'  => $total,
+					'queued'  => $queued,
 					'mode'    => 'scheduled',
 					'message' => sprintf(
 						/* translators: %d: number of orders queued for background resync. */
-						_n( '%d failed order queued for background resync.', '%d failed orders queued for background resync.', $total, 'soocool-for-woocommerce' ),
-						$total
+						_n( '%d new failed order queued for background resync. Already queued orders were skipped.', '%d new failed orders queued for background resync. Already queued orders were skipped.', $queued, 'soocool-for-woocommerce' ),
+						$queued
 					),
 				)
 			);
@@ -95,6 +98,16 @@ final class MaintenanceController extends AbstractRestController {
 				),
 			)
 		);
+	}
+
+	private function enqueue_resync_once( int $order_id ): bool {
+		$args = array( absint( $order_id ) );
+		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( OrderActions::RESYNC_HOOK, $args, 'soocool' ) ) {
+			return false;
+		}
+
+		as_enqueue_async_action( OrderActions::RESYNC_HOOK, $args, 'soocool' );
+		return true;
 	}
 
 	/** @return array<int, int> */

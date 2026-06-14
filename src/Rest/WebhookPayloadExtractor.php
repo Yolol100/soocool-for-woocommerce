@@ -14,6 +14,27 @@ final class WebhookPayloadExtractor {
 	private const MAX_NESTING_DEPTH = 5;
 	private const MAX_ARRAY_ITEMS   = 250;
 	private const MAX_TOTAL_ARRAY_ITEMS = 1000;
+	private const ALLOWED_STATUSES = array(
+		'synced',
+		'pending',
+		'failed',
+		'cancelled',
+		'soocool_accepted',
+		'soocool_active',
+		'soocool_cancelled',
+		'soocool_completed',
+		'soocool_created',
+		'soocool_delivered',
+		'soocool_failed',
+		'soocool_in_progress',
+		'soocool_in_transit',
+		'soocool_pending',
+		'soocool_planned',
+		'soocool_processing',
+		'soocool_ready',
+		'soocool_rejected',
+		'soocool_shipped',
+	);
 
 	/** @param array<string, mixed> $payload */
 	public function shape_is_safe( array $payload ): bool {
@@ -219,6 +240,36 @@ final class WebhookPayloadExtractor {
 			return '';
 		}
 
-		return str_starts_with( $status, 'soocool_' ) ? $status : 'soocool_' . $status;
+		$status = str_starts_with( $status, 'soocool_' ) ? $status : 'soocool_' . $status;
+
+		return in_array( $status, $this->allowed_statuses(), true ) ? $status : '';
+	}
+
+	/** @return array<int, string> */
+	private function allowed_statuses(): array {
+		/**
+		 * Filter accepted SooCool webhook statuses after sanitize_key() and soocool_ prefix normalization.
+		 *
+		 * Unknown values are ignored so a webhook cannot write arbitrary status strings
+		 * into WooCommerce order meta.
+		 *
+		 * @param array<int, string> $statuses Allowed normalized status values.
+		 */
+		$statuses = apply_filters( 'soocool_allowed_webhook_statuses', self::ALLOWED_STATUSES );
+		if ( ! is_array( $statuses ) ) {
+			$statuses = self::ALLOWED_STATUSES;
+		}
+
+		return array_values(
+			array_unique(
+				array_filter(
+					array_map(
+						static fn ( mixed $status ): string => sanitize_key( (string) $status ),
+						$statuses
+					)
+				)
+			)
+		);
 	}
 }
+

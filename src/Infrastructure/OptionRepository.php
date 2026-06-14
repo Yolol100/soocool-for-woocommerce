@@ -226,10 +226,14 @@ final class OptionRepository {
 		$settings['api_key_status']   = $this->api_key_status();
 		$settings['api_key_masked']   = $this->masked_api_key();
 		$settings['api_key']          = $settings['api_key_present'] ? $settings['api_key_masked'] : '';
-		$settings['generated_webhook_url']        = $this->generated_webhook_url();
-		$settings['webhook_header_name']          = 'X-SooCool-Webhook-Token';
-		$settings['query_token_fallback_enabled'] = $this->query_token_fallback_enabled();
-		$settings['effective_webhook_url']        = $this->effective_webhook_url();
+		$settings['generated_webhook_url']          = $this->generated_webhook_url();
+		$settings['webhook_header_name']            = 'X-SooCool-Webhook-Token';
+		$settings['webhook_timestamp_header_name']  = 'X-SooCool-Webhook-Timestamp';
+		$settings['webhook_signature_header_name']  = 'X-SooCool-Webhook-Signature';
+		$settings['webhook_event_id_header_name']   = 'X-SooCool-Webhook-Id';
+		$settings['webhook_signature_required']     = (bool) apply_filters( 'soocool_require_webhook_signature', true );
+		$settings['query_token_fallback_enabled']   = $this->query_token_fallback_enabled();
+		$settings['effective_webhook_url']          = $this->effective_webhook_url();
 		unset( $settings['webhook_secret'] );
 		return $settings;
 	}

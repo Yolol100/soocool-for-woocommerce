@@ -90,9 +90,9 @@ The plugin supports the SooCool order-level shipping label formats `a6` and `col
 
 = How is the webhook secured? =
 
-The webhook receiver requires the stored SooCool webhook token. The generated webhook URL no longer includes the token by default; configure SooCool to send the token via the `X-SooCool-Webhook-Token` header where supported.
+The webhook receiver requires the stored SooCool webhook token and, by default, HMAC verification headers. Configure SooCool to send `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp` and `X-SooCool-Webhook-Signature`. The signature is `hash_hmac('sha256', timestamp + '.' + raw_body, webhook_secret)` and may be sent as the hex digest or `sha256=<hex>`. `X-SooCool-Webhook-Id` is optional but recommended for duplicate-delivery protection.
 
-For legacy callback systems that cannot send custom headers, a developer can explicitly re-enable query-token webhook URLs with the `soocool_allow_query_token_webhook_url` filter. Only use that fallback when header authentication is not available, because URL tokens may appear in logs, browser history, analytics or screenshots.
+For legacy callback systems, a developer can explicitly disable required signatures with the `soocool_require_webhook_signature` filter and re-enable query-token webhook URLs with the `soocool_allow_query_token_webhook_url` filter. Only use those fallbacks when HMAC/header authentication is not available, because URL tokens may appear in logs, browser history, analytics or screenshots.
 
 == Privacy ==
 
@@ -119,7 +119,7 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 
 * Reworked WooCommerce bulk label downloads to use a short-lived, single-use admin-post download token instead of streaming the PDF directly from the bulk action filter.
 * Bulk label downloads remain scoped to the current user, nonce-protected, limited to 50 selected orders and available on HPOS and legacy order list screens.
-* Kept webhook query-token fallback disabled by default; header-token authentication remains the production-safe default.
+* Require HMAC webhook signatures by default, with timestamp-window and duplicate-delivery checks.
 * Added explicit release-package notes for runtime packages versus WordPress.org/source-review packages.
 
 = 0.4.49 =
@@ -166,7 +166,7 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 * Split bulk label download into separate order-label and good-label actions and fixed the HPOS/legacy "link expired" redirect flow.
 
 = 0.4.21 =
-* Hardened webhook authentication defaults so generated URLs prefer the `X-SooCool-Webhook-Token` header and query-token URLs require an explicit fallback filter.
+* Hardened webhook authentication defaults so generated URLs prefer the `X-SooCool-Webhook-Token` header, HMAC signatures are required by default and query-token URLs require an explicit fallback filter.
 * Added no-store cache headers to webhook-token reveal/regeneration responses.
 
 = 0.4.20 =

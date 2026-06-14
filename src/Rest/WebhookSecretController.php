@@ -60,9 +60,12 @@ final class WebhookSecretController extends AbstractRestController {
 	/** @return array<string, string> */
 	private function payload( string $secret ): array {
 		return array(
-			'secret'      => $secret,
-			'header_name' => 'X-SooCool-Webhook-Token',
-			'webhook_url' => $this->options->effective_webhook_url(),
+			'secret'                => $secret,
+			'header_name'           => 'X-SooCool-Webhook-Token',
+			'timestamp_header_name' => 'X-SooCool-Webhook-Timestamp',
+			'signature_header_name' => 'X-SooCool-Webhook-Signature',
+			'event_id_header_name'  => 'X-SooCool-Webhook-Id',
+			'webhook_url'           => $this->options->effective_webhook_url(),
 		);
 	}
 }
