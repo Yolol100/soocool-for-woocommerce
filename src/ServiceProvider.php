@@ -88,7 +88,7 @@ final class ServiceProvider {
 			SettingsController::class => new SettingsController( $this->get( OptionRepository::class ) ),
 			ConnectionController::class => new ConnectionController( $this->get( ApiClient::class ) ),
 			LogsController::class => new LogsController( $this->get( Logger::class ) ),
-			ManualTestController::class => new ManualTestController( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( DummyOrderFactory::class ), $this->get( DebugRedactor::class ), $this->get( Logger::class ) ),
+			ManualTestController::class => new ManualTestController( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( DummyOrderFactory::class ), $this->get( DebugRedactor::class ), $this->get( Logger::class ), $this->get( OptionRepository::class ) ),
 			OrderSyncController::class => new OrderSyncController( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ), $this->get( OrderSyncService::class ) ),
 			WebhookAuthenticator::class => new WebhookAuthenticator( $this->get( OptionRepository::class ) ),
 			WebhookPayloadExtractor::class => new WebhookPayloadExtractor(),

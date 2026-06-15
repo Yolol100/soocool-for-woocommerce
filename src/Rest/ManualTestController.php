@@ -11,6 +11,7 @@ use SooCool\WooCommerce\Api\ApiException;
 use SooCool\WooCommerce\Domain\OrderPayloadBuilder;
 use SooCool\WooCommerce\Domain\PayloadValidationException;
 use SooCool\WooCommerce\Infrastructure\Logger;
+use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -26,7 +27,8 @@ final class ManualTestController extends AbstractRestController {
 		private readonly OrderPayloadBuilder $builder,
 		private readonly DummyOrderFactory $dummy_orders,
 		private readonly DebugRedactor $redactor,
-		private readonly Logger $logger
+		private readonly Logger $logger,
+		private readonly OptionRepository $options
 	) {}
 
 	public function register_routes(): void {
@@ -63,6 +65,7 @@ final class ManualTestController extends AbstractRestController {
 			$mode = sanitize_key( (string) $request->get_param( 'test_mode' ) );
 			if ( 'dummy' === $mode ) {
 				$payload = $this->builder->build( $this->dummy_orders->create() );
+				$payload = $this->with_unique_dummy_reference( $payload );
 				$mode    = 'dummy_woocommerce_order';
 			} else {
 				$order_id = absint( $request->get_param( 'woocommerce_order_id' ) );
@@ -82,10 +85,11 @@ final class ManualTestController extends AbstractRestController {
 			$response = $this->client->create_order( $payload );
 			$result   = array_merge(
 				$result,
+				$this->request_context( $payload, $response->body() ),
 				array(
 					'success' => true,
 					'status'  => $response->status_code(),
-					'message' => __( 'SooCool heeft de testaanvraag geaccepteerd.', 'soocool-for-woocommerce' ),
+					'message' => __( 'SooCool heeft de testaanvraag geaccepteerd. Controleer de juiste SooCool portal, de getoonde orderreferentie en de pickup-/deliverydatum uit de payload.', 'soocool-for-woocommerce' ),
 					'mode'    => $mode,
 					'payload' => $this->redactor->redact( $payload ),
 					'body'    => $this->redactor->redact( $response->body() ),
@@ -98,6 +102,7 @@ final class ManualTestController extends AbstractRestController {
 			$result['message'] = sanitize_text_field( $exception->getMessage() );
 			$result['errors']  = $this->redactor->redact_error_list( $exception->errors() );
 			if ( isset( $payload ) && is_array( $payload ) ) {
+				$result = array_merge( $result, $this->request_context( $payload ) );
 				$result['payload'] = $this->redactor->redact( $payload );
 			}
 		} catch ( \Throwable $exception ) {
@@ -112,4 +117,71 @@ final class ManualTestController extends AbstractRestController {
 
 		return new WP_REST_Response( $result );
 	}
+
+	/** @param array<string, mixed> $payload @return array<string, mixed> */
+	private function with_unique_dummy_reference( array $payload ): array {
+		$reference = sanitize_text_field( (string) ( $payload['orderReference'] ?? '' ) );
+		$suffix    = gmdate( 'YmdHis' ) . '-' . wp_rand( 1000, 9999 );
+		$payload['orderReference'] = '' !== $reference ? $reference . '-test-' . $suffix : 'test-' . $suffix;
+
+		return $payload;
+	}
+
+	/**
+	 * @param array<string, mixed> $payload
+	 * @param mixed                $body
+	 * @return array<string, mixed>
+	 */
+	private function request_context( array $payload, mixed $body = null ): array {
+		$settings = $this->options->all();
+		$context  = array(
+			'environment'     => (string) ( $settings['environment'] ?? 'test' ),
+			'api_base_url'    => $this->options->base_url(),
+			'order_reference' => sanitize_text_field( (string) ( $payload['orderReference'] ?? '' ) ),
+			'portal_dates'    => $this->portal_dates_from_payload( $payload ),
+		);
+
+		$soocool_order_id = $this->soocool_order_id_from_body( $body );
+		if ( '' !== $soocool_order_id ) {
+			$context['soocool_order_id'] = $soocool_order_id;
+		}
+
+		return $context;
+	}
+
+	/** @param array<string, mixed> $payload @return array<int, string> */
+	private function portal_dates_from_payload( array $payload ): array {
+		$dates = array();
+		$tasks = $payload['tasks'] ?? array();
+		if ( ! is_array( $tasks ) ) {
+			return $dates;
+		}
+
+		foreach ( $tasks as $task ) {
+			if ( ! is_array( $task ) ) {
+				continue;
+			}
+			$task_type = sanitize_key( (string) ( $task['taskType'] ?? '' ) );
+			$window    = $task['timeWindow'] ?? array();
+			$start     = is_array( $window ) ? (string) ( $window['startTime'] ?? '' ) : '';
+			$timestamp = strtotime( $start );
+			if ( false === $timestamp ) {
+				continue;
+			}
+			$label = 'pickup' === $task_type ? __( 'Pickup', 'soocool-for-woocommerce' ) : __( 'Delivery', 'soocool-for-woocommerce' );
+			$dates[] = $label . ': ' . wp_date( 'd-m-Y', $timestamp );
+		}
+
+		return array_values( array_unique( $dates ) );
+	}
+
+	private function soocool_order_id_from_body( mixed $body ): string {
+		if ( ! is_array( $body ) || ! isset( $body['orderId'] ) || is_array( $body['orderId'] ) || is_object( $body['orderId'] ) ) {
+			return '';
+		}
+
+		$order_id = trim( sanitize_text_field( (string) $body['orderId'] ) );
+		return ctype_digit( $order_id ) && 0 < (int) $order_id ? (string) (int) $order_id : '';
+	}
+
 }

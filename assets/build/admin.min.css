@@ -1017,3 +1017,40 @@
   border-radius: var(--soocool-radius-xs);
   overflow: hidden;
 }
+
+/* Fix WordPress component focus styling on SooCool select fields.
+ * WP core/components can add a blue focus ring on the input while this plugin
+ * adds its red accent ring on the backdrop. Keep one consistent border/ring. */
+.soocool-shell .components-input-control__input,
+.soocool-shell .components-select-control__input {
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.soocool-shell .components-input-control__container .components-input-control__input,
+.soocool-shell .components-select-control .components-input-control__container .components-select-control__input {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.soocool-shell .components-input-control__container:focus-within .components-input-control__input,
+.soocool-shell .components-select-control .components-input-control__container:focus-within .components-select-control__input {
+  border-color: transparent !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.soocool-shell .components-input-control__container:focus-within .components-input-control__backdrop,
+.soocool-shell .components-select-control .components-input-control__container:focus-within .components-input-control__backdrop,
+.soocool-shell .components-select-control:focus-within .components-input-control__backdrop {
+  border-color: var(--soocool-color-accent) !important;
+  box-shadow: var(--soocool-shadow-focus) !important;
+  outline: 0 !important;
+}
+
+.soocool-shell select:focus,
+.soocool-shell select.components-select-control__input:focus {
+  border-color: var(--soocool-color-accent) !important;
+  outline: 0 !important;
+  box-shadow: var(--soocool-shadow-focus) !important;
+}

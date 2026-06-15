@@ -226,6 +226,8 @@ final class OptionRepository {
 		$settings['api_key_status']   = $this->api_key_status();
 		$settings['api_key_masked']   = $this->masked_api_key();
 		$settings['api_key']          = $settings['api_key_present'] ? $settings['api_key_masked'] : '';
+		$settings['effective_base_url'] = $this->base_url();
+		$settings['api_base_url']       = $settings['effective_base_url'];
 		$settings['generated_webhook_url']          = $this->generated_webhook_url();
 		$settings['webhook_header_name']            = 'X-SooCool-Webhook-Token';
 		$settings['webhook_timestamp_header_name']  = 'X-SooCool-Webhook-Timestamp';

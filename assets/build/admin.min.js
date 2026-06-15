@@ -446,9 +446,14 @@
           el('strong', null, result.success ? __('Resultaat: testorder verstuurd naar SooCool', 'soocool-for-woocommerce') : __('Resultaat: testorder niet verstuurd', 'soocool-for-woocommerce')),
           typeof result.status !== 'undefined' ? el('span', null, 'HTTP status: ' + String(result.status)) : null,
           result.message ? el('p', null, el('strong', null, __('Details:', 'soocool-for-woocommerce')), ' ', result.message) : null,
-          result.mode ? el('span', null, __('Testmodus:', 'soocool-for-woocommerce') + ' ' + String(result.mode)) : null
+          result.mode ? el('span', null, __('Testmodus:', 'soocool-for-woocommerce') + ' ' + String(result.mode)) : null,
+          result.environment ? el('span', null, __('Omgeving:', 'soocool-for-woocommerce') + ' ' + String(result.environment)) : null,
+          result.api_base_url ? el('span', null, __('API URL:', 'soocool-for-woocommerce') + ' ' + String(result.api_base_url)) : null,
+          result.order_reference ? el('span', null, __('Orderreferentie:', 'soocool-for-woocommerce') + ' ' + String(result.order_reference)) : null,
+          result.soocool_order_id ? el('span', null, __('SooCool order-ID:', 'soocool-for-woocommerce') + ' ' + String(result.soocool_order_id)) : null,
+          result.portal_dates && result.portal_dates.length ? el('span', null, __('Controleer portaldatum:', 'soocool-for-woocommerce') + ' ' + result.portal_dates.join(', ')) : null
         ),
-        el('p', { className: 'soocool-next-step' }, result.success ? __('Volgende stap: controleer de verzonden payload, download daarna een label of wacht op webhook/track & trace als deze test een echte order heeft aangemaakt.', 'soocool-for-woocommerce') : __('Volgende stap: controleer de foutdetails en pas orderdata, API-key, timeWindow of payload aan voordat je opnieuw test.', 'soocool-for-woocommerce'))
+        el('p', { className: 'soocool-next-step' }, result.success ? __('Volgende stap: zoek in de juiste SooCool portal op de getoonde orderreferentie of op de getoonde pickup-/deliverydatum. Production-orders staan niet in de testportal.', 'soocool-for-woocommerce') : __('Volgende stap: controleer de foutdetails en pas orderdata, API-key, timeWindow of payload aan voordat je opnieuw test.', 'soocool-for-woocommerce'))
       ) : el(Card, null,
         el('h3', null, __('Welke order wil je testen?', 'soocool-for-woocommerce')),
         el('p', { className: 'soocool-field-help' }, __('Gebruik bij voorkeur staging. Een echte WooCommerce order wordt naar de actieve SooCool omgeving gestuurd en kan daar een echte order aanmaken of bijwerken.', 'soocool-for-woocommerce')),
