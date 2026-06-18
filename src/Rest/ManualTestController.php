@@ -89,7 +89,7 @@ final class ManualTestController extends AbstractRestController {
 				array(
 					'success' => true,
 					'status'  => $response->status_code(),
-					'message' => __( 'SooCool heeft de testaanvraag geaccepteerd. Controleer de juiste SooCool portal, de getoonde orderreferentie en de pickup-/deliverydatum uit de payload.', 'soocool-for-woocommerce' ),
+					'message' => __( 'SooCool heeft de testaanvraag geaccepteerd. Controleer het juiste SooCool-portaal, de getoonde orderreferentie en de ophaal-/bezorgdatum uit de payload.', 'soocool-for-woocommerce' ),
 					'mode'    => $mode,
 					'payload' => $this->redactor->redact( $payload ),
 					'body'    => $this->redactor->redact( $response->body() ),
@@ -107,7 +107,7 @@ final class ManualTestController extends AbstractRestController {
 			}
 		} catch ( \Throwable $exception ) {
 			$this->logger->error(
-				'Manual SooCool API test failed unexpectedly.',
+				'Handmatige SooCool API-test onverwacht mislukt.',
 				array(
 					'error' => $exception->getMessage(),
 				)
@@ -168,7 +168,7 @@ final class ManualTestController extends AbstractRestController {
 			if ( false === $timestamp ) {
 				continue;
 			}
-			$label = 'pickup' === $task_type ? __( 'Pickup', 'soocool-for-woocommerce' ) : __( 'Delivery', 'soocool-for-woocommerce' );
+			$label = 'pickup' === $task_type ? __( 'Ophalen', 'soocool-for-woocommerce' ) : __( 'Bezorgen', 'soocool-for-woocommerce' );
 			$dates[] = $label . ': ' . wp_date( 'd-m-Y', $timestamp );
 		}
 

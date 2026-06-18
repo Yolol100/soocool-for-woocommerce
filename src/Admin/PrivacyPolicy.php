@@ -23,10 +23,10 @@ final class PrivacyPolicy {
 
 	private function content(): string {
 		$paragraphs = array(
-			__( 'SooCool for WooCommerce can send WooCommerce order, delivery, pickup, recipient and label data to the configured SooCool transport API when an order is manually or automatically synchronized.', 'soocool-for-woocommerce' ),
-			__( 'Depending on your settings and order contents, this can include recipient name, shipping or billing address, postcode, city, email address, phone number, order reference, package details, delivery instructions, tracking data and shipping label references.', 'soocool-for-woocommerce' ),
-			__( 'The plugin stores API connection settings and a webhook secret in WordPress options. API keys and webhook secrets are masked in the admin interface and should not be shared in logs, screenshots or support exports.', 'soocool-for-woocommerce' ),
-			__( 'The site owner remains responsible for documenting the SooCool transport service, the legal basis for shipment processing and any retention periods in the site privacy policy.', 'soocool-for-woocommerce' ),
+			__( 'SooCool for WooCommerce kan WooCommerce order-, bezorg-, ophaal-, ontvanger- en labelgegevens naar de ingestelde SooCool transport-API sturen wanneer een order handmatig of automatisch wordt gesynchroniseerd.', 'soocool-for-woocommerce' ),
+			__( 'Afhankelijk van de instellingen en orderinhoud kan dit bestaan uit naam van de ontvanger, verzend- of factuuradres, postcode, plaats, e-mailadres, telefoonnummer, orderreferentie, pakketgegevens, bezorginstructies, trackinggegevens en verzendlabelreferenties.', 'soocool-for-woocommerce' ),
+			__( 'De plugin bewaart API-koppelingsinstellingen en een webhookgeheim in WordPress-opties. API-keys en webhookgeheimen worden in de beheeromgeving gemaskeerd en mogen niet worden gedeeld in logs, screenshots of supportexports.', 'soocool-for-woocommerce' ),
+			__( 'De site-eigenaar blijft verantwoordelijk voor het beschrijven van de SooCool transportdienst, de juridische grondslag voor verzendverwerking en eventuele bewaartermijnen in het privacybeleid van de site.', 'soocool-for-woocommerce' ),
 		);
 
 		$html = '';

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace SooCool\WooCommerce\Rest;
 
 use SooCool\WooCommerce\Infrastructure\Logger;
-use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 use WP_Error;
@@ -20,7 +19,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class WebhookController extends AbstractRestController {
 
 	public function __construct(
-		private readonly OptionRepository $options,
 		private readonly OrderMeta $meta,
 		private readonly Logger $logger,
 		private readonly WebhookAuthenticator $authenticator,
@@ -46,12 +44,12 @@ final class WebhookController extends AbstractRestController {
 	public function receive( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$raw_body = $request->get_body();
 		if ( is_string( $raw_body ) && strlen( $raw_body ) > WebhookPayloadExtractor::MAX_PAYLOAD_BYTES ) {
-			return new WP_Error( 'soocool_webhook_payload_too_large', __( 'SooCool webhook payload is too large.', 'soocool-for-woocommerce' ), array( 'status' => 413 ) );
+			return new WP_Error( 'soocool_webhook_payload_too_large', __( 'SooCool webhook-payload is te groot.', 'soocool-for-woocommerce' ), array( 'status' => 413 ) );
 		}
 
 		$payload = $request->get_json_params();
 		if ( ! is_array( $payload ) || ! $this->payloads->shape_is_safe( $payload ) ) {
-			return new WP_Error( 'soocool_webhook_invalid_payload', __( 'Invalid SooCool webhook payload.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+			return new WP_Error( 'soocool_webhook_invalid_payload', __( 'Ongeldige SooCool webhook-payload.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
 		}
 
 		$soocool_order_id = $this->payloads->soocool_order_id( $payload );
@@ -67,7 +65,7 @@ final class WebhookController extends AbstractRestController {
 					'orderId' => '' !== $soocool_order_id ? $soocool_order_id : '[missing]',
 				)
 			);
-			return new WP_Error( 'soocool_webhook_order_not_found', __( 'SooCool webhook order not found.', 'soocool-for-woocommerce' ), array( 'status' => 404 ) );
+			return new WP_Error( 'soocool_webhook_order_not_found', __( 'SooCool webhook-order niet gevonden.', 'soocool-for-woocommerce' ), array( 'status' => 404 ) );
 		}
 
 		$data = $this->payloads->update_data( $payload );
@@ -140,10 +138,10 @@ final class WebhookController extends AbstractRestController {
 		}
 
 		return '' === implode( ', ', $parts )
-			? __( 'SooCool webhook received.', 'soocool-for-woocommerce' )
+			? __( 'SooCool webhook ontvangen.', 'soocool-for-woocommerce' )
 			: sprintf(
 				/* translators: %s: safe webhook summary. */
-				__( 'SooCool webhook received: %s.', 'soocool-for-woocommerce' ),
+				__( 'SooCool webhook ontvangen: %s.', 'soocool-for-woocommerce' ),
 				implode( ', ', $parts )
 			);
 	}

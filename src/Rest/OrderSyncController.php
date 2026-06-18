@@ -10,6 +10,7 @@ use SooCool\WooCommerce\Domain\OrderPayloadBuilder;
 use SooCool\WooCommerce\Domain\OrderSyncService;
 use SooCool\WooCommerce\Domain\PayloadValidationException;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
+use SooCool\WooCommerce\Infrastructure\SecretSanitizer;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -26,7 +27,8 @@ final class OrderSyncController extends AbstractRestController {
 		private readonly OrderPayloadBuilder $builder,
 		private readonly OrderMeta $meta,
 		private readonly OptionRepository $options,
-		private readonly OrderSyncService $sync
+		private readonly OrderSyncService $sync,
+		private readonly SecretSanitizer $sanitizer
 	) {}
 
 	public function register_routes(): void {
@@ -59,7 +61,7 @@ final class OrderSyncController extends AbstractRestController {
 			return new WP_REST_Response(
 				array(
 					'success' => false,
-					'message' => __( 'Order not found.', 'soocool-for-woocommerce' ),
+					'message' => __( 'Order niet gevonden.', 'soocool-for-woocommerce' ),
 				),
 				404
 			);
@@ -72,7 +74,7 @@ final class OrderSyncController extends AbstractRestController {
 			return new WP_REST_Response(
 				array(
 					'success' => false,
-					'message' => __( 'Manual resubmission is disabled in the SooCool settings.', 'soocool-for-woocommerce' ),
+					'message' => __( 'Handmatig opnieuw versturen is uitgeschakeld in de SooCool-instellingen.', 'soocool-for-woocommerce' ),
 				),
 				403
 			);
@@ -81,7 +83,7 @@ final class OrderSyncController extends AbstractRestController {
 			return new WP_REST_Response(
 				array(
 					'success' => false,
-					'message' => __( 'Order is already synced with SooCool.', 'soocool-for-woocommerce' ),
+					'message' => __( 'Order is al met SooCool gesynchroniseerd.', 'soocool-for-woocommerce' ),
 				),
 				409
 			);
@@ -92,7 +94,7 @@ final class OrderSyncController extends AbstractRestController {
 			return new WP_REST_Response(
 				array(
 					'success' => false,
-					'message' => __( 'SooCool sync is already running for this order. Try again in a moment.', 'soocool-for-woocommerce' ),
+					'message' => __( 'SooCool-synchronisatie draait al voor deze order. Probeer het zo opnieuw.', 'soocool-for-woocommerce' ),
 				),
 				409
 			);
@@ -105,14 +107,14 @@ final class OrderSyncController extends AbstractRestController {
 			if ( array() !== $existing_order ) {
 				$soocool_order_id = $this->meta->extract_order_id( $existing_order );
 				$this->meta->save_success( $order, $existing_order, (string) $payload['orderReference'] );
-				$order->add_order_note( __( 'Existing SooCool order found by order reference. WooCommerce order linked without creating a duplicate SooCool order.', 'soocool-for-woocommerce' ) );
+				$order->add_order_note( __( 'Bestaande SooCool-order gevonden op orderreferentie. WooCommerce-order gekoppeld zonder dubbele SooCool-order aan te maken.', 'soocool-for-woocommerce' ) );
 				return new WP_REST_Response(
 					array(
 						'success'      => true,
 						'orderId'      => $soocool_order_id,
 						'ourReference' => isset( $existing_order['ourReference'] ) ? sanitize_text_field( (string) $existing_order['ourReference'] ) : sanitize_text_field( (string) $payload['orderReference'] ),
 						'existing'     => true,
-						'message'      => __( 'Existing SooCool order found by order reference. No duplicate SooCool order was created.', 'soocool-for-woocommerce' ),
+						'message'      => __( 'Bestaande SooCool-order gevonden op orderreferentie. Er is geen dubbele SooCool-order aangemaakt.', 'soocool-for-woocommerce' ),
 					)
 				);
 			}
@@ -121,7 +123,7 @@ final class OrderSyncController extends AbstractRestController {
 			$body             = is_array( $response->body() ) ? $response->body() : array();
 			$soocool_order_id = $this->meta->extract_order_id( $body );
 			if ( '' === $soocool_order_id ) {
-				throw new ApiException( esc_html__( 'SooCool did not return a valid order ID.', 'soocool-for-woocommerce' ) );
+				throw new ApiException( esc_html__( 'SooCool gaf geen geldig order-ID terug.', 'soocool-for-woocommerce' ) );
 			}
 			$this->meta->save_success( $order, $body, (string) $payload['orderReference'] );
 			return new WP_REST_Response(
@@ -153,7 +155,7 @@ final class OrderSyncController extends AbstractRestController {
 				$this->safe_status_code( $exception->status_code() )
 			);
 		} catch ( \Throwable $exception ) {
-			$message = __( 'SooCool sync failed unexpectedly. Check the SooCool logs and PHP error log for details.', 'soocool-for-woocommerce' );
+			$message = __( 'SooCool-synchronisatie is onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details.', 'soocool-for-woocommerce' );
 			$this->meta->save_error( $order, $message );
 			$order->add_order_note( $message );
 
@@ -182,23 +184,10 @@ final class OrderSyncController extends AbstractRestController {
 			$message .= ' (' . implode( '; ', $errors ) . ')';
 		}
 
-		return '' !== $message ? $message : __( 'SooCool sync failed. Check the SooCool logs for details.', 'soocool-for-woocommerce' );
+		return '' !== $message ? $message : __( 'SooCool-synchronisatie mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' );
 	}
 
 	private function redact_public_error_text( string $value ): string {
-		$patterns = array(
-			'/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i' => '[redacted-api-key]',
-			'/([A-Z0-9._%+\-]+)@([A-Z0-9.\-]+\.[A-Z]{2,})/i' => '[redacted-email]',
-			'/\b(?:\+?\d[\d\s().\-]{7,}\d)\b/' => '[redacted-phone]',
-			'/\b\d{4}\s?[A-Z]{2}\b/i' => '[redacted-postcode]',
-			'/\b(?:api[_ -]?key|x-api-key|authorization|token|secret|password)\s*[:=]\s*(?:Bearer\s+)?[^\s,;]+/i' => '[redacted-secret]',
-			'/\bBearer\s+[^\s,;]+/i' => '[redacted-secret]',
-		);
-
-		foreach ( $patterns as $pattern => $replacement ) {
-			$value = preg_replace( $pattern, $replacement, $value ) ?? $value;
-		}
-
-		return trim( sanitize_text_field( $value ) );
+		return $this->sanitizer->scrub_text( $value );
 	}
 }

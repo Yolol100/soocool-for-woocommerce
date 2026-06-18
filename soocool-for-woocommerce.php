@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SooCool for WooCommerce
  * Description: Connect WooCommerce orders with the SooCool transport API.
- * Version: 0.4.53
+ * Version: 0.4.91
  * Author: Webactueel
  * Text Domain: soocool-for-woocommerce
  * Domain Path: /languages
@@ -10,7 +10,7 @@
  * Requires at least: 6.5
  * Requires Plugins: woocommerce
  * WC requires at least: 8.0
- * WC tested up to: 9.9
+ * WC tested up to: 10.8
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  *
@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'SOOCOOL_PLUGIN_FILE', __FILE__ );
 define( 'SOOCOOL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SOOCOOL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'SOOCOOL_VERSION', '0.4.53' );
+define( 'SOOCOOL_VERSION', '0.4.91' );
 
 add_action(
 	'before_woocommerce_init',
@@ -63,7 +63,7 @@ add_filter(
 		$settings_url = admin_url( 'admin.php?page=soocool-for-woocommerce' );
 		array_unshift(
 			$links,
-			'<a href="' . esc_url( $settings_url ) . '">' . esc_html__( 'Settings', 'soocool-for-woocommerce' ) . '</a>'
+			'<a href="' . esc_url( $settings_url ) . '">' . esc_html__( 'Instellingen', 'soocool-for-woocommerce' ) . '</a>'
 		);
 
 		return $links;
@@ -75,7 +75,13 @@ register_activation_hook(
 	static function (): void {
 		if ( PHP_VERSION_ID < 80100 ) {
 			deactivate_plugins( plugin_basename( __FILE__ ) );
-			wp_die( esc_html__( 'SooCool for WooCommerce requires PHP 8.1 or higher.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'SooCool for WooCommerce vereist PHP 8.1 of hoger.', 'soocool-for-woocommerce' ) );
+		}
+
+		$soocool_requirements = new SooCool\WooCommerce\Infrastructure\Requirements();
+		if ( ! $soocool_requirements->is_supported() ) {
+			deactivate_plugins( plugin_basename( __FILE__ ) );
+			wp_die( esc_html( $soocool_requirements->get_missing_message() ) );
 		}
 
 		( new SooCool\WooCommerce\Infrastructure\OptionRepository() )->migrate_for_current_version();
@@ -89,7 +95,7 @@ add_action(
 			add_action(
 				'admin_notices',
 				static function (): void {
-					echo '<div class="notice notice-error"><p>' . esc_html__( 'SooCool for WooCommerce requires PHP 8.1 or higher.', 'soocool-for-woocommerce' ) . '</p></div>';
+					echo '<div class="notice notice-error"><p>' . esc_html__( 'SooCool for WooCommerce vereist PHP 8.1 of hoger.', 'soocool-for-woocommerce' ) . '</p></div>';
 				}
 			);
 			return;

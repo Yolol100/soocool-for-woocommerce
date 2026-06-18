@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Domain;
 
+use SooCool\WooCommerce\Checkout\DeliverySchedule;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
+use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -27,7 +29,7 @@ final class TaskFactory {
 	private const DELIVERY_TIME_FROM = '08:00';
 	private const DELIVERY_TIME_TO   = '18:00';
 
-	public function __construct( private readonly OptionRepository $options, private readonly AddressParser $address_parser ) {}
+	public function __construct( private readonly OptionRepository $options, private readonly AddressParser $address_parser, private readonly ?DeliverySchedule $delivery_schedule = null ) {}
 
 	/** @param array<int, int|string> $good_ids Requested good IDs to attach to every task. @return array<int, array<string, mixed>> */
 	public function create_tasks( WC_Order $order, array $good_ids = array() ): array {
@@ -53,7 +55,11 @@ final class TaskFactory {
 		}
 
 		$delivery_date = $this->date_for_offset( $delivery_offset );
-		$tasks         = array();
+		$requested_delivery_date = $this->requested_delivery_date( $order, (bool) $settings['enable_pickup'], $pickup_date );
+		if ( '' !== $requested_delivery_date ) {
+			$delivery_date = $requested_delivery_date;
+		}
+		$tasks = array();
 
 		if ( (bool) $settings['enable_pickup'] ) {
 			$tasks[] = $this->pickup_task( $settings, $pickup_date, $good_ids );
@@ -64,11 +70,34 @@ final class TaskFactory {
 		return $tasks;
 	}
 
+
+	private function requested_delivery_date( WC_Order $order, bool $pickup_enabled, string $pickup_date ): string {
+		$value = $order->get_meta( OrderMeta::REQUESTED_DELIVERY_DATE, true );
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		$date = sanitize_text_field( (string) $value );
+		if ( null !== $this->delivery_schedule ) {
+			return $this->delivery_schedule->is_usable_order_date( $date, $pickup_enabled ? $pickup_date : '' ) ? $date : '';
+		}
+
+		if ( 1 !== preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+			return '';
+		}
+
+		if ( $date < $this->date_for_offset( 0 ) ) {
+			return '';
+		}
+
+		return $pickup_enabled && $date <= $pickup_date ? '' : $date;
+	}
+
 	/** @param array<string, mixed> $settings @param array<int, int> $good_ids @return array<string, mixed> */
 	private function pickup_task( array $settings, string $date, array $good_ids ): array {
 		foreach ( array( 'pickup_company', 'pickup_street', 'pickup_house_number', 'pickup_postal_code', 'pickup_city', 'pickup_country' ) as $field ) {
 			if ( '' === trim( (string) ( $settings[ $field ] ?? '' ) ) ) {
-				throw new PayloadValidationException( esc_html__( 'Pickup settings are incomplete. Complete the pickup address before sending orders to SooCool.', 'soocool-for-woocommerce' ) );
+				throw new PayloadValidationException( esc_html__( 'Ophaalinstellingen zijn onvolledig. Vul het ophaaladres aan voordat orders naar SooCool worden gestuurd.', 'soocool-for-woocommerce' ) );
 			}
 		}
 
@@ -77,7 +106,7 @@ final class TaskFactory {
 			sanitize_text_field( (string) $settings['pickup_phone'] )
 		);
 		if ( array() === $contact_info ) {
-			throw new PayloadValidationException( esc_html__( 'Pickup contact is incomplete. Add a pickup email address, phone number or valid Dutch mobile number in the SooCool settings.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'Ophaalcontact is onvolledig. Voeg in de SooCool-instellingen een ophaal-e-mailadres, telefoonnummer of geldig Nederlands mobiel nummer toe.', 'soocool-for-woocommerce' ) );
 		}
 
 		$task = array(
@@ -234,25 +263,25 @@ final class TaskFactory {
 		$fields = array();
 
 		if ( '' === trim( $recipient_name ) ) {
-			$fields[] = __( 'recipient name', 'soocool-for-woocommerce' );
+			$fields[] = __( 'naam ontvanger', 'soocool-for-woocommerce' );
 		}
 		if ( '' === trim( (string) $address['street'] ) ) {
-			$fields[] = __( 'street name', 'soocool-for-woocommerce' );
+			$fields[] = __( 'straatnaam', 'soocool-for-woocommerce' );
 		}
 		if ( '' === trim( (string) $address['houseNumber'] ) ) {
-			$fields[] = __( 'house number', 'soocool-for-woocommerce' );
+			$fields[] = __( 'huisnummer', 'soocool-for-woocommerce' );
 		}
 		if ( '' === trim( $postal_code ) ) {
 			$fields[] = __( 'postcode', 'soocool-for-woocommerce' );
 		}
 		if ( '' === trim( $city ) ) {
-			$fields[] = __( 'city', 'soocool-for-woocommerce' );
+			$fields[] = __( 'plaats', 'soocool-for-woocommerce' );
 		}
 		if ( '' === trim( $country ) ) {
-			$fields[] = __( 'country', 'soocool-for-woocommerce' );
+			$fields[] = __( 'land', 'soocool-for-woocommerce' );
 		}
 		if ( array() === $this->delivery_contact_info( $order ) ) {
-			$fields[] = __( 'email, phone number or valid Dutch mobile number', 'soocool-for-woocommerce' );
+			$fields[] = __( 'e-mailadres, telefoonnummer of geldig Nederlands mobiel nummer', 'soocool-for-woocommerce' );
 		}
 
 		return $fields;
@@ -264,7 +293,7 @@ final class TaskFactory {
 
 		return sprintf(
 			/* translators: %s: comma-separated list of missing WooCommerce address fields. */
-			esc_html__( 'Delivery address is incomplete. Missing WooCommerce field(s): %s. Complete the shipping or billing address before sending this order to SooCool.', 'soocool-for-woocommerce' ),
+			esc_html__( 'Bezorgadres is onvolledig. Ontbrekende WooCommerce-velden: %s. Vul het verzend- of factuuradres aan voordat deze order naar SooCool wordt gestuurd.', 'soocool-for-woocommerce' ),
 			$fields
 		);
 	}
@@ -350,7 +379,7 @@ final class TaskFactory {
 		try {
 			$date_time = new \DateTimeImmutable( $date . ' ' . $time, $timezone );
 		} catch ( \Exception ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool task time could not be generated.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool taaktijd kon niet worden gegenereerd.', 'soocool-for-woocommerce' ) );
 		}
 
 		return $date_time->format( DATE_ATOM );

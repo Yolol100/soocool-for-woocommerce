@@ -13,7 +13,7 @@ final class OrderPayloadValidator {
 	/** @param array<string, mixed> $payload */
 	public function validate_contract_minimums( array $payload ): void {
 		if ( '' === trim( (string) ( $payload['orderReference'] ?? '' ) ) ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool order reference is missing.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool orderreferentie ontbreekt.', 'soocool-for-woocommerce' ) );
 		}
 
 		// Per the SooCool OpenAPI contract (1.2.1) only orderReference, tasks and goods
@@ -25,13 +25,13 @@ final class OrderPayloadValidator {
 		if ( array_key_exists( 'webhook', $payload ) ) {
 			$webhook = $payload['webhook'];
 			if ( ! is_array( $webhook ) || empty( $webhook['webhookUrl'] ) || empty( $webhook['webhookUpdates'] ) ) {
-				throw new PayloadValidationException( esc_html__( 'SooCool webhook block is present but incomplete. Provide a HTTPS webhook.webhookUrl and webhook.webhookUpdates, or remove the webhook block.', 'soocool-for-woocommerce' ) );
+				throw new PayloadValidationException( esc_html__( 'SooCool webhookblok is aanwezig maar onvolledig. Vul een HTTPS webhook.webhookUrl en webhook.webhookUpdates in, of verwijder het webhookblok.', 'soocool-for-woocommerce' ) );
 			}
 		}
 
 		$tasks = $payload['tasks'] ?? array();
 		if ( ! is_array( $tasks ) || array() === $tasks ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool payload must contain at least one task.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool payload moet minimaal één taak bevatten.', 'soocool-for-woocommerce' ) );
 		}
 
 		$defined_ids = $this->validate_goods_manifest( $payload['goods'] ?? null );
@@ -40,12 +40,12 @@ final class OrderPayloadValidator {
 		$pickup_starts   = array();
 		foreach ( $tasks as $task ) {
 			if ( ! is_array( $task ) ) {
-				throw new PayloadValidationException( esc_html__( 'Every SooCool task must be an object.', 'soocool-for-woocommerce' ) );
+				throw new PayloadValidationException( esc_html__( 'Elke SooCool-taak moet een object zijn.', 'soocool-for-woocommerce' ) );
 			}
 
 			$task_type = sanitize_key( (string) ( $task['taskType'] ?? '' ) );
 			if ( ! in_array( $task_type, array( 'delivery', 'pickup' ), true ) ) {
-				throw new PayloadValidationException( esc_html__( 'SooCool taskType must be delivery or pickup.', 'soocool-for-woocommerce' ) );
+				throw new PayloadValidationException( esc_html__( 'SooCool taskType moet delivery of pickup zijn.', 'soocool-for-woocommerce' ) );
 			}
 
 			$start = $this->validate_time_window( $task['timeWindow'] ?? null );
@@ -62,13 +62,13 @@ final class OrderPayloadValidator {
 		}
 
 		if ( array() === $delivery_starts ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool payload must contain at least one delivery task.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool payload moet minimaal één bezorgtaak bevatten.', 'soocool-for-woocommerce' ) );
 		}
 
 		foreach ( $pickup_starts as $pickup_start ) {
 			foreach ( $delivery_starts as $delivery_start ) {
 				if ( ! $this->delivery_is_on_later_date_than_pickup( $delivery_start, $pickup_start ) ) {
-					throw new PayloadValidationException( esc_html__( 'SooCool delivery date must be later than the pickup date when a pickup task is used.', 'soocool-for-woocommerce' ) );
+					throw new PayloadValidationException( esc_html__( 'De SooCool bezorgdatum moet later zijn dan de ophaaldatum wanneer een ophaaltaak wordt gebruikt.', 'soocool-for-woocommerce' ) );
 				}
 			}
 		}
@@ -77,19 +77,19 @@ final class OrderPayloadValidator {
 	/** @param mixed $time_window @return string startTime */
 	private function validate_time_window( mixed $time_window ): string {
 		if ( ! is_array( $time_window ) ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool task timeWindow is missing.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool taakveld timeWindow ontbreekt.', 'soocool-for-woocommerce' ) );
 		}
 
 		$start = (string) ( $time_window['startTime'] ?? '' );
 		$end   = (string) ( $time_window['endTime'] ?? '' );
 		if ( '' === trim( $start ) || '' === trim( $end ) ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool timeWindow must contain a startTime and endTime.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool timeWindow moet een startTime en endTime bevatten.', 'soocool-for-woocommerce' ) );
 		}
 
 		$start_timestamp = strtotime( $start );
 		$end_timestamp   = strtotime( $end );
 		if ( false === $start_timestamp || false === $end_timestamp || $end_timestamp <= $start_timestamp ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool timeWindow endTime must be later than startTime.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool timeWindow endTime moet later zijn dan startTime.', 'soocool-for-woocommerce' ) );
 		}
 
 		return $start;
@@ -98,7 +98,7 @@ final class OrderPayloadValidator {
 	/** @param mixed $address */
 	private function validate_task_address( mixed $address ): void {
 		if ( ! is_array( $address ) ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool task address is missing.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool taakadres ontbreekt.', 'soocool-for-woocommerce' ) );
 		}
 
 		foreach ( array( 'person', 'street', 'houseNumber', 'postCode', 'city', 'country' ) as $field ) {
@@ -106,7 +106,7 @@ final class OrderPayloadValidator {
 				throw new PayloadValidationException(
 					sprintf(
 						/* translators: %s: SooCool address field name. */
-						esc_html__( 'SooCool address field %s is missing.', 'soocool-for-woocommerce' ),
+						esc_html__( 'SooCool adresveld %s ontbreekt.', 'soocool-for-woocommerce' ),
 						esc_html( $field )
 					)
 				);
@@ -117,7 +117,7 @@ final class OrderPayloadValidator {
 	/** @param mixed $contact */
 	private function validate_task_contact_info( mixed $contact ): void {
 		if ( ! is_array( $contact ) ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool task contactInfo is missing.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool taakveld contactInfo ontbreekt.', 'soocool-for-woocommerce' ) );
 		}
 
 		$has_email  = '' !== trim( (string) ( $contact['email'] ?? '' ) );
@@ -125,7 +125,7 @@ final class OrderPayloadValidator {
 		$has_mobile = '' !== trim( (string) ( $contact['mobile'] ?? '' ) );
 
 		if ( ! $has_email && ! $has_phone && ! $has_mobile ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool task contactInfo must contain at least an email address, phone number or mobile number.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool taakveld contactInfo moet minimaal een e-mailadres, telefoonnummer of mobiel nummer bevatten.', 'soocool-for-woocommerce' ) );
 		}
 	}
 
@@ -135,17 +135,17 @@ final class OrderPayloadValidator {
 	 */
 	private function validate_task_goods( mixed $goods, array $defined_ids ): void {
 		if ( ! is_array( $goods ) || array() === $goods ) {
-			throw new PayloadValidationException( esc_html__( 'Every SooCool task must reference at least one good.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'Elke SooCool-taak moet minimaal één good refereren.', 'soocool-for-woocommerce' ) );
 		}
 
 		foreach ( $goods as $good_id ) {
 			$normalized_id = $this->signed_int_or_null( $good_id );
 			if ( null === $normalized_id || 0 === $normalized_id ) {
-				throw new PayloadValidationException( esc_html__( 'SooCool task goods must be a list of non-zero good IDs.', 'soocool-for-woocommerce' ) );
+				throw new PayloadValidationException( esc_html__( 'SooCool taakveld goods moet een lijst met niet-nul goederen-ID’s zijn.', 'soocool-for-woocommerce' ) );
 			}
 
 			if ( ! isset( $defined_ids[ $normalized_id ] ) ) {
-				throw new PayloadValidationException( esc_html__( 'SooCool task references a good that is not in the goods list.', 'soocool-for-woocommerce' ) );
+				throw new PayloadValidationException( esc_html__( 'SooCool-taak verwijst naar een good dat niet in de goods-lijst staat.', 'soocool-for-woocommerce' ) );
 			}
 		}
 	}
@@ -156,13 +156,13 @@ final class OrderPayloadValidator {
 	 */
 	private function validate_goods_manifest( mixed $goods ): array {
 		if ( ! is_array( $goods ) || array() === $goods ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool payload must contain at least one good.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool payload moet minimaal één good bevatten.', 'soocool-for-woocommerce' ) );
 		}
 
 		$ids = array();
 		foreach ( $goods as $good ) {
 			if ( ! is_array( $good ) ) {
-				throw new PayloadValidationException( esc_html__( 'Every SooCool good must be an object.', 'soocool-for-woocommerce' ) );
+				throw new PayloadValidationException( esc_html__( 'Elke SooCool-good moet een object zijn.', 'soocool-for-woocommerce' ) );
 			}
 
 			foreach ( array( 'packagingType', 'contents' ) as $field ) {
@@ -170,7 +170,7 @@ final class OrderPayloadValidator {
 					throw new PayloadValidationException(
 						sprintf(
 							/* translators: %s: SooCool field name. */
-							esc_html__( 'SooCool good field %s is missing.', 'soocool-for-woocommerce' ),
+							esc_html__( 'SooCool-good-veld %s ontbreekt.', 'soocool-for-woocommerce' ),
 							esc_html( $field )
 						)
 					);
@@ -179,11 +179,11 @@ final class OrderPayloadValidator {
 
 			$good_id = $this->signed_int_or_null( $good['goodId'] ?? null );
 			if ( null === $good_id || 0 === $good_id ) {
-				throw new PayloadValidationException( esc_html__( 'SooCool goodId must be a non-zero integer.', 'soocool-for-woocommerce' ) );
+				throw new PayloadValidationException( esc_html__( 'SooCool goodId moet een niet-nul geheel getal zijn.', 'soocool-for-woocommerce' ) );
 			}
 
 			if ( isset( $ids[ $good_id ] ) ) {
-				throw new PayloadValidationException( esc_html__( 'SooCool good IDs must be unique.', 'soocool-for-woocommerce' ) );
+				throw new PayloadValidationException( esc_html__( 'SooCool-goederen-ID’s moeten uniek zijn.', 'soocool-for-woocommerce' ) );
 			}
 
 			$this->validate_optional_dimensions( $good['dimensions'] ?? null );
@@ -203,7 +203,7 @@ final class OrderPayloadValidator {
 		}
 
 		if ( ! is_array( $dimensions ) ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool good dimensions must be an object when provided.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool-good-dimensions moet een object zijn wanneer dit veld is ingevuld.', 'soocool-for-woocommerce' ) );
 		}
 
 		foreach ( array( 'width', 'depth', 'height' ) as $field ) {
@@ -211,7 +211,7 @@ final class OrderPayloadValidator {
 				throw new PayloadValidationException(
 					sprintf(
 						/* translators: %s: SooCool field name. */
-						esc_html__( 'SooCool good dimensions.%s must be a positive integer.', 'soocool-for-woocommerce' ),
+						esc_html__( 'SooCool-good dimensions.%s moet een positief geheel getal zijn.', 'soocool-for-woocommerce' ),
 						esc_html( $field )
 					)
 				);
@@ -227,7 +227,7 @@ final class OrderPayloadValidator {
 			throw new PayloadValidationException(
 				sprintf(
 					/* translators: %s: SooCool field name. */
-					esc_html__( 'SooCool good %s must be a positive integer.', 'soocool-for-woocommerce' ),
+					esc_html__( 'SooCool-good %s moet een positief geheel getal zijn.', 'soocool-for-woocommerce' ),
 					esc_html( $field )
 				)
 			);
@@ -240,7 +240,7 @@ final class OrderPayloadValidator {
 			return;
 		}
 		if ( ! is_array( $requirements ) || array() === array_values( array_filter( $requirements, static fn ( mixed $value ): bool => '' !== trim( (string) $value ) ) ) ) {
-			throw new PayloadValidationException( esc_html__( 'SooCool good transportRequirements must contain at least one value when provided.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( esc_html__( 'SooCool-good transportRequirements moet minimaal één waarde bevatten wanneer dit veld is ingevuld.', 'soocool-for-woocommerce' ) );
 		}
 	}
 

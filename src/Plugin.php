@@ -9,6 +9,7 @@ use SooCool\WooCommerce\Admin\Assets;
 use SooCool\WooCommerce\Admin\AdminNoticeSuppressor;
 use SooCool\WooCommerce\Admin\Notices;
 use SooCool\WooCommerce\Admin\PrivacyPolicy;
+use SooCool\WooCommerce\Checkout\DeliveryOptions;
 use SooCool\WooCommerce\Infrastructure\Requirements;
 use SooCool\WooCommerce\Rest\ConnectionController;
 use SooCool\WooCommerce\Rest\LogsController;
@@ -55,6 +56,7 @@ final class Plugin {
 		add_action( 'admin_enqueue_scripts', array( $provider->get( Assets::class ), 'enqueue' ) );
 		$provider->get( AdminNoticeSuppressor::class )->register();
 		add_action( 'admin_init', array( $provider->get( PrivacyPolicy::class ), 'register' ) );
+		add_action( 'admin_notices', array( $provider->get( Notices::class ), 'render_runtime_notices' ) );
 		add_action( 'rest_api_init', array( $provider->get( SettingsController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( ConnectionController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( LogsController::class ), 'register_routes' ) );
@@ -67,6 +69,7 @@ final class Plugin {
 		$provider->get( OrderActions::class )->register();
 		$provider->get( OrderStatusHooks::class )->register();
 		$provider->get( ShippingLabelActions::class )->register();
+		$provider->get( DeliveryOptions::class )->register();
 		$provider->get( OrderListColumn::class )->register();
 		$provider->get( BulkSyncActions::class )->register();
 	}

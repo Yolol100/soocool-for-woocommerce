@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Admin;
 
+use SooCool\WooCommerce\Infrastructure\AssetResolver;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -35,18 +37,17 @@ final class Assets {
 			$asset['dependencies'] = array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n' );
 		}
 
-		$script_file = $this->asset_path( 'admin', 'js' );
-		$style_file  = $this->asset_path( 'admin', 'css' );
+		$script_file = AssetResolver::filename( 'assets/build', 'admin', 'js' );
+		$style_file  = AssetResolver::filename( 'assets/build', 'admin', 'css' );
 
-		if ( '' !== $style_file && is_readable( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $style_file ) ) {
-			$style_mtime        = filemtime( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $style_file );
+		if ( '' !== $style_file ) {
 			$style_dependencies = $is_settings_page ? array( 'wp-components' ) : array();
 
 			wp_enqueue_style(
 				'soocool-admin',
-				SOOCOOL_PLUGIN_URL . 'assets/build/' . $style_file,
+				AssetResolver::url( 'assets/build', $style_file ),
 				$style_dependencies,
-				false !== $style_mtime ? (string) $style_mtime : SOOCOOL_VERSION
+				AssetResolver::version( 'assets/build', $style_file )
 			);
 		}
 
@@ -54,20 +55,19 @@ final class Assets {
 			return;
 		}
 
-		if ( '' === $script_file || ! is_readable( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $script_file ) ) {
+		if ( '' === $script_file ) {
 			return;
 		}
 
-		$script_mtime   = filemtime( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $script_file );
-		$script_version = false !== $script_mtime ? (string) $script_mtime : (string) $asset['version'];
-
 		wp_enqueue_script(
 			'soocool-admin',
-			SOOCOOL_PLUGIN_URL . 'assets/build/' . $script_file,
+			AssetResolver::url( 'assets/build', $script_file ),
 			$asset['dependencies'],
-			$script_version,
+			AssetResolver::version( 'assets/build', $script_file, (string) $asset['version'] ),
 			true
 		);
+
+		wp_set_script_translations( 'soocool-admin', 'soocool-for-woocommerce', SOOCOOL_PLUGIN_DIR . 'languages' );
 
 		wp_add_inline_script(
 			'soocool-admin',
@@ -102,16 +102,4 @@ final class Assets {
 			|| 'shop_order' === $post_type;
 	}
 
-	private function asset_path( string $base, string $extension ): string {
-		$suffixes = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? array( '' ) : array( '.min', '' );
-
-		foreach ( $suffixes as $suffix ) {
-			$file = $base . $suffix . '.' . $extension;
-			if ( is_readable( SOOCOOL_PLUGIN_DIR . 'assets/build/' . $file ) ) {
-				return $file;
-			}
-		}
-
-		return '';
-	}
 }

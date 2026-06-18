@@ -15,13 +15,19 @@ abstract class AbstractRestController extends WP_REST_Controller {
 	/**
 	 * REST API namespace.
 	 *
-	 * Keep this untyped because WP_REST_Controller defines the same
-	 * inherited property without a native type. Adding a type here causes
-	 * a fatal error on activation in PHP.
+	 * Keep inherited WP_REST_Controller properties untyped. WordPress core
+	 * declares these properties without native types; typed or readonly
+	 * redeclarations cause fatal errors on modern PHP versions.
 	 *
 	 * @var string
 	 */
 	protected $namespace = 'soocool/v1';
+
+	/** @var string */
+	protected $rest_base = '';
+
+	/** @var array<string, mixed>|null */
+	protected $schema = null;
 
 	public function can_manage(): bool {
 		return current_user_can( 'manage_woocommerce' );

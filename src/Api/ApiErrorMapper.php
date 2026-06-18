@@ -12,15 +12,15 @@ final class ApiErrorMapper {
 
 	public function public_message( int $status ): string {
 		return match ( $status ) {
-			400, 422 => esc_html__( 'SooCool rejected the request. Check the order data and SooCool logs.', 'soocool-for-woocommerce' ),
-			401, 403 => esc_html__( 'SooCool authentication failed. Check the configured API key.', 'soocool-for-woocommerce' ),
-			404 => esc_html__( 'The requested SooCool resource could not be found.', 'soocool-for-woocommerce' ),
-			412 => esc_html__( 'SooCool could not generate the label because a precondition failed. Check the SooCool logs and order data.', 'soocool-for-woocommerce' ),
-			429 => esc_html__( 'SooCool rate limit reached. Please try again later.', 'soocool-for-woocommerce' ),
-			500, 502, 503, 504 => esc_html__( 'SooCool is temporarily unavailable. Please try again later.', 'soocool-for-woocommerce' ),
+			400, 422 => esc_html__( 'SooCool heeft de aanvraag geweigerd. Controleer de ordergegevens en SooCool-logs.', 'soocool-for-woocommerce' ),
+			401, 403 => esc_html__( 'SooCool-authenticatie mislukt. Controleer de ingestelde API-key.', 'soocool-for-woocommerce' ),
+			404 => esc_html__( 'De gevraagde SooCool-resource is niet gevonden.', 'soocool-for-woocommerce' ),
+			412 => esc_html__( 'SooCool kon het label niet genereren omdat niet aan een voorwaarde is voldaan. Controleer de SooCool-logs en ordergegevens.', 'soocool-for-woocommerce' ),
+			429 => esc_html__( 'SooCool-rate limit bereikt. Probeer het later opnieuw.', 'soocool-for-woocommerce' ),
+			500, 502, 503, 504 => esc_html__( 'SooCool is tijdelijk niet beschikbaar. Probeer het later opnieuw.', 'soocool-for-woocommerce' ),
 			default => sprintf(
 				/* translators: %d: HTTP status code. */
-				esc_html__( 'SooCool API returned HTTP %d. Check the SooCool logs for details.', 'soocool-for-woocommerce' ),
+				esc_html__( 'SooCool API gaf HTTP %d terug. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ),
 				$status
 			),
 		};

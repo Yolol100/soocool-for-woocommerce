@@ -80,18 +80,16 @@ final class OrderListColumn {
 
 	private function render_badge( WC_Order $order ): void {
 		$status   = (string) $order->get_meta( OrderMeta::SYNC_STATUS, true );
-		$colors   = $this->presenter->colors( $status );
 		$tracking = (string) $order->get_meta( OrderMeta::TRACKING_CODE, true );
 
 		printf(
-			'<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;line-height:1.6;background:%1$s;color:%2$s;">%3$s</span>',
-			esc_attr( $colors['bg'] ),
-			esc_attr( $colors['fg'] ),
+			'<span class="%1$s">%2$s</span>',
+			esc_attr( $this->presenter->badge_class( $status ) ),
 			esc_html( $this->presenter->label( $status ) )
 		);
 
 		if ( '' !== $tracking ) {
-			echo '<br /><small style="color:#646970;">' . esc_html( $tracking ) . '</small>';
+			echo '<br /><small class="soocool-order-tracking-code">' . esc_html( $tracking ) . '</small>';
 		}
 
 		$this->render_label_links( $order );
@@ -109,7 +107,7 @@ final class OrderListColumn {
 		);
 
 		echo '<div class="soocool-list-label-actions">';
-		echo '<a href="' . esc_url( $order_url ) . '">' . esc_html__( 'Order label', 'soocool-for-woocommerce' ) . '</a>';
+		echo '<a href="' . esc_url( $order_url ) . '">' . esc_html__( 'Orderlabel', 'soocool-for-woocommerce' ) . '</a>';
 
 		$good_ids = $this->meta->get_good_ids( $order );
 		if ( array() !== $good_ids ) {
@@ -117,7 +115,7 @@ final class OrderListColumn {
 				admin_url( 'admin-post.php?action=soocool_download_label&order_id=' . $order_id . '&good_ids=' . rawurlencode( implode( ',', $good_ids ) ) ),
 				'soocool_download_good_labels_' . $order_id
 			);
-			echo '<span aria-hidden="true"> | </span><a href="' . esc_url( $good_url ) . '">' . esc_html__( 'Good labels', 'soocool-for-woocommerce' ) . '</a>';
+			echo '<span aria-hidden="true"> | </span><a href="' . esc_url( $good_url ) . '">' . esc_html__( 'Goederenlabels', 'soocool-for-woocommerce' ) . '</a>';
 		}
 
 		echo '</div>';
@@ -138,7 +136,7 @@ final class OrderListColumn {
 		$selected = isset( $_GET[ self::FILTER_PARAM ] ) ? sanitize_key( wp_unslash( (string) $_GET[ self::FILTER_PARAM ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list filter.
 
 		echo '<select name="' . esc_attr( self::FILTER_PARAM ) . '" id="soocool-sync-filter">';
-		echo '<option value="">' . esc_html__( 'SooCool: all', 'soocool-for-woocommerce' ) . '</option>';
+		echo '<option value="">' . esc_html__( 'SooCool: alles', 'soocool-for-woocommerce' ) . '</option>';
 		foreach ( $this->presenter->filter_options() as $value => $label ) {
 			printf(
 				'<option value="%1$s"%2$s>%3$s</option>',

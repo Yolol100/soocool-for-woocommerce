@@ -32,7 +32,7 @@ final class ApiClient {
 	public function search_order_by_reference( string $order_reference ): ApiResponse {
 		$order_reference = trim( sanitize_text_field( $order_reference ) );
 		if ( '' === $order_reference ) {
-			throw new ApiException( esc_html__( 'Missing SooCool order reference.', 'soocool-for-woocommerce' ), 0 );
+			throw new ApiException( esc_html__( 'SooCool orderreferentie ontbreekt.', 'soocool-for-woocommerce' ), 0 );
 		}
 
 		return $this->request( 'GET', '/order?orderReference=' . rawurlencode( $order_reference ) );
@@ -65,7 +65,7 @@ final class ApiClient {
 	public function get_multiple_shipping_labels( array $order_ids, string $output = 'a6' ): ApiResponse {
 		$ids = array_values( array_unique( array_map( array( $this, 'encode_numeric_order_id' ), $order_ids ) ) );
 		if ( array() === $ids ) {
-			throw new ApiException( esc_html__( 'Missing valid SooCool order IDs for label download.', 'soocool-for-woocommerce' ), 0 );
+			throw new ApiException( esc_html__( 'Geldige SooCool order-ID’s voor labeldownload ontbreken.', 'soocool-for-woocommerce' ), 0 );
 		}
 
 		$output = $this->normalize_label_output( $output );
@@ -76,7 +76,7 @@ final class ApiClient {
 	public function get_multiple_good_shipping_labels( array $good_ids, string $output = 'a6' ): ApiResponse {
 		$ids = array_values( array_unique( array_map( array( $this, 'encode_numeric_order_id' ), $good_ids ) ) );
 		if ( array() === $ids ) {
-			throw new ApiException( esc_html__( 'Missing valid SooCool good IDs for label download.', 'soocool-for-woocommerce' ), 0 );
+			throw new ApiException( esc_html__( 'Geldige SooCool-goederen-ID’s voor labeldownload ontbreken.', 'soocool-for-woocommerce' ), 0 );
 		}
 
 		$output = $this->normalize_label_output( $output );
@@ -90,7 +90,7 @@ final class ApiClient {
 	private function encode_numeric_order_id( int|string $order_id ): string {
 		$normalized = trim( sanitize_text_field( (string) $order_id ) );
 		if ( ! ctype_digit( $normalized ) || 0 >= (int) $normalized ) {
-			throw new ApiException( esc_html__( 'Missing valid numeric SooCool order ID.', 'soocool-for-woocommerce' ), 0 );
+			throw new ApiException( esc_html__( 'Geldige numerieke SooCool order-ID ontbreekt.', 'soocool-for-woocommerce' ), 0 );
 		}
 
 		return (string) (int) $normalized;
@@ -105,7 +105,7 @@ final class ApiClient {
 				'SooCool API key is missing or invalid before request.',
 				$this->api_key_debug_context( $api_key, $url, $path )
 			);
-			throw new ApiException( esc_html__( 'Missing or invalid SooCool API key. Paste and save the API key again.', 'soocool-for-woocommerce' ), 401 );
+			throw new ApiException( esc_html__( 'SooCool API-key ontbreekt of is ongeldig. Plak en bewaar de API-key opnieuw.', 'soocool-for-woocommerce' ), 401 );
 		}
 
 		$headers = array_merge(
@@ -127,7 +127,7 @@ final class ApiClient {
 		if ( null !== $payload ) {
 			$json = wp_json_encode( $payload );
 			if ( false === $json ) {
-				throw new ApiException( esc_html__( 'Could not encode SooCool payload.', 'soocool-for-woocommerce' ), 0 );
+				throw new ApiException( esc_html__( 'Kon de SooCool payload niet coderen.', 'soocool-for-woocommerce' ), 0 );
 			}
 			$args['headers']['Content-Type'] = 'application/json';
 			$args['body'] = $json;
@@ -143,7 +143,7 @@ final class ApiClient {
 					'error'  => $response->get_error_message(),
 				)
 			);
-			throw new ApiException( esc_html__( 'Could not connect to the SooCool API. Please try again or check the SooCool logs.', 'soocool-for-woocommerce' ), 0 );
+			throw new ApiException( esc_html__( 'Kon geen verbinding maken met de SooCool API. Probeer opnieuw of controleer de SooCool logs.', 'soocool-for-woocommerce' ), 0 );
 		}
 
 		$status       = (int) wp_remote_retrieve_response_code( $response );

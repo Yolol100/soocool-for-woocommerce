@@ -60,6 +60,10 @@ final class SecretSanitizer {
 		);
 	}
 
+	public function scrub_text( string $value, string $parent_key = '' ): string {
+		return trim( sanitize_text_field( $this->redact_string( $value, $parent_key ) ) );
+	}
+
 	private function redact_string( string $value, string $parent_key = '' ): string {
 		if ( $this->looks_secret( $parent_key ) || $this->looks_personal_data( $parent_key ) ) {
 			return '[redacted]';

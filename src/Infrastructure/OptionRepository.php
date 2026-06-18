@@ -38,6 +38,13 @@ final class OptionRepository {
 			'delivery_time_from'         => '08:00',
 			'delivery_time_to'           => '18:00',
 			'delivery_days_offset'       => 1,
+			'checkout_delivery_enabled'  => true,
+			'checkout_delivery_days_ahead' => 14,
+			'checkout_delivery_holidays' => '',
+			'checkout_delivery_rules'    => $this->default_delivery_rules(),
+			'checkout_delivery_time_slots' => $this->default_delivery_time_slots(),
+			'checkout_delivery_schedule' => $this->default_delivery_schedule(),
+			'checkout_delivery_hide_unavailable_slots' => true,
 			'auto_submit_enabled'        => false,
 			'auto_submit_status'         => 'processing',
 			'allow_resubmit'             => false,
@@ -53,6 +60,117 @@ final class OptionRepository {
 			'package_weight'             => 1600,
 			'log_retention'              => 100,
 		);
+	}
+
+
+	/** @return array<int, array<string, mixed>> */
+	public function default_delivery_rules(): array {
+		return array(
+			array(
+				'enabled'          => true,
+				'delivery_weekday' => 'monday',
+				'cutoff_weekday'   => 'saturday',
+				'cutoff_time'      => '13:00',
+			),
+			array(
+				'enabled'          => true,
+				'delivery_weekday' => 'thursday',
+				'cutoff_weekday'   => 'wednesday',
+				'cutoff_time'      => '13:00',
+			),
+			array(
+				'enabled'          => true,
+				'delivery_weekday' => 'saturday',
+				'cutoff_weekday'   => 'friday',
+				'cutoff_time'      => '13:00',
+			),
+		);
+	}
+
+	/** @return array<int, array<string, mixed>> */
+	public function default_delivery_time_slots(): array {
+		$weekdays = $this->allowed_weekdays();
+
+		return array(
+			array(
+				'enabled'     => true,
+				'label'       => '',
+				'time_from'   => '07:00',
+				'time_to'     => '11:00',
+				'cutoff_time' => '07:00',
+				'weekdays'    => $weekdays,
+				'sort_order'  => 10,
+			),
+			array(
+				'enabled'     => true,
+				'label'       => '',
+				'time_from'   => '08:00',
+				'time_to'     => '12:00',
+				'cutoff_time' => '08:00',
+				'weekdays'    => $weekdays,
+				'sort_order'  => 20,
+			),
+			array(
+				'enabled'     => true,
+				'label'       => '',
+				'time_from'   => '09:00',
+				'time_to'     => '13:00',
+				'cutoff_time' => '09:00',
+				'weekdays'    => $weekdays,
+				'sort_order'  => 30,
+			),
+			array(
+				'enabled'     => true,
+				'label'       => '',
+				'time_from'   => '14:00',
+				'time_to'     => '18:00',
+				'cutoff_time' => '14:00',
+				'weekdays'    => $weekdays,
+				'sort_order'  => 40,
+			),
+			array(
+				'enabled'     => true,
+				'label'       => '',
+				'time_from'   => '15:00',
+				'time_to'     => '19:00',
+				'cutoff_time' => '15:00',
+				'weekdays'    => $weekdays,
+				'sort_order'  => 50,
+			),
+			array(
+				'enabled'     => true,
+				'label'       => '',
+				'time_from'   => '16:00',
+				'time_to'     => '20:00',
+				'cutoff_time' => '16:00',
+				'weekdays'    => $weekdays,
+				'sort_order'  => 60,
+			),
+			array(
+				'enabled'     => true,
+				'label'       => '',
+				'time_from'   => '17:00',
+				'time_to'     => '21:00',
+				'cutoff_time' => '17:00',
+				'weekdays'    => $weekdays,
+				'sort_order'  => 70,
+			),
+			array(
+				'enabled'     => true,
+				'label'       => '',
+				'time_from'   => '18:00',
+				'time_to'     => '22:00',
+				'cutoff_time' => '18:00',
+				'weekdays'    => $weekdays,
+				'sort_order'  => 80,
+			),
+		);
+	}
+
+
+	/** @return array<int, array<string, mixed>> */
+	public function default_delivery_schedule(): array {
+		return $this->schedule_from_legacy( $this->default_delivery_rules(), $this->default_delivery_time_slots() );
 	}
 
 	public function migrate_for_current_version(): void {
@@ -90,6 +208,14 @@ final class OptionRepository {
 			$changed                    = true;
 		}
 
+		if ( ! is_array( $settings['checkout_delivery_schedule'] ?? null ) || array() === $settings['checkout_delivery_schedule'] ) {
+			$settings['checkout_delivery_schedule'] = $this->schedule_from_legacy(
+				is_array( $settings['checkout_delivery_rules'] ?? null ) ? $settings['checkout_delivery_rules'] : $this->default_delivery_rules(),
+				is_array( $settings['checkout_delivery_time_slots'] ?? null ) ? $settings['checkout_delivery_time_slots'] : $this->default_delivery_time_slots()
+			);
+			$changed = true;
+		}
+
 		if ( $changed ) {
 			update_option( self::OPTION_NAME, $this->sanitize_settings( $settings, $this->defaults() ), false );
 		}
@@ -109,6 +235,13 @@ final class OptionRepository {
 		// SooCool requires delivery tasks for this connection to use the exact 08:00-18:00 window.
 		$settings['delivery_time_from'] = '08:00';
 		$settings['delivery_time_to']   = '18:00';
+
+		if ( ! is_array( $settings['checkout_delivery_schedule'] ?? null ) || array() === $settings['checkout_delivery_schedule'] ) {
+			$settings['checkout_delivery_schedule'] = $this->schedule_from_legacy(
+				is_array( $settings['checkout_delivery_rules'] ?? null ) ? $settings['checkout_delivery_rules'] : $this->default_delivery_rules(),
+				is_array( $settings['checkout_delivery_time_slots'] ?? null ) ? $settings['checkout_delivery_time_slots'] : $this->default_delivery_time_slots()
+			);
+		}
 
 		return $settings;
 	}
@@ -164,6 +297,24 @@ final class OptionRepository {
 		}
 		$clean['delivery_days_offset'] = min( 30, $delivery_days_offset );
 
+		$clean['checkout_delivery_enabled']    = $this->to_bool( $settings['checkout_delivery_enabled'] ?? $current['checkout_delivery_enabled'] );
+		$clean['checkout_delivery_days_ahead'] = max( 7, min( 60, absint( $settings['checkout_delivery_days_ahead'] ?? $current['checkout_delivery_days_ahead'] ) ) );
+		$clean['checkout_delivery_holidays']   = $this->sanitize_holidays( $settings['checkout_delivery_holidays'] ?? $current['checkout_delivery_holidays'] ?? '' );
+		$current_schedule = is_array( $current['checkout_delivery_schedule'] ?? null ) ? $current['checkout_delivery_schedule'] : $this->schedule_from_legacy(
+			is_array( $current['checkout_delivery_rules'] ?? null ) ? $current['checkout_delivery_rules'] : $this->default_delivery_rules(),
+			is_array( $current['checkout_delivery_time_slots'] ?? null ) ? $current['checkout_delivery_time_slots'] : $this->default_delivery_time_slots()
+		);
+		if ( is_array( $settings['checkout_delivery_schedule'] ?? null ) ) {
+			$clean['checkout_delivery_schedule'] = $this->sanitize_delivery_schedule( $settings['checkout_delivery_schedule'], $current_schedule );
+			$clean['checkout_delivery_rules']    = $this->delivery_rules_from_schedule( $clean['checkout_delivery_schedule'] );
+			$clean['checkout_delivery_time_slots'] = $this->delivery_time_slots_from_schedule( $clean['checkout_delivery_schedule'] );
+		} else {
+			$clean['checkout_delivery_rules']      = $this->sanitize_delivery_rules( $settings['checkout_delivery_rules'] ?? $current['checkout_delivery_rules'] ?? array(), is_array( $current['checkout_delivery_rules'] ?? null ) ? $current['checkout_delivery_rules'] : $this->default_delivery_rules() );
+			$clean['checkout_delivery_time_slots'] = $this->sanitize_delivery_time_slots( $settings['checkout_delivery_time_slots'] ?? $current['checkout_delivery_time_slots'] ?? array(), is_array( $current['checkout_delivery_time_slots'] ?? null ) ? $current['checkout_delivery_time_slots'] : $this->default_delivery_time_slots() );
+			$clean['checkout_delivery_schedule']   = $this->schedule_from_legacy( $clean['checkout_delivery_rules'], $clean['checkout_delivery_time_slots'] );
+		}
+		$clean['checkout_delivery_hide_unavailable_slots'] = $this->to_bool( $settings['checkout_delivery_hide_unavailable_slots'] ?? $current['checkout_delivery_hide_unavailable_slots'] ?? true );
+
 		$clean['auto_submit_enabled']        = $this->to_bool( $settings['auto_submit_enabled'] ?? $current['auto_submit_enabled'] );
 		$clean['auto_submit_status']         = $this->one_of( $settings['auto_submit_status'] ?? $current['auto_submit_status'], array( 'processing', 'completed', 'on-hold' ), 'processing' );
 		$clean['allow_resubmit']             = $this->to_bool( $settings['allow_resubmit'] ?? $current['allow_resubmit'] );
@@ -181,6 +332,283 @@ final class OptionRepository {
 		$clean['log_retention']              = max( 20, min( 500, absint( $settings['log_retention'] ?? $current['log_retention'] ) ) );
 
 		return $clean;
+	}
+
+
+	/** @param mixed $value @return array<int, array<string, mixed>> */
+	private function sanitize_delivery_rules( mixed $value, array $fallback ): array {
+		$allowed_weekdays = $this->allowed_weekdays();
+		$rules            = is_array( $value ) ? $value : $fallback;
+		$clean            = array();
+
+		foreach ( $rules as $rule ) {
+			if ( ! is_array( $rule ) ) {
+				continue;
+			}
+
+			$delivery_weekday = sanitize_key( (string) ( $rule['delivery_weekday'] ?? '' ) );
+			$cutoff_weekday   = sanitize_key( (string) ( $rule['cutoff_weekday'] ?? '' ) );
+			$cutoff_time      = $this->sanitize_time( sanitize_text_field( (string) ( $rule['cutoff_time'] ?? '13:00' ) ), '13:00' );
+			if ( ! in_array( $delivery_weekday, $allowed_weekdays, true ) || ! in_array( $cutoff_weekday, $allowed_weekdays, true ) ) {
+				continue;
+			}
+
+			$clean[] = array(
+				'enabled'          => $this->to_bool( $rule['enabled'] ?? true ),
+				'delivery_weekday' => $delivery_weekday,
+				'cutoff_weekday'   => $cutoff_weekday,
+				'cutoff_time'      => $cutoff_time,
+			);
+		}
+
+		$enabled = array_filter( $clean, static fn ( array $rule ): bool => (bool) $rule['enabled'] );
+		if ( array() === $clean || array() === $enabled ) {
+			return $this->default_delivery_rules();
+		}
+
+		return array_values( $clean );
+	}
+
+	/** @param mixed $value @param array<int, array<string, mixed>> $fallback @return array<int, array<string, mixed>> */
+	private function sanitize_delivery_time_slots( mixed $value, array $fallback ): array {
+		$allowed_weekdays = $this->allowed_weekdays();
+		$slots            = is_array( $value ) ? $value : $fallback;
+		$clean            = array();
+
+		foreach ( $slots as $index => $slot ) {
+			if ( ! is_array( $slot ) ) {
+				continue;
+			}
+
+			$time_from   = $this->sanitize_time( sanitize_text_field( (string) ( $slot['time_from'] ?? '' ) ), '' );
+			$time_to     = $this->sanitize_time( sanitize_text_field( (string) ( $slot['time_to'] ?? '' ) ), '' );
+			$cutoff_time = $this->sanitize_time( sanitize_text_field( (string) ( $slot['cutoff_time'] ?? $time_from ) ), $time_from );
+			if ( '' === $time_from || '' === $time_to || '' === $cutoff_time || $time_to <= $time_from ) {
+				continue;
+			}
+
+			$weekdays = array();
+			$raw_weekdays = is_array( $slot['weekdays'] ?? null ) ? $slot['weekdays'] : $allowed_weekdays;
+			foreach ( $raw_weekdays as $weekday ) {
+				$weekday = sanitize_key( (string) $weekday );
+				if ( in_array( $weekday, $allowed_weekdays, true ) ) {
+					$weekdays[] = $weekday;
+				}
+			}
+			$weekdays = array_values( array_unique( $weekdays ) );
+			if ( array() === $weekdays ) {
+				$weekdays = $allowed_weekdays;
+			}
+
+			$clean[] = array(
+				'enabled'     => $this->to_bool( $slot['enabled'] ?? true ),
+				'label'       => sanitize_text_field( (string) ( $slot['label'] ?? '' ) ),
+				'time_from'   => $time_from,
+				'time_to'     => $time_to,
+				'cutoff_time' => $cutoff_time,
+				'weekdays'    => $weekdays,
+				'sort_order'  => is_numeric( $slot['sort_order'] ?? null ) ? (int) $slot['sort_order'] : (int) $index,
+			);
+		}
+
+		$enabled = array_filter( $clean, static fn ( array $slot ): bool => (bool) $slot['enabled'] );
+		if ( array() === $clean || array() === $enabled ) {
+			return $this->default_delivery_time_slots();
+		}
+
+		usort(
+			$clean,
+			static function ( array $a, array $b ): int {
+				$sort = (int) $a['sort_order'] <=> (int) $b['sort_order'];
+				return 0 !== $sort ? $sort : strcmp( (string) $a['time_from'], (string) $b['time_from'] );
+			}
+		);
+
+		return array_values( $clean );
+	}
+
+
+	/** @param mixed $value @param array<int, array<string, mixed>> $fallback @return array<int, array<string, mixed>> */
+	private function sanitize_delivery_schedule( mixed $value, array $fallback ): array {
+		$allowed_weekdays = $this->allowed_weekdays();
+		$schedule         = is_array( $value ) ? $value : $fallback;
+		$clean            = array();
+
+		foreach ( $schedule as $rule_index => $rule ) {
+			if ( ! is_array( $rule ) ) {
+				continue;
+			}
+
+			$delivery_weekday = sanitize_key( (string) ( $rule['delivery_weekday'] ?? $rule['delivery_day'] ?? '' ) );
+			$cutoff_weekday   = sanitize_key( (string) ( $rule['cutoff_weekday'] ?? $rule['cutoff_day'] ?? '' ) );
+			$cutoff_time      = $this->sanitize_time( sanitize_text_field( (string) ( $rule['cutoff_time'] ?? '13:00' ) ), '13:00' );
+			if ( ! in_array( $delivery_weekday, $allowed_weekdays, true ) || ! in_array( $cutoff_weekday, $allowed_weekdays, true ) ) {
+				continue;
+			}
+
+			$slots = $this->sanitize_schedule_slots( $rule['slots'] ?? array(), $delivery_weekday );
+			if ( array() === $slots ) {
+				$slots = $this->sanitize_schedule_slots( $this->default_delivery_time_slots(), $delivery_weekday );
+			}
+
+			$clean[] = array(
+				'enabled'          => $this->to_bool( $rule['enabled'] ?? true ),
+				'delivery_weekday' => $delivery_weekday,
+				'cutoff_weekday'   => $cutoff_weekday,
+				'cutoff_time'      => $cutoff_time,
+				'sort_order'       => is_numeric( $rule['sort_order'] ?? null ) ? (int) $rule['sort_order'] : ( (int) $rule_index + 1 ) * 10,
+				'slots'            => $slots,
+			);
+		}
+
+		$enabled = array_filter( $clean, static fn ( array $rule ): bool => (bool) $rule['enabled'] );
+		if ( array() === $clean || array() === $enabled ) {
+			return $this->default_delivery_schedule();
+		}
+
+		usort(
+			$clean,
+			static function ( array $a, array $b ): int {
+				$sort = (int) $a['sort_order'] <=> (int) $b['sort_order'];
+				return 0 !== $sort ? $sort : strcmp( (string) $a['delivery_weekday'], (string) $b['delivery_weekday'] );
+			}
+		);
+
+		return array_values( $clean );
+	}
+
+	/** @param mixed $value @return array<int, array<string, mixed>> */
+	private function sanitize_schedule_slots( mixed $value, string $delivery_weekday ): array {
+		$slots = is_array( $value ) ? $value : array();
+		$clean = array();
+
+		foreach ( $slots as $index => $slot ) {
+			if ( ! is_array( $slot ) ) {
+				continue;
+			}
+
+			$time_from   = $this->sanitize_time( sanitize_text_field( (string) ( $slot['time_from'] ?? '' ) ), '' );
+			$time_to     = $this->sanitize_time( sanitize_text_field( (string) ( $slot['time_to'] ?? '' ) ), '' );
+			$cutoff_time = $this->sanitize_time( sanitize_text_field( (string) ( $slot['cutoff_time'] ?? $time_from ) ), $time_from );
+			if ( '' === $time_from || '' === $time_to || '' === $cutoff_time || $time_to <= $time_from ) {
+				continue;
+			}
+
+			$clean[] = array(
+				'enabled'     => $this->to_bool( $slot['enabled'] ?? true ),
+				'label'       => sanitize_text_field( (string) ( $slot['label'] ?? '' ) ),
+				'time_from'   => $time_from,
+				'time_to'     => $time_to,
+				'cutoff_time' => $cutoff_time,
+				'weekdays'    => array( $delivery_weekday ),
+				'sort_order'  => is_numeric( $slot['sort_order'] ?? null ) ? (int) $slot['sort_order'] : ( (int) $index + 1 ) * 10,
+			);
+		}
+
+		usort(
+			$clean,
+			static function ( array $a, array $b ): int {
+				$sort = (int) $a['sort_order'] <=> (int) $b['sort_order'];
+				return 0 !== $sort ? $sort : strcmp( (string) $a['time_from'], (string) $b['time_from'] );
+			}
+		);
+
+		return array_values( $clean );
+	}
+
+	/** @param array<int, array<string, mixed>> $rules @param array<int, array<string, mixed>> $slots @return array<int, array<string, mixed>> */
+	private function schedule_from_legacy( array $rules, array $slots ): array {
+		$clean_rules = $this->sanitize_delivery_rules( $rules, $this->default_delivery_rules() );
+		$clean_slots = $this->sanitize_delivery_time_slots( $slots, $this->default_delivery_time_slots() );
+		$schedule    = array();
+
+		foreach ( $clean_rules as $index => $rule ) {
+			$delivery_weekday = (string) $rule['delivery_weekday'];
+			$rule_slots       = array();
+
+			foreach ( $clean_slots as $slot ) {
+				$weekdays = is_array( $slot['weekdays'] ?? null ) ? $slot['weekdays'] : $this->allowed_weekdays();
+				if ( ! in_array( $delivery_weekday, $weekdays, true ) ) {
+					continue;
+				}
+				$slot['weekdays'] = array( $delivery_weekday );
+				$rule_slots[]     = $slot;
+			}
+
+			if ( array() === $rule_slots ) {
+				$rule_slots = $this->sanitize_schedule_slots( $this->default_delivery_time_slots(), $delivery_weekday );
+			}
+
+			$schedule[] = array(
+				'enabled'          => (bool) $rule['enabled'],
+				'delivery_weekday' => $delivery_weekday,
+				'cutoff_weekday'   => (string) $rule['cutoff_weekday'],
+				'cutoff_time'      => (string) $rule['cutoff_time'],
+				'sort_order'       => ( (int) $index + 1 ) * 10,
+				'slots'            => array_values( $rule_slots ),
+			);
+		}
+
+		return $schedule;
+	}
+
+	/** @param array<int, array<string, mixed>> $schedule @return array<int, array<string, mixed>> */
+	private function delivery_rules_from_schedule( array $schedule ): array {
+		$rules = array();
+		foreach ( $schedule as $rule ) {
+			if ( ! is_array( $rule ) ) {
+				continue;
+			}
+			$rules[] = array(
+				'enabled'          => (bool) ( $rule['enabled'] ?? true ),
+				'delivery_weekday' => (string) ( $rule['delivery_weekday'] ?? 'monday' ),
+				'cutoff_weekday'   => (string) ( $rule['cutoff_weekday'] ?? 'saturday' ),
+				'cutoff_time'      => (string) ( $rule['cutoff_time'] ?? '13:00' ),
+			);
+		}
+		return array() !== $rules ? $rules : $this->default_delivery_rules();
+	}
+
+	/** @param array<int, array<string, mixed>> $schedule @return array<int, array<string, mixed>> */
+	private function delivery_time_slots_from_schedule( array $schedule ): array {
+		$slots = array();
+		foreach ( $schedule as $rule ) {
+			if ( ! is_array( $rule ) ) {
+				continue;
+			}
+			$delivery_weekday = sanitize_key( (string) ( $rule['delivery_weekday'] ?? '' ) );
+			foreach ( is_array( $rule['slots'] ?? null ) ? $rule['slots'] : array() as $slot ) {
+				if ( ! is_array( $slot ) ) {
+					continue;
+				}
+				$slot['weekdays'] = array( $delivery_weekday );
+				$slots[]          = $slot;
+			}
+		}
+		return array() !== $slots ? $slots : $this->default_delivery_time_slots();
+	}
+
+	private function sanitize_holidays( mixed $value ): string {
+		$raw = is_array( $value ) ? implode( ',', array_map( 'strval', $value ) ) : (string) $value;
+		$dates = array();
+		foreach ( preg_split( '/[\s,]+/', sanitize_text_field( $raw ) ) ?: array() as $date ) {
+			$date = trim( (string) $date );
+			if ( 1 !== preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+				continue;
+			}
+
+			$parts = array_map( 'absint', explode( '-', $date ) );
+			if ( checkdate( $parts[1] ?? 0, $parts[2] ?? 0, $parts[0] ?? 0 ) ) {
+				$dates[] = $date;
+			}
+		}
+
+		return implode( ',', array_values( array_unique( $dates ) ) );
+	}
+
+	/** @return array<int, string> */
+	private function allowed_weekdays(): array {
+		return array( 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday' );
 	}
 
 	private function positive_int_between( mixed $value, int $min, int $max, int $fallback ): int {
@@ -305,10 +733,15 @@ final class OptionRepository {
 		 * parameter. Header-token authentication is the safer default because URL
 		 * tokens can end up in logs, browser history, analytics or screenshots. Enable
 		 * this fallback only when the remote SooCool callback configuration cannot send
-		 * the X-SooCool-Webhook-Token header.
+		 * the X-SooCool-Webhook-Token header. The SOOCOOL_ALLOW_QUERY_TOKEN_WEBHOOK_URL
+		 * constant must also be enabled explicitly.
 		 *
 		 * @param bool $enabled Default false.
 		 */
+		if ( ! defined( 'SOOCOOL_ALLOW_QUERY_TOKEN_WEBHOOK_URL' ) || ! (bool) SOOCOOL_ALLOW_QUERY_TOKEN_WEBHOOK_URL ) {
+			return false;
+		}
+
 		return (bool) apply_filters( 'soocool_allow_query_token_webhook_url', false );
 	}
 

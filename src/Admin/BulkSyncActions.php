@@ -5,24 +5,20 @@ declare(strict_types=1);
 namespace SooCool\WooCommerce\Admin;
 
 use SooCool\WooCommerce\WooCommerce\OrderActions;
-use SooCool\WooCommerce\WooCommerce\OrderMeta;
-use WC_Order;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Adds a "Send to SooCool" bulk action to the HPOS and legacy orders lists.
- * Work is queued through Action Scheduler when available so a large selection
- * never blocks the admin request on a slow SooCool API; a small synchronous
- * batch is used as a fallback. Mirrors the resync-failed maintenance flow.
+ * Adds a "Naar SooCool versturen" bulk action to the HPOS and legacy orders lists.
+ * Work is queued through Action Scheduler when available, with WP-Cron as the
+ * fallback, so a large selection never blocks the admin request on a slow SooCool API.
  */
 final class BulkSyncActions {
 
 	private const ACTION            = 'soocool_send_to_soocool';
 	private const MAX_BULK_ORDERS   = 50;
-	private const SYNC_FALLBACK_LIMIT = 5;
 	private const MODE_PARAM        = 'soocool_bulk_mode';
 	private const QUEUED_PARAM      = 'soocool_bulk_queued';
 	private const SYNCED_PARAM      = 'soocool_bulk_synced';
@@ -30,7 +26,7 @@ final class BulkSyncActions {
 	private const REMAINING_PARAM   = 'soocool_bulk_remaining';
 	private const ERROR_PARAM       = 'soocool_bulk_error';
 
-	public function __construct( private readonly OrderActions $actions, private readonly OrderMeta $meta ) {}
+	public function __construct( private readonly OrderActions $actions ) {}
 
 	public function register(): void {
 		add_filter( 'bulk_actions-woocommerce_page_wc-orders', array( $this, 'add_bulk_action' ) );
@@ -45,7 +41,7 @@ final class BulkSyncActions {
 	 * @return array<string, string>
 	 */
 	public function add_bulk_action( array $actions ): array {
-		$actions[ self::ACTION ] = __( 'Send to SooCool', 'soocool-for-woocommerce' );
+		$actions[ self::ACTION ] = __( 'Naar SooCool versturen', 'soocool-for-woocommerce' );
 		return $actions;
 	}
 
@@ -79,60 +75,20 @@ final class BulkSyncActions {
 			);
 		}
 
-		// Prefer Action Scheduler so a large selection never blocks the request
-		// on a slow SooCool API. Reuses the same background hook as the
-		// normal single-order send path, so already-synced orders still respect the resubmission setting.
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			$queued = 0;
-			foreach ( $order_ids as $order_id ) {
-				if ( $this->enqueue_sync_once( (int) $order_id ) ) {
-					++$queued;
-				}
-			}
-
-			return add_query_arg(
-				array(
-					self::MODE_PARAM   => 'scheduled',
-					self::QUEUED_PARAM => $queued,
-				),
-				$redirect_to
-			);
-		}
-
-		// Fallback: process a small batch inline so the action still works
-		// without Action Scheduler, without risking a request timeout.
-		$synced = 0;
-		$failed = 0;
-		foreach ( array_slice( $order_ids, 0, self::SYNC_FALLBACK_LIMIT ) as $order_id ) {
-			$this->actions->send_order_by_id( (int) $order_id );
-
-			$order = wc_get_order( $order_id );
-			if ( $order instanceof WC_Order && $this->meta->is_synced( $order ) ) {
-				++$synced;
-			} else {
-				++$failed;
+		$queued = 0;
+		foreach ( $order_ids as $order_id ) {
+			if ( OrderActions::QUEUE_SCHEDULED === $this->actions->schedule_send_to_soocool( (int) $order_id ) ) {
+				++$queued;
 			}
 		}
 
 		return add_query_arg(
 			array(
-				self::MODE_PARAM      => 'inline',
-				self::SYNCED_PARAM    => $synced,
-				self::FAILED_PARAM    => $failed,
-				self::REMAINING_PARAM => max( 0, $total - $synced - $failed ),
+				self::MODE_PARAM   => 'scheduled',
+				self::QUEUED_PARAM => $queued,
 			),
 			$redirect_to
 		);
-	}
-
-	private function enqueue_sync_once( int $order_id ): bool {
-		$args = array( absint( $order_id ) );
-		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( OrderActions::SYNC_HOOK, $args, 'soocool' ) ) {
-			return false;
-		}
-
-		as_enqueue_async_action( OrderActions::SYNC_HOOK, $args, 'soocool' );
-		return true;
 	}
 
 	public function render_notice(): void {
@@ -148,7 +104,7 @@ final class BulkSyncActions {
 					esc_html(
 						sprintf(
 							/* translators: %d: number of orders selected for the SooCool bulk send action. */
-							_n( 'Select 50 or fewer orders for one SooCool bulk send. You selected %d order.', 'Select 50 or fewer orders for one SooCool bulk send. You selected %d orders.', $total, 'soocool-for-woocommerce' ),
+							_n( 'Selecteer maximaal 50 orders voor één SooCool bulkverzending. Je hebt %d order geselecteerd.', 'Selecteer maximaal 50 orders voor één SooCool bulkverzending. Je hebt %d orders geselecteerd.', $total, 'soocool-for-woocommerce' ),
 							$total
 						)
 					)
@@ -160,10 +116,10 @@ final class BulkSyncActions {
 		if ( 'scheduled' === $mode ) {
 			$queued = isset( $_GET[ self::QUEUED_PARAM ] ) ? absint( wp_unslash( $_GET[ self::QUEUED_PARAM ] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$message = 0 === $queued
-				? __( 'No new SooCool background sync jobs were queued. The selected orders are already scheduled.', 'soocool-for-woocommerce' )
+				? __( 'Er zijn geen nieuwe SooCool achtergrondsynchronisaties ingepland. De geselecteerde orders staan al ingepland.', 'soocool-for-woocommerce' )
 				: sprintf(
 					/* translators: %d: number of orders queued for background sync to SooCool. */
-					_n( '%d new order queued for background sync to SooCool. Already queued orders were skipped.', '%d new orders queued for background sync to SooCool. Already queued orders were skipped.', $queued, 'soocool-for-woocommerce' ),
+					_n( '%d nieuwe order is ingepland voor SooCool-synchronisatie op de achtergrond. Orders die al ingepland waren, zijn overgeslagen.', '%d nieuwe orders zijn ingepland voor SooCool-synchronisatie op de achtergrond. Orders die al ingepland waren, zijn overgeslagen.', $queued, 'soocool-for-woocommerce' ),
 					$queued
 				);
 
@@ -184,14 +140,14 @@ final class BulkSyncActions {
 
 		$message = sprintf(
 			/* translators: %d: number of orders sent to SooCool. */
-			_n( '%d order sent to SooCool.', '%d orders sent to SooCool.', $synced, 'soocool-for-woocommerce' ),
+			_n( '%d order is naar SooCool verstuurd.', '%d orders zijn naar SooCool verstuurd.', $synced, 'soocool-for-woocommerce' ),
 			$synced
 		);
 
 		if ( $failed > 0 ) {
 			$message .= ' ' . sprintf(
 				/* translators: %d: number of orders that could not be sent. */
-				_n( '%d order could not be sent; check its SooCool notes.', '%d orders could not be sent; check their SooCool notes.', $failed, 'soocool-for-woocommerce' ),
+				_n( '%d order kon niet worden verstuurd; controleer de SooCool-notities bij deze order.', '%d orders konden niet worden verstuurd; controleer de SooCool-notities bij deze orders.', $failed, 'soocool-for-woocommerce' ),
 				$failed
 			);
 		}
@@ -199,7 +155,7 @@ final class BulkSyncActions {
 		if ( $remaining > 0 ) {
 			$message .= ' ' . sprintf(
 				/* translators: %d: number of orders still waiting to be sent. */
-				_n( '%d order remaining; run the bulk action again to continue.', '%d orders remaining; run the bulk action again to continue.', $remaining, 'soocool-for-woocommerce' ),
+				_n( '%d order staat nog open; voer de bulkactie opnieuw uit om door te gaan.', '%d orders staan nog open; voer de bulkactie opnieuw uit om door te gaan.', $remaining, 'soocool-for-woocommerce' ),
 				$remaining
 			);
 		}

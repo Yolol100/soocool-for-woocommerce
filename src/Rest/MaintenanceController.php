@@ -6,7 +6,6 @@ namespace SooCool\WooCommerce\Rest;
 
 use SooCool\WooCommerce\WooCommerce\OrderActions;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
-use WC_Order;
 use WP_REST_Response;
 use WP_REST_Server;
 
@@ -16,14 +15,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Operator maintenance actions. Currently exposes a "resync failed orders"
- * action that re-submits every order whose SooCool sync previously failed.
- * Work is queued through Action Scheduler when available so a large backlog
- * never blocks the request; a small synchronous batch is used as a fallback.
+ * action that queues a bounded batch of orders whose SooCool sync previously
+ * failed. Work is queued through Action Scheduler when available, with WP-Cron
+ * as the fallback, so a large backlog never blocks the request.
  */
 final class MaintenanceController extends AbstractRestController {
 
-	private const MAX_ORDERS         = 200;
-	private const SYNC_FALLBACK_LIMIT = 5;
+	private const MAX_ORDERS = 200;
 
 	public function __construct( private readonly OrderActions $actions ) {}
 
@@ -40,81 +38,81 @@ final class MaintenanceController extends AbstractRestController {
 	}
 
 	public function resync_failed(): WP_REST_Response {
-		$order_ids = $this->failed_order_ids();
-		$total     = count( $order_ids );
+		$batch       = $this->failed_order_batch();
+		$order_ids   = $batch['order_ids'];
+		$total_found = $batch['total_found'];
+		$batch_total = count( $order_ids );
+		$remaining   = max( 0, $total_found - $batch_total );
+		$truncated   = $remaining > 0;
 
-		if ( 0 === $total ) {
+		if ( 0 === $total_found ) {
 			return new WP_REST_Response(
 				array(
-					'success' => true,
-					'queued'  => 0,
-					'mode'    => 'none',
-					'message' => __( 'No failed SooCool orders to resync.', 'soocool-for-woocommerce' ),
+					'success'     => true,
+					'queued'      => 0,
+					'limit'       => self::MAX_ORDERS,
+					'total_found' => 0,
+					'remaining'   => 0,
+					'truncated'   => false,
+					'mode'        => 'none',
+					'message'     => __( 'Geen mislukte SooCool-orders om opnieuw te synchroniseren.', 'soocool-for-woocommerce' ),
 				)
 			);
 		}
 
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			$queued = 0;
-			foreach ( $order_ids as $order_id ) {
-				if ( $this->enqueue_resync_once( (int) $order_id ) ) {
-					++$queued;
-				}
+		$queued     = 0;
+		$duplicates = 0;
+		$failed     = 0;
+		foreach ( $order_ids as $order_id ) {
+			$result = $this->actions->schedule_resync_order( (int) $order_id );
+			if ( OrderActions::QUEUE_SCHEDULED === $result ) {
+				++$queued;
+				continue;
 			}
 
-			return new WP_REST_Response(
-				array(
-					'success' => true,
-					'queued'  => $queued,
-					'mode'    => 'scheduled',
-					'message' => sprintf(
-						/* translators: %d: number of orders queued for background resync. */
-						_n( '%d new failed order queued for background resync. Already queued orders were skipped.', '%d new failed orders queued for background resync. Already queued orders were skipped.', $queued, 'soocool-for-woocommerce' ),
-						$queued
-					),
-				)
-			);
+			if ( OrderActions::QUEUE_DUPLICATE === $result ) {
+				++$duplicates;
+				continue;
+			}
+
+			++$failed;
 		}
 
-		// Fallback: process a small batch inline so the action still works
-		// without Action Scheduler, without risking a request timeout.
-		$processed = 0;
-		foreach ( array_slice( $order_ids, 0, self::SYNC_FALLBACK_LIMIT ) as $order_id ) {
-			$this->actions->resync_order_by_id( (int) $order_id );
-			++$processed;
+		$message = sprintf(
+			/* translators: 1: queued orders, 2: duplicate orders, 3: failed schedules, 4: remaining failed orders. */
+			__( '%1$d mislukte orders ingepland voor hersynchronisatie op de achtergrond. %2$d orders stonden al ingepland, %3$d orders konden niet worden ingepland. Nog resterend na deze batch: %4$d.', 'soocool-for-woocommerce' ),
+			$queued,
+			$duplicates,
+			$failed,
+			$remaining
+		);
+
+		if ( $truncated ) {
+			$message .= ' ' . __( 'Voer deze actie opnieuw uit om de volgende batch mislukte orders in te plannen.', 'soocool-for-woocommerce' );
 		}
 
 		return new WP_REST_Response(
 			array(
-				'success'   => true,
-				'queued'    => $processed,
-				'remaining' => max( 0, $total - $processed ),
-				'mode'      => 'inline',
-				'message'   => sprintf(
-					/* translators: 1: processed count, 2: remaining count. */
-					__( 'Resynced %1$d failed orders now. %2$d remaining; run again to continue.', 'soocool-for-woocommerce' ),
-					$processed,
-					max( 0, $total - $processed )
-				),
+				'success'     => 0 === $failed,
+				'queued'      => $queued,
+				'duplicates'  => $duplicates,
+				'failed'      => $failed,
+				'limit'       => self::MAX_ORDERS,
+				'total_found' => $total_found,
+				'remaining'   => $remaining,
+				'truncated'   => $truncated,
+				'mode'        => 'scheduled',
+				'message'     => $message,
 			)
 		);
 	}
 
-	private function enqueue_resync_once( int $order_id ): bool {
-		$args = array( absint( $order_id ) );
-		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( OrderActions::RESYNC_HOOK, $args, 'soocool' ) ) {
-			return false;
-		}
-
-		as_enqueue_async_action( OrderActions::RESYNC_HOOK, $args, 'soocool' );
-		return true;
-	}
-
-	/** @return array<int, int> */
-	private function failed_order_ids(): array {
-		$orders = wc_get_orders(
+	/** @return array{order_ids: array<int, int>, total_found: int} */
+	private function failed_order_batch(): array {
+		$query = wc_get_orders(
 			array(
 				'limit'      => self::MAX_ORDERS,
+				'paginate'   => true,
 				'return'     => 'ids',
 				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Bounded maintenance query.
 					array(
@@ -125,10 +123,12 @@ final class MaintenanceController extends AbstractRestController {
 			)
 		);
 
-		if ( ! is_array( $orders ) ) {
-			return array();
-		}
+		$orders = ( is_object( $query ) && isset( $query->orders ) && is_array( $query->orders ) ) ? $query->orders : array();
+		$total  = ( is_object( $query ) && isset( $query->total ) ) ? absint( $query->total ) : count( $orders );
 
-		return array_values( array_filter( array_map( 'absint', $orders ) ) );
+		return array(
+			'order_ids'   => array_values( array_filter( array_map( 'absint', $orders ) ) ),
+			'total_found' => $total,
+		);
 	}
 }

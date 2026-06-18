@@ -27,7 +27,7 @@ final class WebhookAuthenticator {
 		$provided = $this->provided_token( $request );
 
 		if ( '' === $expected || '' === $provided || ! hash_equals( $expected, $provided ) ) {
-			return new WP_Error( 'soocool_webhook_forbidden', __( 'Invalid SooCool webhook token.', 'soocool-for-woocommerce' ), array( 'status' => 403 ) );
+			return new WP_Error( 'soocool_webhook_forbidden', __( 'Ongeldige SooCool webhook-token.', 'soocool-for-woocommerce' ), array( 'status' => 403 ) );
 		}
 
 		if ( ! $this->signature_required() && ! $this->has_signature_headers( $request ) ) {
@@ -52,12 +52,17 @@ final class WebhookAuthenticator {
 		 * Require HMAC verification for incoming SooCool webhooks.
 		 *
 		 * Keep enabled unless the remote SooCool callback configuration cannot send
-		 * signature headers yet. Token-only fallback remains available for legacy
-		 * integrations by returning false from this filter.
+		 * signature headers yet. Token-only fallback requires the
+		 * SOOCOOL_ALLOW_INSECURE_WEBHOOK_FALLBACK constant and a false filter value.
 		 *
 		 * @param bool $required Default true.
 		 */
-		return (bool) apply_filters( 'soocool_require_webhook_signature', true );
+		$required = (bool) apply_filters( 'soocool_require_webhook_signature', true );
+		if ( $required ) {
+			return true;
+		}
+
+		return ! ( defined( 'SOOCOOL_ALLOW_INSECURE_WEBHOOK_FALLBACK' ) && (bool) SOOCOOL_ALLOW_INSECURE_WEBHOOK_FALLBACK );
 	}
 
 	private function verify_signature( WP_REST_Request $request, string $secret ): bool|WP_Error {
@@ -65,21 +70,21 @@ final class WebhookAuthenticator {
 		$signature = $this->provided_signature( $request );
 
 		if ( 0 >= $timestamp || '' === $signature ) {
-			return new WP_Error( 'soocool_webhook_signature_missing', __( 'Missing SooCool webhook signature headers.', 'soocool-for-woocommerce' ), array( 'status' => 403 ) );
+			return new WP_Error( 'soocool_webhook_signature_missing', __( 'SooCool webhook-signature headers ontbreken.', 'soocool-for-woocommerce' ), array( 'status' => 403 ) );
 		}
 
 		if ( abs( time() - $timestamp ) > self::SIGNATURE_TOLERANCE_SECONDS ) {
-			return new WP_Error( 'soocool_webhook_timestamp_expired', __( 'Expired SooCool webhook timestamp.', 'soocool-for-woocommerce' ), array( 'status' => 403 ) );
+			return new WP_Error( 'soocool_webhook_timestamp_expired', __( 'SooCool webhook-timestamp is verlopen.', 'soocool-for-woocommerce' ), array( 'status' => 403 ) );
 		}
 
 		$body = $request->get_body();
 		if ( ! is_string( $body ) || strlen( $body ) > self::MAX_SIGNED_BODY_BYTES ) {
-			return new WP_Error( 'soocool_webhook_payload_too_large', __( 'SooCool webhook payload is too large.', 'soocool-for-woocommerce' ), array( 'status' => 413 ) );
+			return new WP_Error( 'soocool_webhook_payload_too_large', __( 'SooCool webhook-payload is te groot.', 'soocool-for-woocommerce' ), array( 'status' => 413 ) );
 		}
 
 		$expected = hash_hmac( 'sha256', $timestamp . '.' . $body, $secret );
 		if ( ! hash_equals( $expected, strtolower( $signature ) ) ) {
-			return new WP_Error( 'soocool_webhook_signature_invalid', __( 'Invalid SooCool webhook signature.', 'soocool-for-woocommerce' ), array( 'status' => 403 ) );
+			return new WP_Error( 'soocool_webhook_signature_invalid', __( 'Ongeldige SooCool webhook-signature.', 'soocool-for-woocommerce' ), array( 'status' => 403 ) );
 		}
 
 		return true;
@@ -94,7 +99,7 @@ final class WebhookAuthenticator {
 		$key       = 'soocool_webhook_replay_' . md5( $replay_id );
 
 		if ( false !== get_transient( $key ) ) {
-			return new WP_Error( 'soocool_webhook_replay', __( 'Duplicate SooCool webhook delivery.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
+			return new WP_Error( 'soocool_webhook_replay', __( 'Dubbele SooCool webhook-delivery.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
 		}
 
 		set_transient( $key, '1', self::SIGNATURE_TOLERANCE_SECONDS * 2 );

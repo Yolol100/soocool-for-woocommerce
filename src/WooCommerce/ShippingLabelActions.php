@@ -36,8 +36,8 @@ final class ShippingLabelActions {
 
 	/** @param array<string, string> $actions @return array<string, string> */
 	public function add_bulk_action( array $actions ): array {
-		$actions[ self::BULK_ORDER_LABELS_ACTION ] = __( 'Download SooCool order labels', 'soocool-for-woocommerce' );
-		$actions[ self::BULK_GOOD_LABELS_ACTION ]  = __( 'Download SooCool good labels', 'soocool-for-woocommerce' );
+		$actions[ self::BULK_ORDER_LABELS_ACTION ] = __( 'SooCool orderlabels downloaden', 'soocool-for-woocommerce' );
+		$actions[ self::BULK_GOOD_LABELS_ACTION ]  = __( 'SooCool goederenlabels downloaden', 'soocool-for-woocommerce' );
 		return $actions;
 	}
 
@@ -57,7 +57,7 @@ final class ShippingLabelActions {
 		}
 
 		if ( count( $order_ids ) > self::MAX_BULK_LABEL_IDS ) {
-			wp_die( esc_html__( 'Select 50 or fewer orders for one SooCool label download.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'Selecteer maximaal 50 orders voor één SooCool labeldownload.', 'soocool-for-woocommerce' ) );
 		}
 
 		$output = $this->requested_output();
@@ -85,12 +85,12 @@ final class ShippingLabelActions {
 
 	public function download_bulk_labels(): void {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-			wp_die( esc_html__( 'You are not allowed to download these labels.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'Je mag deze labels niet downloaden.', 'soocool-for-woocommerce' ) );
 		}
 
 		$token = sanitize_key( $this->query_string( 'token' ) );
 		if ( '' === $token ) {
-			wp_die( esc_html__( 'SooCool label download request is invalid.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
+			wp_die( esc_html__( 'SooCool labeldownloadverzoek is ongeldig.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
 		}
 
 		check_admin_referer( $this->bulk_label_nonce_action( $token ) );
@@ -99,7 +99,7 @@ final class ShippingLabelActions {
 		delete_transient( $this->bulk_label_transient_key( $token ) );
 
 		if ( ! is_array( $payload ) || (int) ( $payload['user_id'] ?? 0 ) !== get_current_user_id() ) {
-			wp_die( esc_html__( 'SooCool label download request has expired.', 'soocool-for-woocommerce' ), '', array( 'response' => 403 ) );
+			wp_die( esc_html__( 'SooCool labeldownloadverzoek is verlopen.', 'soocool-for-woocommerce' ), '', array( 'response' => 403 ) );
 		}
 
 		$action    = sanitize_key( (string) ( $payload['action'] ?? '' ) );
@@ -107,7 +107,7 @@ final class ShippingLabelActions {
 		$output    = 'collated_a4' === (string) ( $payload['output'] ?? '' ) ? 'collated_a4' : 'a6';
 
 		if ( array() === $order_ids || count( $order_ids ) > self::MAX_BULK_LABEL_IDS ) {
-			wp_die( esc_html__( 'SooCool label download request is invalid.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
+			wp_die( esc_html__( 'SooCool labeldownloadverzoek is ongeldig.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
 		}
 
 		if ( self::BULK_GOOD_LABELS_ACTION === $action ) {
@@ -120,12 +120,12 @@ final class ShippingLabelActions {
 			return;
 		}
 
-		wp_die( esc_html__( 'SooCool label download action is invalid.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
+		wp_die( esc_html__( 'SooCool labeldownloadactie is ongeldig.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
 	}
 
 	public function download(): void {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-			wp_die( esc_html__( 'You are not allowed to download this label.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'Je mag dit label niet downloaden.', 'soocool-for-woocommerce' ) );
 		}
 
 		$output = $this->requested_output();
@@ -136,7 +136,7 @@ final class ShippingLabelActions {
 		}
 
 		if ( $this->has_unbound_bulk_download_request() ) {
-			wp_die( esc_html__( 'Use the WooCommerce bulk action or an order-specific SooCool label link for label downloads.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'Gebruik de WooCommerce bulkactie of een order-specifieke SooCool labellink voor labeldownloads.', 'soocool-for-woocommerce' ) );
 		}
 
 		$this->handle_single_label_download( $output );
@@ -185,7 +185,7 @@ final class ShippingLabelActions {
 
 		$order = wc_get_order( $order_id );
 		if ( ! $order instanceof WC_Order ) {
-			wp_die( esc_html__( 'Order not found.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'Order niet gevonden.', 'soocool-for-woocommerce' ) );
 		}
 
 		$requested_good_ids = $this->request_good_ids();
@@ -193,11 +193,11 @@ final class ShippingLabelActions {
 		$unknown_good_ids   = array_diff( $requested_good_ids, $stored_good_ids );
 
 		if ( array() === $requested_good_ids || array() !== $unknown_good_ids ) {
-			wp_die( esc_html__( 'One or more requested SooCool good IDs do not belong to this order.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'Eén of meer aangevraagde SooCool-goederen-ID’s horen niet bij deze order.', 'soocool-for-woocommerce' ) );
 		}
 
 		if ( count( $requested_good_ids ) > self::MAX_BULK_LABEL_IDS ) {
-			wp_die( esc_html__( 'Select 50 or fewer SooCool good IDs for one label download.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'Selecteer maximaal 50 SooCool-goederen-ID’s voor één labeldownload.', 'soocool-for-woocommerce' ) );
 		}
 
 		$good_ids = $requested_good_ids;
@@ -207,7 +207,7 @@ final class ShippingLabelActions {
 				? $this->labels->get_bulk_good_labels( $good_ids, $output )
 				: $this->labels->get_good_label( $order, $good_ids[0], $output );
 		} catch ( \Throwable $exception ) {
-			wp_die( esc_html__( 'SooCool good label download failed. Check the SooCool logs for details.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'SooCool goederenlabeldownload mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
 		}
 
 		$filename = count( $good_ids ) > 1 ? 'soocool-good-labels-' . absint( $order_id ) . '.pdf' : 'soocool-label-' . absint( $order_id ) . '-good-' . absint( $good_ids[0] ) . '.pdf';
@@ -218,13 +218,13 @@ final class ShippingLabelActions {
 	private function send_bulk_order_labels_for_orders( array $order_ids, string $output ): void {
 		$orders = $this->orders_from_ids( $order_ids );
 		if ( array() === $orders ) {
-			wp_die( esc_html__( 'No valid orders selected for SooCool label download.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'Geen geldige orders geselecteerd voor SooCool labeldownload.', 'soocool-for-woocommerce' ) );
 		}
 
 		try {
 			$pdf = $this->labels->get_bulk_labels( $orders, $output );
 		} catch ( \Throwable $exception ) {
-			wp_die( esc_html__( 'SooCool bulk order label download failed. Check the SooCool logs for details.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'SooCool bulkdownload van orderlabels mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
 		}
 
 		$filename = count( $orders ) > 1 ? 'soocool-order-labels.pdf' : 'soocool-order-label-' . absint( $orders[0]->get_id() ) . '.pdf';
@@ -242,17 +242,17 @@ final class ShippingLabelActions {
 
 		$good_ids = array_values( array_unique( array_filter( array_map( 'absint', $good_ids ) ) ) );
 		if ( array() === $good_ids ) {
-			wp_die( esc_html__( 'No SooCool good IDs found for the selected orders.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'Geen SooCool-goederen-ID’s gevonden voor de geselecteerde orders.', 'soocool-for-woocommerce' ) );
 		}
 
 		if ( count( $good_ids ) > self::MAX_BULK_LABEL_IDS ) {
-			wp_die( esc_html__( 'The selected orders contain more than 50 SooCool good IDs. Select fewer orders and try again.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'De geselecteerde orders bevatten meer dan 50 SooCool-goederen-ID’s. Selecteer minder orders en probeer opnieuw.', 'soocool-for-woocommerce' ) );
 		}
 
 		try {
 			$pdf = $this->labels->get_bulk_good_labels( $good_ids, $output );
 		} catch ( \Throwable $exception ) {
-			wp_die( esc_html__( 'SooCool bulk good label download failed. Check the SooCool logs for details.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'SooCool bulkdownload van goederenlabels mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
 		}
 
 		$filename = count( $good_ids ) > 1 ? 'soocool-good-labels.pdf' : 'soocool-good-label-' . absint( $good_ids[0] ) . '.pdf';
@@ -278,18 +278,18 @@ final class ShippingLabelActions {
 		check_admin_referer( 'soocool_download_label_' . $order_id );
 		$order = wc_get_order( $order_id );
 		if ( ! $order instanceof WC_Order ) {
-			wp_die( esc_html__( 'Order not found.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'Order niet gevonden.', 'soocool-for-woocommerce' ) );
 		}
 
 		$good_id = $this->query_int( 'good_id' );
 		if ( $good_id > 0 && ! in_array( $good_id, $this->stored_good_ids( $order ), true ) ) {
-			wp_die( esc_html__( 'The requested SooCool good ID does not belong to this order.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'De gevraagde SooCool-goederen-ID hoort niet bij deze order.', 'soocool-for-woocommerce' ) );
 		}
 
 		try {
 			$pdf = $good_id > 0 ? $this->labels->get_good_label( $order, $good_id, $output ) : $this->labels->get_label( $order, $output );
 		} catch ( \Throwable $exception ) {
-			wp_die( esc_html__( 'SooCool label download failed. Check the SooCool logs for details.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'SooCool labeldownload mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
 		}
 
 		$filename = $good_id > 0 ? 'soocool-label-' . absint( $order_id ) . '-good-' . absint( $good_id ) . '.pdf' : 'soocool-label-' . absint( $order_id ) . '.pdf';
@@ -324,23 +324,6 @@ final class ShippingLabelActions {
 		return array_values( array_unique( $ids ) );
 	}
 
-	/** @return array<int, int> */
-	private function request_order_ids( string $order_ids ): array {
-		if ( '' === $order_ids ) {
-			return array();
-		}
-
-		$ids = array();
-		foreach ( explode( ',', $order_ids ) as $order_id ) {
-			$order_id = trim( $order_id );
-			if ( '' === $order_id || ! ctype_digit( $order_id ) || 0 >= (int) $order_id ) {
-				return array();
-			}
-			$ids[] = (int) $order_id;
-		}
-
-		return array_values( array_unique( $ids ) );
-	}
 
 	private function has_unbound_bulk_download_request(): bool {
 		return $this->query_has( 'order_ids' )
@@ -365,11 +348,11 @@ final class ShippingLabelActions {
 
 	private function send_pdf( string $pdf, string $filename ): void {
 		if ( '' === $pdf || ! str_starts_with( ltrim( $pdf ), '%PDF' ) ) {
-			wp_die( esc_html__( 'SooCool did not return a valid PDF label.', 'soocool-for-woocommerce' ) );
+			wp_die( esc_html__( 'SooCool gaf geen geldig PDF-label terug.', 'soocool-for-woocommerce' ) );
 		}
 
 		if ( headers_sent() ) {
-			wp_die( esc_html__( 'SooCool label download could not start because output was already sent.', 'soocool-for-woocommerce' ), '', array( 'response' => 500 ) );
+			wp_die( esc_html__( 'SooCool labeldownload kon niet starten omdat er al output is verstuurd.', 'soocool-for-woocommerce' ), '', array( 'response' => 500 ) );
 		}
 
 		while ( ob_get_level() > 0 ) {

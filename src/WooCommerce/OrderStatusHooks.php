@@ -36,6 +36,17 @@ final class OrderStatusHooks {
 			return;
 		}
 
-		$this->actions->send_to_soocool( $order );
+		$result = $this->actions->schedule_send_to_soocool( $order_id );
+		if ( OrderActions::QUEUE_SCHEDULED === $result ) {
+			$order->add_order_note( __( 'SooCool-synchronisatie is ingepland op de achtergrond na de orderstatuswijziging.', 'soocool-for-woocommerce' ) );
+			return;
+		}
+
+		if ( OrderActions::QUEUE_DUPLICATE === $result ) {
+			$order->add_order_note( __( 'SooCool-synchronisatie is overgeslagen omdat deze order al op de achtergrond ingepland staat.', 'soocool-for-woocommerce' ) );
+			return;
+		}
+
+		$order->add_order_note( __( 'SooCool-synchronisatie kon niet op de achtergrond worden ingepland. Controleer WooCommerce Action Scheduler of WP-Cron.', 'soocool-for-woocommerce' ) );
 	}
 }

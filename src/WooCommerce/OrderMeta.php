@@ -22,6 +22,65 @@ final class OrderMeta {
 	public const TRACKING_CODE   = '_soocool_tracking_code';
 	public const TRACKING_URL    = '_soocool_tracking_url';
 	public const GOOD_IDS        = '_soocool_good_ids';
+	public const REQUESTED_DELIVERY_DATE  = '_soocool_requested_delivery_date';
+	public const REQUESTED_DELIVERY_LABEL = '_soocool_requested_delivery_label';
+	public const REQUESTED_DELIVERY_TIME_FROM  = '_soocool_requested_delivery_time_from';
+	public const REQUESTED_DELIVERY_TIME_TO    = '_soocool_requested_delivery_time_to';
+	public const REQUESTED_DELIVERY_TIME_LABEL = '_soocool_requested_delivery_time_label';
+
+
+	public function get_requested_delivery_date( WC_Order $order ): string {
+		$value = $order->get_meta( self::REQUESTED_DELIVERY_DATE, true );
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		$date = sanitize_text_field( (string) $value );
+		return 1 === preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ? $date : '';
+	}
+
+	public function get_requested_delivery_label( WC_Order $order ): string {
+		$value = $order->get_meta( self::REQUESTED_DELIVERY_LABEL, true );
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		return trim( sanitize_text_field( (string) $value ) );
+	}
+
+	public function get_requested_delivery_time_from( WC_Order $order ): string {
+		return $this->get_requested_delivery_time( $order, self::REQUESTED_DELIVERY_TIME_FROM );
+	}
+
+	public function get_requested_delivery_time_to( WC_Order $order ): string {
+		return $this->get_requested_delivery_time( $order, self::REQUESTED_DELIVERY_TIME_TO );
+	}
+
+	public function get_requested_delivery_time_label( WC_Order $order ): string {
+		$value = $order->get_meta( self::REQUESTED_DELIVERY_TIME_LABEL, true );
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		$label = trim( sanitize_text_field( (string) $value ) );
+		if ( '' !== $label ) {
+			return $label;
+		}
+
+		$from = $this->get_requested_delivery_time_from( $order );
+		$to   = $this->get_requested_delivery_time_to( $order );
+		return '' !== $from && '' !== $to ? $from . '-' . $to : '';
+	}
+
+	private function get_requested_delivery_time( WC_Order $order, string $key ): string {
+		$value = $order->get_meta( $key, true );
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		$time = sanitize_text_field( (string) $value );
+		return 1 === preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $time ) ? $time : '';
+	}
 
 	/** @param array<string, mixed> $body */
 	public function save_success( WC_Order $order, array $body, string $order_reference = '' ): void {

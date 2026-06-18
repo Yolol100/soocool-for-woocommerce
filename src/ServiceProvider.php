@@ -18,6 +18,8 @@ use SooCool\WooCommerce\Admin\OrderListColumn;
 use SooCool\WooCommerce\Admin\BulkSyncActions;
 use SooCool\WooCommerce\Api\ApiClient;
 use SooCool\WooCommerce\Api\ApiErrorMapper;
+use SooCool\WooCommerce\Checkout\DeliveryOptions;
+use SooCool\WooCommerce\Checkout\DeliverySchedule;
 use SooCool\WooCommerce\Domain\AddressParser;
 use SooCool\WooCommerce\Domain\OrderPayloadBuilder;
 use SooCool\WooCommerce\Domain\OrderPayloadValidator;
@@ -33,6 +35,8 @@ use SooCool\WooCommerce\Rest\LogsController;
 use SooCool\WooCommerce\Rest\ManualTestController;
 use SooCool\WooCommerce\Rest\OrderSyncController;
 use SooCool\WooCommerce\Rest\SettingsController;
+use SooCool\WooCommerce\Rest\SettingsSchema;
+use SooCool\WooCommerce\Rest\SettingsValidator;
 use SooCool\WooCommerce\Rest\WebhookAuthenticator;
 use SooCool\WooCommerce\Rest\WebhookPayloadExtractor;
 use SooCool\WooCommerce\Rest\WebhookController;
@@ -71,7 +75,8 @@ final class ServiceProvider {
 			ApiErrorMapper::class => new ApiErrorMapper(),
 			ApiClient::class => new ApiClient( $this->get( OptionRepository::class ), $this->get( Logger::class ), $this->get( ApiErrorMapper::class ) ),
 			AddressParser::class => new AddressParser(),
-			TaskFactory::class => new TaskFactory( $this->get( OptionRepository::class ), $this->get( AddressParser::class ) ),
+			DeliverySchedule::class => new DeliverySchedule( $this->get( OptionRepository::class ) ),
+			TaskFactory::class => new TaskFactory( $this->get( OptionRepository::class ), $this->get( AddressParser::class ), $this->get( DeliverySchedule::class ) ),
 			OrderPayloadValidator::class => new OrderPayloadValidator(),
 			OrderPayloadBuilder::class => new OrderPayloadBuilder( $this->get( TaskFactory::class ), $this->get( OptionRepository::class ), $this->get( OrderPayloadValidator::class ) ),
 			OrderMeta::class => new OrderMeta(),
@@ -83,23 +88,26 @@ final class ServiceProvider {
 			AdminMenu::class => new AdminMenu(),
 			Assets::class => new Assets(),
 			AdminNoticeSuppressor::class => new AdminNoticeSuppressor(),
-			Notices::class => new Notices( $this->get( Requirements::class ) ),
+			Notices::class => new Notices( $this->get( Requirements::class ), $this->get( OptionRepository::class ) ),
 			PrivacyPolicy::class => new PrivacyPolicy(),
-			SettingsController::class => new SettingsController( $this->get( OptionRepository::class ) ),
+			SettingsValidator::class => new SettingsValidator( $this->get( OptionRepository::class ) ),
+			SettingsSchema::class => new SettingsSchema( $this->get( SettingsValidator::class ) ),
+			SettingsController::class => new SettingsController( $this->get( OptionRepository::class ), $this->get( SettingsSchema::class ), $this->get( SettingsValidator::class ) ),
+			DeliveryOptions::class => new DeliveryOptions( $this->get( OptionRepository::class ), $this->get( DeliverySchedule::class ) ),
 			ConnectionController::class => new ConnectionController( $this->get( ApiClient::class ) ),
 			LogsController::class => new LogsController( $this->get( Logger::class ) ),
 			ManualTestController::class => new ManualTestController( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( DummyOrderFactory::class ), $this->get( DebugRedactor::class ), $this->get( Logger::class ), $this->get( OptionRepository::class ) ),
-			OrderSyncController::class => new OrderSyncController( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ), $this->get( OrderSyncService::class ) ),
+			OrderSyncController::class => new OrderSyncController( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ), $this->get( OrderSyncService::class ), $this->get( SecretSanitizer::class ) ),
 			WebhookAuthenticator::class => new WebhookAuthenticator( $this->get( OptionRepository::class ) ),
 			WebhookPayloadExtractor::class => new WebhookPayloadExtractor(),
-			WebhookController::class => new WebhookController( $this->get( OptionRepository::class ), $this->get( OrderMeta::class ), $this->get( Logger::class ), $this->get( WebhookAuthenticator::class ), $this->get( WebhookPayloadExtractor::class ) ),
+			WebhookController::class => new WebhookController( $this->get( OrderMeta::class ), $this->get( Logger::class ), $this->get( WebhookAuthenticator::class ), $this->get( WebhookPayloadExtractor::class ) ),
 			WebhookSecretController::class => new WebhookSecretController( $this->get( OptionRepository::class ) ),
 			RemoteStatusMapper::class => new RemoteStatusMapper(),
-			OrderMetaBox::class => new OrderMetaBox( $this->get( OrderMeta::class ), $this->get( OrderStatusPresenter::class ) ),
+			OrderMetaBox::class => new OrderMetaBox( $this->get( OrderMeta::class ), $this->get( OrderStatusPresenter::class ), $this->get( DeliverySchedule::class ) ),
 			OrderActionConfirmScript::class => new OrderActionConfirmScript(),
-			OrderActions::class => new OrderActions( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ), $this->get( RemoteStatusMapper::class ), $this->get( OrderMetaBox::class ), $this->get( OrderActionConfirmScript::class ), $this->get( OrderSyncService::class ) ),
+			OrderActions::class => new OrderActions( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ), $this->get( RemoteStatusMapper::class ), $this->get( OrderMetaBox::class ), $this->get( OrderActionConfirmScript::class ), $this->get( OrderSyncService::class ), $this->get( SecretSanitizer::class ) ),
 			OrderListColumn::class => new OrderListColumn( $this->get( OrderMeta::class ), $this->get( OrderStatusPresenter::class ) ),
-			BulkSyncActions::class => new BulkSyncActions( $this->get( OrderActions::class ), $this->get( OrderMeta::class ) ),
+			BulkSyncActions::class => new BulkSyncActions( $this->get( OrderActions::class ) ),
 			MaintenanceController::class => new MaintenanceController( $this->get( OrderActions::class ) ),
 			OrderStatusHooks::class => new OrderStatusHooks( $this->get( OptionRepository::class ), $this->get( OrderActions::class ), $this->get( OrderMeta::class ) ),
 			ShippingLabelActions::class => new ShippingLabelActions( $this->get( ShippingLabelService::class ), $this->get( OptionRepository::class ), $this->get( OrderMeta::class ) ),

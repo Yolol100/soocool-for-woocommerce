@@ -23,11 +23,11 @@ final class OrderStatusPresenter {
 	 */
 	public function filter_options(): array {
 		return array(
-			'synced'     => __( 'Synced', 'soocool-for-woocommerce' ),
-			'pending'    => __( 'Pending', 'soocool-for-woocommerce' ),
-			'failed'     => __( 'Failed', 'soocool-for-woocommerce' ),
-			'cancelled'  => __( 'Cancelled', 'soocool-for-woocommerce' ),
-			'not_synced' => __( 'Not synced', 'soocool-for-woocommerce' ),
+			'synced'     => __( 'Gesynchroniseerd', 'soocool-for-woocommerce' ),
+			'pending'    => __( 'In wachtrij', 'soocool-for-woocommerce' ),
+			'failed'     => __( 'Mislukt', 'soocool-for-woocommerce' ),
+			'cancelled'  => __( 'Geannuleerd', 'soocool-for-woocommerce' ),
+			'not_synced' => __( 'Niet gesynchroniseerd', 'soocool-for-woocommerce' ),
 		);
 	}
 
@@ -35,13 +35,13 @@ final class OrderStatusPresenter {
 		$status = sanitize_key( $status );
 
 		return match ( $status ) {
-			'pending'   => __( 'Pending', 'soocool-for-woocommerce' ),
-			'synced'    => __( 'Synced', 'soocool-for-woocommerce' ),
+			'pending'   => __( 'In wachtrij', 'soocool-for-woocommerce' ),
+			'synced'    => __( 'Gesynchroniseerd', 'soocool-for-woocommerce' ),
 			'cancelled',
-			'soocool_cancelled' => __( 'Cancelled', 'soocool-for-woocommerce' ),
-			'failed'    => __( 'Failed', 'soocool-for-woocommerce' ),
-			''          => __( 'Not synced', 'soocool-for-woocommerce' ),
-			default     => preg_replace( '/^soocool_/', '', str_replace( '_', ' ', $status ) ) ?: __( 'Unknown', 'soocool-for-woocommerce' ),
+			'soocool_cancelled' => __( 'Geannuleerd', 'soocool-for-woocommerce' ),
+			'failed'    => __( 'Mislukt', 'soocool-for-woocommerce' ),
+			''          => __( 'Niet gesynchroniseerd', 'soocool-for-woocommerce' ),
+			default     => preg_replace( '/^soocool_/', '', str_replace( '_', ' ', $status ) ) ?: __( 'Onbekend', 'soocool-for-woocommerce' ),
 		};
 	}
 

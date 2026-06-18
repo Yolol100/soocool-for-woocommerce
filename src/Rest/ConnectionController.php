@@ -40,7 +40,7 @@ final class ConnectionController extends AbstractRestController {
 					array(
 						'success'          => true,
 						'status'           => $response->status_code(),
-						'message'          => __( 'Connection successful.', 'soocool-for-woocommerce' ),
+						'message'          => __( 'Verbinding gelukt.', 'soocool-for-woocommerce' ),
 						'contract_warning' => true,
 					),
 					200
@@ -51,7 +51,7 @@ final class ConnectionController extends AbstractRestController {
 				array(
 					'success'          => true,
 					'status'           => $response->status_code(),
-					'message'          => __( 'Connection successful.', 'soocool-for-woocommerce' ),
+					'message'          => __( 'Verbinding gelukt.', 'soocool-for-woocommerce' ),
 					'contract_warning' => false,
 				)
 			);
@@ -65,7 +65,7 @@ final class ConnectionController extends AbstractRestController {
 				array(
 					'success' => false,
 					'status'  => $exception->status_code(),
-					'message' => '' !== $exception->getMessage() ? sanitize_text_field( $exception->getMessage() ) : __( 'Connection failed. Check the SooCool API key and base URL.', 'soocool-for-woocommerce' ),
+					'message' => '' !== $exception->getMessage() ? sanitize_text_field( $exception->getMessage() ) : __( 'Verbinding mislukt. Controleer de SooCool API-key en basis-URL.', 'soocool-for-woocommerce' ),
 				),
 				$status
 			);
@@ -74,7 +74,7 @@ final class ConnectionController extends AbstractRestController {
 				array(
 					'success' => false,
 					'status'  => 500,
-					'message' => __( 'Connection test failed unexpectedly. Check the SooCool logs and PHP error log for details.', 'soocool-for-woocommerce' ),
+					'message' => __( 'Verbindingstest onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details.', 'soocool-for-woocommerce' ),
 				),
 				500
 			);
