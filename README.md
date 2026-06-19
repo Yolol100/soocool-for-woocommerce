@@ -45,15 +45,21 @@ This release package contains runtime PHP source, human-readable built admin ass
 - WordPress 6.5+
 - WooCommerce 8.0+
 
-## Development setup
+## Local release checks
 
 ```bash
-composer install
-npm install
-npm run check:assets
-npm run build
-composer quality
+php -l soocool-for-woocommerce.php
+php -l uninstall.php
+find src -name "*.php" -print0 | xargs -0 -n1 php -l
+node --check assets/build/admin.js
+node --check assets/build/admin.min.js
+node --check assets/admin/order-actions.js
+node --check assets/admin/order-actions.min.js
+node --check assets/frontend/checkout-delivery.js
+node --check assets/frontend/checkout-delivery.min.js
 ```
+
+This repository is a release package and does not currently include Composer, npm or CI configuration files. If you are working from a separate development repository that contains those files, run that repository's Composer, npm and build commands before copying generated assets into this package.
 
 ## Security notes
 
@@ -81,21 +87,18 @@ The webhook receiver requires the stored SooCool webhook token and, by default, 
 
 ## Quality checks
 
-Run these checks before packaging a release:
+Run the available syntax checks in this release package before publishing:
 
 ```bash
-composer validate --strict
-composer install
-composer lint:php
-composer phpcs
-composer phpstan
-composer test
-npm install
-# Commit package-lock.json after the first install. Use npm ci in CI once the lockfile exists.
-npm run check:assets
-npm run lint:js
-npm run lint:css
-npm run build
+php -l soocool-for-woocommerce.php
+php -l uninstall.php
+find src -name "*.php" -print0 | xargs -0 -n1 php -l
+node --check assets/build/admin.js
+node --check assets/build/admin.min.js
+node --check assets/admin/order-actions.js
+node --check assets/admin/order-actions.min.js
+node --check assets/frontend/checkout-delivery.js
+node --check assets/frontend/checkout-delivery.min.js
 ```
 
 Use WooCommerce HPOS in staging and verify the manual order action, optional status hook, `/ping` connection test, delivery-only task creation, optional pickup plus delivery task creation, fixed 08:00-18:00 delivery window and PDF label downloads before enabling production credentials.
@@ -103,7 +106,7 @@ Use WooCommerce HPOS in staging and verify the manual order action, optional sta
 
 ## Release note
 
-This repository should commit `package-lock.json` after running `npm install` locally. Release builds should be generated locally or in CI with the committed lockfile so `assets/build` exactly matches `assets/src`.
+Release builds should keep `assets/build` and the asset metadata aligned with the plugin version. If build tooling lives in a separate development repository, copy the generated assets and asset manifest into this release package together.
 
 
 ## Release quality gate
@@ -144,8 +147,9 @@ add_filter('soocool_allowed_api_hosts', static function (array $hosts): array {
 
 Before production, record evidence for:
 
-- Composer quality checks.
-- npm asset contract, build and lint checks.
+- PHP syntax checks for the plugin files.
+- JavaScript syntax checks for bundled admin and checkout assets.
+- Plugin Check and PHPCS/WPCS results when those tools are available in the release environment.
 - HPOS-enabled order screen test.
 - SooCool `/ping` test.
 - Pickup-enabled test order in SooCool portal.
