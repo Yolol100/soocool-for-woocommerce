@@ -249,13 +249,26 @@
   outline-offset: 2px;
 }
 
+.soocool-delivery-day.is-disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .soocool-delivery-day.is-disabled .soocool-delivery-day__card {
-  border-color: #eeeeee;
-  background: #f8f8f8;
-  color: #6c6c6c;
+  border-color: #d6d6d6;
+  border-style: dashed;
+  background: #f1f1f1;
+  color: #9a9a9a;
   cursor: not-allowed;
   box-shadow: none;
+  opacity: 0.78;
 }
+
+.soocool-delivery-day.is-disabled .soocool-delivery-day__day {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
 
 .soocool-delivery-day__weekday,
 .soocool-delivery-day__month {
@@ -272,6 +285,20 @@
   font-weight: 700;
   line-height: 1;
 }
+
+.soocool-delivery-options__screen-reader-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
 
 .soocool-delivery-options__time {
   margin-top: 2px;
@@ -422,7 +449,7 @@ button.soocool-delivery-time-more:focus,
   margin-top: 24px;
 }
 
-/* Containment hardening for checkout themes that give the WooCommerce review/payment area a viewport-sized width. */
+/* Limit checkout layout rules to the SooCool delivery block when a theme stretches the WooCommerce review/payment area. */
 .woocommerce-checkout .soocool-delivery-options,
 .woocommerce-checkout-review-order .soocool-delivery-options,
 #order_review .soocool-delivery-options,
@@ -722,4 +749,37 @@ button.soocool-delivery-time-more:focus,
   .soocool-delivery-time-empty {
     overflow-wrap: anywhere;
   }
+}
+
+
+/* Delivery date states: unavailable dates remain visually disabled without extra label text. */
+.soocool-delivery-options .soocool-delivery-day.is-available .soocool-delivery-day__card {
+  border-color: #dddddd;
+  background: #ffffff;
+  color: #111111;
+}
+
+.soocool-delivery-options .soocool-delivery-day.is-available:hover .soocool-delivery-day__card {
+  border-color: rgba(197, 22, 29, 0.42);
+  background: #fff7f8;
+}
+
+.soocool-delivery-options .soocool-delivery-day.is-disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.soocool-delivery-options .soocool-delivery-day.is-disabled .soocool-delivery-day__card {
+  border: 1px dashed #d6d6d6;
+  background: #f1f1f1;
+  color: #9a9a9a;
+  cursor: not-allowed;
+  opacity: 0.78;
+  box-shadow: none;
+  transform: none;
+}
+
+.soocool-delivery-options .soocool-delivery-day input:checked + .soocool-delivery-day__card {
+  border-color: #c5161d;
+  background: #fff2f3;
 }

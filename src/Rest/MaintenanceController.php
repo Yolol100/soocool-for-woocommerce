@@ -9,9 +9,7 @@ use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WP_REST_Response;
 use WP_REST_Server;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Operator maintenance actions. Currently exposes a "resync failed orders"

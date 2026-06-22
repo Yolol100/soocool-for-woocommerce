@@ -6,9 +6,7 @@ namespace SooCool\WooCommerce\WooCommerce;
 
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class OrderStatusHooks {
 

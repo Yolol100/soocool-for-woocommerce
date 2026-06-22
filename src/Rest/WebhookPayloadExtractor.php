@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Rest;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class WebhookPayloadExtractor {
 
@@ -238,6 +236,10 @@ final class WebhookPayloadExtractor {
 		$status = sanitize_key( $status );
 		if ( '' === $status ) {
 			return '';
+		}
+
+		if ( in_array( $status, array( 'synced', 'pending', 'failed', 'cancelled' ), true ) ) {
+			return $status;
 		}
 
 		$status = str_starts_with( $status, 'soocool_' ) ? $status : 'soocool_' . $status;

@@ -10,9 +10,7 @@ use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 use WP_Error;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Classic WooCommerce checkout integration.
@@ -22,8 +20,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class DeliveryOptions {
 
-	private const FIELD_DATE      = 'soocool_requested_delivery_date';
-	private const FIELD_TIME_SLOT = 'soocool_requested_delivery_time_slot';
+	private const FIELD_DATE      = DeliveryCheckoutRequest::FIELD_DATE;
+	private const FIELD_TIME_SLOT = DeliveryCheckoutRequest::FIELD_TIME_SLOT;
 
 	/** @var array<int, string> */
 	private const SHORT_WEEKDAYS = array( 'zo', 'ma', 'di', 'wo', 'do', 'vr', 'za' );
@@ -60,7 +58,7 @@ final class DeliveryOptions {
 		12 => 'december',
 	);
 
-	public function __construct( private readonly OptionRepository $options, private readonly DeliverySchedule $schedule ) {}
+	public function __construct( private readonly OptionRepository $options, private readonly DeliverySchedule $schedule, private readonly DeliveryCheckoutRequest $request, private readonly DeliveryOrderDetails $order_details ) {}
 
 	public function register(): void {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
@@ -110,8 +108,8 @@ final class DeliveryOptions {
 		}
 
 		$options      = $this->schedule->available_options();
-		$current_date = $this->selected_delivery_date( $options );
-		$current_slot = $this->selected_time_slot( $current_date );
+		$current_date = $this->request->selected_delivery_date( $options );
+		$current_slot = $this->request->selected_time_slot( $this->schedule, $current_date );
 
 		$root_classes = 'soocool-delivery-options is-time-collapsed' . ( '' !== $current_date && '' !== $current_slot['time_from'] && '' !== $current_slot['time_to'] ? ' has-selection' : '' );
 		echo '<div class="' . esc_attr( $root_classes ) . '" id="soocool-delivery-options">';
@@ -137,7 +135,7 @@ final class DeliveryOptions {
 			return;
 		}
 
-		$date = $this->posted_delivery_date();
+		$date = $this->request->posted_delivery_date();
 		if ( '' === $date ) {
 			$errors->add( 'soocool_delivery_date_required', __( 'Kies een bezorgdag voordat je de bestelling plaatst.', 'soocool-for-woocommerce' ) );
 			return;
@@ -148,14 +146,14 @@ final class DeliveryOptions {
 			return;
 		}
 
-		$slot = $this->posted_time_slot();
+		$slot = $this->request->posted_time_slot();
 		if ( '' === $slot['time_from'] || '' === $slot['time_to'] ) {
-			$errors->add( 'soocool_delivery_time_slot_required', __( 'Kies een tijdslot voordat je de bestelling plaatst.', 'soocool-for-woocommerce' ) );
+			$errors->add( 'soocool_delivery_time_slot_required', __( 'Kies een dagdeel voordat je de bestelling plaatst.', 'soocool-for-woocommerce' ) );
 			return;
 		}
 
 		if ( ! $this->schedule->is_valid_time_slot( $date, $slot['time_from'], $slot['time_to'] ) ) {
-			$errors->add( 'soocool_delivery_time_slot_invalid', __( 'Dit tijdslot is niet meer beschikbaar. Kies een ander tijdslot.', 'soocool-for-woocommerce' ) );
+			$errors->add( 'soocool_delivery_time_slot_invalid', __( 'Dit dagdeel is niet meer beschikbaar. Kies een ander dagdeel.', 'soocool-for-woocommerce' ) );
 		}
 	}
 
@@ -166,8 +164,8 @@ final class DeliveryOptions {
 			return;
 		}
 
-		$date = $this->posted_delivery_date();
-		$slot = $this->posted_time_slot();
+		$date = $this->request->posted_delivery_date();
+		$slot = $this->request->posted_time_slot();
 		if ( '' === $date || ! $this->schedule->is_valid_date( $date ) || ! $this->schedule->is_valid_time_slot( $date, $slot['time_from'], $slot['time_to'] ) ) {
 			return;
 		}
@@ -183,27 +181,11 @@ final class DeliveryOptions {
 
 	/** @param array<string, array<string, string>> $fields @return array<string, array<string, string>> */
 	public function email_order_meta_fields( array $fields, bool $sent_to_admin, WC_Order $order ): array {
-		$label = $this->order_delivery_moment_label( $order );
-		if ( '' !== $label ) {
-			$fields['soocool_requested_delivery_moment'] = array(
-				'label' => __( 'Bezorgmoment', 'soocool-for-woocommerce' ),
-				'value' => $label,
-			);
-		}
-
-		return $fields;
+		return $this->order_details->email_order_meta_fields( $fields, $sent_to_admin, $order );
 	}
 
 	public function render_customer_order_detail( WC_Order $order ): void {
-		$label = $this->order_delivery_moment_label( $order );
-		if ( '' === $label ) {
-			return;
-		}
-
-		echo '<section class="woocommerce-order-details soocool-order-delivery-detail">';
-		echo '<h2 class="woocommerce-order-details__title">' . esc_html__( 'Bezorging', 'soocool-for-woocommerce' ) . '</h2>';
-		echo '<p><strong>' . esc_html__( 'Bezorgmoment:', 'soocool-for-woocommerce' ) . '</strong> ' . esc_html( $label ) . '</p>';
-		echo '</section>';
+		$this->order_details->render_customer_order_detail( $order );
 	}
 
 	/** @param array<string, mixed> $settings */
@@ -211,7 +193,7 @@ final class DeliveryOptions {
 		$cutoff_time = $this->checkout_cutoff_time_label( $settings );
 
 		echo '<div class="soocool-delivery-options__intro">';
-		echo '<p>' . esc_html__( 'Kies een beschikbare bezorgdag en daarna een tijdslot.', 'soocool-for-woocommerce' ) . '</p>';
+		echo '<p>' . esc_html__( 'Je ontvangt Track & Trace zodra je bestelling onderweg is.', 'soocool-for-woocommerce' ) . '</p>';
 
 		if ( '' !== $cutoff_time ) {
 			echo '<p>' . sprintf(
@@ -358,13 +340,24 @@ final class DeliveryOptions {
 			$month_label = (string) $day['month_label'];
 			$visible     = $month_key === $active_month;
 			$classes     = 'soocool-delivery-day' . ( $enabled ? ' is-available' : ' is-disabled' );
+			$input_label = $label;
+			if ( ! $enabled ) {
+				$input_label = sprintf(
+					/* translators: %s: delivery date label, for example donderdag 25 juni. */
+					__( '%s - niet beschikbaar', 'soocool-for-woocommerce' ),
+					$label
+				);
+			}
 
 			echo '<label class="' . esc_attr( $classes ) . '" data-soocool-delivery-month="' . esc_attr( $month_key ) . '" data-soocool-delivery-month-label="' . esc_attr( $month_label ) . '" aria-hidden="' . esc_attr( $visible ? 'false' : 'true' ) . '"';
+			if ( ! $enabled ) {
+				echo ' aria-disabled="true"';
+			}
 			if ( ! $visible ) {
 				echo ' hidden';
 			}
 			echo '>';
-			echo '<input type="radio" name="' . esc_attr( self::FIELD_DATE ) . '" value="' . esc_attr( $date ) . '" data-delivery-label="' . esc_attr( $label ) . '" ';
+			echo '<input type="radio" name="' . esc_attr( self::FIELD_DATE ) . '" value="' . esc_attr( $date ) . '" data-delivery-label="' . esc_attr( $label ) . '" aria-label="' . esc_attr( $input_label ) . '" ';
 			if ( ! $enabled ) {
 				echo 'disabled aria-disabled="true" ';
 			}
@@ -374,6 +367,9 @@ final class DeliveryOptions {
 			echo '<span class="soocool-delivery-day__weekday">' . esc_html( $this->short_weekday( $date_time ) ) . '</span>';
 			echo '<span class="soocool-delivery-day__day">' . esc_html( $date_time->format( 'j' ) ) . '</span>';
 			echo '<span class="soocool-delivery-day__month">' . esc_html( $this->short_month( $date_time ) ) . '</span>';
+			if ( ! $enabled ) {
+				echo '<span class="soocool-delivery-options__screen-reader-text">' . esc_html__( 'Niet beschikbaar', 'soocool-for-woocommerce' ) . '</span>';
+			}
 			echo '</span>';
 			echo '</label>';
 		}
@@ -385,8 +381,8 @@ final class DeliveryOptions {
 		$include_unavailable = ! (bool) ( $settings['checkout_delivery_hide_unavailable_slots'] ?? true );
 
 		echo '<div class="soocool-delivery-options__time" id="soocool-delivery-time-panel" data-soocool-time-slots aria-hidden="true">';
-		echo '<div class="soocool-delivery-options__section-label soocool-delivery-options__step"><span class="soocool-delivery-options__step-number" aria-hidden="true">2</span><span>' . esc_html__( 'Tijdslot', 'soocool-for-woocommerce' ) . '</span></div>';
-		echo '<p class="soocool-delivery-options__time-help">' . esc_html__( 'Kies een beschikbaar tijdslot voor de geselecteerde bezorgdatum.', 'soocool-for-woocommerce' ) . '</p>';
+		echo '<div class="soocool-delivery-options__section-label soocool-delivery-options__step"><span class="soocool-delivery-options__step-number" aria-hidden="true">2</span><span>' . esc_html__( 'Dagdeel', 'soocool-for-woocommerce' ) . '</span></div>';
+		echo '<p class="soocool-delivery-options__time-help">' . esc_html__( 'Kies ochtend of avond.', 'soocool-for-woocommerce' ) . '</p>';
 
 		foreach ( $options as $option ) {
 			$date       = (string) ( $option['date'] ?? '' );
@@ -403,14 +399,14 @@ final class DeliveryOptions {
 			echo '>';
 
 			if ( array() === $slots ) {
-				echo '<div class="soocool-delivery-time-empty">' . esc_html__( 'Geen tijdsloten beschikbaar voor deze datum.', 'soocool-for-woocommerce' ) . '</div>';
+				echo '<div class="soocool-delivery-time-empty">' . esc_html__( 'Geen dagdelen beschikbaar voor deze datum.', 'soocool-for-woocommerce' ) . '</div>';
 				echo '</div>';
 				continue;
 			}
 
 			$time_list_id = 'soocool-delivery-time-list-' . sanitize_key( $date );
 			/* translators: %s: selected delivery date label. */
-			echo '<div class="soocool-delivery-time-list" id="' . esc_attr( $time_list_id ) . '" role="radiogroup" aria-required="true" aria-label="' . esc_attr( sprintf( __( 'Tijdsloten voor %s', 'soocool-for-woocommerce' ), $date_label ) ) . '">';
+			echo '<div class="soocool-delivery-time-list" id="' . esc_attr( $time_list_id ) . '" role="radiogroup" aria-required="true" aria-label="' . esc_attr( sprintf( __( 'Dagdelen voor %s', 'soocool-for-woocommerce' ), $date_label ) ) . '">';
 			$available_count = 0;
 			foreach ( $slots as $slot ) {
 				$time_from = (string) $slot['time_from'];
@@ -448,7 +444,7 @@ final class DeliveryOptions {
 			}
 			echo '</div>';
 			if ( $available_count > 4 ) {
-				echo '<button type="button" class="soocool-delivery-time-more" data-soocool-time-more data-more-label="' . esc_attr__( 'Meer tijdsloten tonen', 'soocool-for-woocommerce' ) . '" data-less-label="' . esc_attr__( 'Minder tonen', 'soocool-for-woocommerce' ) . '" aria-expanded="false" aria-controls="' . esc_attr( $time_list_id ) . '">' . esc_html__( 'Meer tijdsloten tonen', 'soocool-for-woocommerce' ) . '</button>';
+				echo '<button type="button" class="soocool-delivery-time-more" data-soocool-time-more data-more-label="' . esc_attr__( 'Meer dagdelen tonen', 'soocool-for-woocommerce' ) . '" data-less-label="' . esc_attr__( 'Minder tonen', 'soocool-for-woocommerce' ) . '" aria-expanded="false" aria-controls="' . esc_attr( $time_list_id ) . '">' . esc_html__( 'Meer dagdelen tonen', 'soocool-for-woocommerce' ) . '</button>';
 			}
 			echo '</div>';
 		}
@@ -469,93 +465,7 @@ final class DeliveryOptions {
 		return $available;
 	}
 
-	/** @param array<int, array<string, mixed>> $options */
-	private function selected_delivery_date( array $options ): string {
-		$posted = $this->posted_delivery_date();
-		foreach ( $options as $option ) {
-			$date = (string) $option['date'];
-			if ( '' !== $posted && $posted === $date ) {
-				return $posted;
-			}
-		}
 
-		return '';
-	}
-
-	private function posted_delivery_date(): string {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce validates the checkout nonce before processing checkout fields; value is sanitized immediately on this line.
-		$value = isset( $_POST[ self::FIELD_DATE ] ) && is_scalar( $_POST[ self::FIELD_DATE ] ) ? sanitize_text_field( wp_unslash( (string) $_POST[ self::FIELD_DATE ] ) ) : '';
-
-		return 1 === preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) ? $value : '';
-	}
-
-	/** @return array{time_from:string,time_to:string} */
-	private function posted_time_slot(): array {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce validates the checkout nonce before processing checkout fields; value is sanitized immediately on this line.
-		$value = isset( $_POST[ self::FIELD_TIME_SLOT ] ) && is_scalar( $_POST[ self::FIELD_TIME_SLOT ] ) ? sanitize_text_field( wp_unslash( (string) $_POST[ self::FIELD_TIME_SLOT ] ) ) : '';
-		if ( 1 !== preg_match( '/^([01]\d|2[0-3]):[0-5]\d\|([01]\d|2[0-3]):[0-5]\d$/', $value ) ) {
-			return array( 'time_from' => '', 'time_to' => '' );
-		}
-
-		$parts = explode( '|', $value, 2 );
-		return array(
-			'time_from' => (string) ( $parts[0] ?? '' ),
-			'time_to'   => (string) ( $parts[1] ?? '' ),
-		);
-	}
-
-	/** @return array{time_from:string,time_to:string} */
-	private function selected_time_slot( string $current_date ): array {
-		$empty = array( 'time_from' => '', 'time_to' => '' );
-		if ( '' === $current_date ) {
-			return $empty;
-		}
-
-		$slot = $this->posted_time_slot();
-		if ( '' !== $slot['time_from'] && '' !== $slot['time_to'] && $this->schedule->is_valid_time_slot( $current_date, $slot['time_from'], $slot['time_to'] ) ) {
-			return $slot;
-		}
-
-		return $empty;
-	}
-
-	private function order_delivery_label( WC_Order $order ): string {
-		$raw_label = $order->get_meta( OrderMeta::REQUESTED_DELIVERY_LABEL, true );
-		$label     = is_scalar( $raw_label ) ? sanitize_text_field( (string) $raw_label ) : '';
-		if ( '' !== $label ) {
-			return $label;
-		}
-
-		$raw_date = $order->get_meta( OrderMeta::REQUESTED_DELIVERY_DATE, true );
-		$date     = is_scalar( $raw_date ) ? sanitize_text_field( (string) $raw_date ) : '';
-
-		return '' !== $date ? $this->schedule->format_label( $date ) : '';
-	}
-
-	private function order_delivery_time_label( WC_Order $order ): string {
-		$raw_label = $order->get_meta( OrderMeta::REQUESTED_DELIVERY_TIME_LABEL, true );
-		$label     = is_scalar( $raw_label ) ? sanitize_text_field( (string) $raw_label ) : '';
-		if ( '' !== $label ) {
-			return $label;
-		}
-
-		$time_from = $order->get_meta( OrderMeta::REQUESTED_DELIVERY_TIME_FROM, true );
-		$time_to   = $order->get_meta( OrderMeta::REQUESTED_DELIVERY_TIME_TO, true );
-		$time_from = is_scalar( $time_from ) ? sanitize_text_field( (string) $time_from ) : '';
-		$time_to   = is_scalar( $time_to ) ? sanitize_text_field( (string) $time_to ) : '';
-
-		return '' !== $time_from && '' !== $time_to ? $this->schedule->format_time_slot_label( $time_from, $time_to ) : '';
-	}
-
-	private function order_delivery_moment_label( WC_Order $order ): string {
-		$date_label = $this->order_delivery_label( $order );
-		$time_label = $this->order_delivery_time_label( $order );
-		if ( '' === $date_label ) {
-			return '';
-		}
-
-		return '' !== $time_label ? $date_label . ', ' . $time_label : $date_label;
-	}
 
 	private function today(): \DateTimeImmutable {
 		$timezone = function_exists( 'wp_timezone' ) ? wp_timezone() : new \DateTimeZone( 'UTC' );

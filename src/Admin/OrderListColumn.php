@@ -7,9 +7,7 @@ namespace SooCool\WooCommerce\Admin;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Adds a "SooCool" sync-status column and a status filter dropdown to both the

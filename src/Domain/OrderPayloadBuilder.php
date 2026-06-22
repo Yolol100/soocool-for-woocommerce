@@ -7,9 +7,7 @@ namespace SooCool\WooCommerce\Domain;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use WC_Order;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Builds the SooCool create-order payload (SooCool API 1.2.1).
@@ -101,7 +99,7 @@ final class OrderPayloadBuilder {
 				/**
 				 * Allows projects to adjust each SooCool good before it is sent.
 				 *
-				 * Keep required SooCool fields goodId, packagingType and contents present.
+				 * Required SooCool fields goodId, packagingType and contents must remain present.
 				 * Dimensions, weight and transportRequirements are provided by default from
 				 * product data or global package settings but can be adjusted per project.
 				 *

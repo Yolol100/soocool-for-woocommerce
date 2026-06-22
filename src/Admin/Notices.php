@@ -7,9 +7,7 @@ namespace SooCool\WooCommerce\Admin;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use SooCool\WooCommerce\Infrastructure\Requirements;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class Notices {
 
@@ -25,7 +23,7 @@ final class Notices {
 		}
 
 		$this->render_checkout_blocks_notice();
-		$this->render_webhook_fallback_notice();
+		$this->render_webhook_signature_notice();
 	}
 
 	private function render_checkout_blocks_notice(): void {
@@ -48,17 +46,14 @@ final class Notices {
 		);
 	}
 
-	private function render_webhook_fallback_notice(): void {
-		$signature_disabled = defined( 'SOOCOOL_ALLOW_INSECURE_WEBHOOK_FALLBACK' ) && (bool) SOOCOOL_ALLOW_INSECURE_WEBHOOK_FALLBACK && ! (bool) apply_filters( 'soocool_require_webhook_signature', true );
-		$query_token_enabled = $this->options->query_token_fallback_enabled();
-
-		if ( ! $signature_disabled && ! $query_token_enabled ) {
+	private function render_webhook_signature_notice(): void {
+		if ( ! (bool) apply_filters( 'soocool_require_webhook_signature', false ) ) {
 			return;
 		}
 
 		printf(
 			'<div class="notice notice-warning"><p>%s</p></div>',
-			esc_html__( 'SooCool webhook fallback-authenticatie is actief. Gebruik dit alleen tijdelijk voor legacy-koppelingen; headers met token en HMAC-signature blijven de veilige productie-instelling.', 'soocool-for-woocommerce' )
+			esc_html__( 'SooCool webhook-HMAC is verplicht gemaakt via filter. Controleer op staging of SooCool de timestamp- en signature-headers voor deze koppeling meestuurt.', 'soocool-for-woocommerce' )
 		);
 	}
 }

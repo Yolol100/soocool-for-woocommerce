@@ -12,6 +12,7 @@
   var apiFetch = wp.apiFetch;
   var c = wp.components;
   var adminConfig = window.sooCoolAdmin || {};
+  var manualTestsEnabled = adminConfig.manualTestsEnabled === true;
 
   if (apiFetch.createNonceMiddleware) {
     apiFetch.use(apiFetch.createNonceMiddleware((window.sooCoolAdmin && window.sooCoolAdmin.nonce) || ''));
@@ -42,6 +43,7 @@
   function getSettings(){ return api('/soocool/v1/settings'); }
   function saveSettings(settings){ return api('/soocool/v1/settings', 'POST', cleanPayload(settings)); }
   function testConnection(){ return api('/soocool/v1/connection/test', 'POST'); }
+  function runManualTest(data){ return api('/soocool/v1/manual-test/order', 'POST', data); }
   function getLogs(limit, offset){ return api('/soocool/v1/logs?limit=' + encodeURIComponent(limit || 50) + '&offset=' + encodeURIComponent(offset || 0)); }
   function clearLogs(){ return api('/soocool/v1/logs', 'DELETE'); }
   function getWebhookSecret(){ return api('/soocool/v1/webhook/secret'); }
@@ -686,6 +688,110 @@
     );
   }
 
+  function ApiTestScreen(){
+    var s = useSettings(__('Kon de API-testinstellingen niet laden.', 'soocool-for-woocommerce'));
+    var modeState = useState('real');
+    var mode = modeState[0];
+    var setMode = modeState[1];
+    var orderIdState = useState('');
+    var orderId = orderIdState[0];
+    var setOrderId = orderIdState[1];
+    var resultState = useState(null);
+    var result = resultState[0];
+    var setResult = resultState[1];
+    var busyState = useState(false);
+    var busy = busyState[0];
+    var setBusy = busyState[1];
+    var errorState = useState('');
+    var errorMessage = errorState[0];
+    var setErrorMessage = errorState[1];
+    var settings = s.settings || {};
+
+    if (s.loading) {
+      return el(FieldGroup, { title: __('SooCool API-test', 'soocool-for-woocommerce'), badge: __('API-test', 'soocool-for-woocommerce'), description: __('Kies één test: stuur een echte WooCommerce order of gebruik een veilige testorder. De plugin bouwt dezelfde SooCool orderpayload als de normale order-sync.', 'soocool-for-woocommerce') },
+        el(Loading, { message: __('API-testinstellingen laden…', 'soocool-for-woocommerce') })
+      );
+    }
+
+    if (s.errorMessage) {
+      return el(FieldGroup, { title: __('SooCool API-test', 'soocool-for-woocommerce'), badge: __('API-test', 'soocool-for-woocommerce'), description: __('Kies één test: stuur een echte WooCommerce order of gebruik een veilige testorder. De plugin bouwt dezelfde SooCool orderpayload als de normale order-sync.', 'soocool-for-woocommerce') },
+        el(ErrorNotice, { message: s.errorMessage })
+      );
+    }
+
+    function submit(){
+      if (busy) { return; }
+      if (mode === 'real' && !window.confirm(__('Dit verstuurt de gekozen WooCommerce-order naar de actieve SooCool-omgeving en kan daar een echte SooCool-order aanmaken of bijwerken. Doorgaan?', 'soocool-for-woocommerce'))) { return; }
+      if (mode === 'real' && settings.environment === 'production' && !window.confirm(__('De productieomgeving is actief. Ga alleen door wanneer dit bewust een productie-ordertest is.', 'soocool-for-woocommerce'))) { return; }
+      setBusy(true);
+      setErrorMessage('');
+      setResult(null);
+      runManualTest({ test_mode: mode, woocommerce_order_id: Number(orderId || 0) }).then(function(response){
+        setResult(response || {});
+        if (response && response.success) {
+          emitToast(__('API-test afgerond.', 'soocool-for-woocommerce'), 'success');
+        } else {
+          emitToast(__('API-test gaf een fout terug. Controleer de resultaatdetails.', 'soocool-for-woocommerce'), 'error');
+        }
+      }).catch(function(){
+        var message = __('Kon de API-test niet uitvoeren.', 'soocool-for-woocommerce');
+        setErrorMessage(message);
+        emitToast(message, 'error');
+      }).finally(function(){ setBusy(false); });
+    }
+
+    function reset(){
+      setResult(null);
+      setErrorMessage('');
+      setMode('real');
+      setOrderId('');
+    }
+
+    return el(FieldGroup, { title: __('SooCool API-test', 'soocool-for-woocommerce'), badge: __('API-test', 'soocool-for-woocommerce'), description: __('Kies één test: stuur een echte WooCommerce order of gebruik een veilige testorder. De plugin bouwt dezelfde SooCool orderpayload als de normale order-sync.', 'soocool-for-woocommerce') },
+      errorMessage ? el(ErrorNotice, { message: errorMessage }) : null,
+      el(Note, { className: 'soocool-manual-environment-note' },
+        el('strong', null, __('Actieve SooCool-omgeving:', 'soocool-for-woocommerce')), ' ',
+        el('span', null, settings.environment || __('Niet ingesteld', 'soocool-for-woocommerce')),
+        (settings.effective_base_url || settings.api_base_url) ? el('span', { className: 'soocool-env-url' }, settings.effective_base_url || settings.api_base_url) : null
+      ),
+      result ? el('div', { className: 'soocool-status ' + (result.success ? 'is-success' : 'is-error') + ' soocool-manual-result', role: 'status' },
+        el('div', null,
+          el('strong', null, result.success ? __('Resultaat: testorder verstuurd naar SooCool', 'soocool-for-woocommerce') : __('Resultaat: testorder niet verstuurd', 'soocool-for-woocommerce')),
+          typeof result.status !== 'undefined' ? el('span', null, 'HTTP status: ' + String(result.status)) : null,
+          result.message ? el('p', null, el('strong', null, __('Details:', 'soocool-for-woocommerce')), ' ', result.message) : null,
+          result.mode ? el('span', null, __('Testmodus:', 'soocool-for-woocommerce') + ' ' + String(result.mode)) : null,
+          result.environment ? el('span', null, __('Omgeving:', 'soocool-for-woocommerce') + ' ' + String(result.environment)) : null,
+          result.api_base_url ? el('span', null, __('API-URL:', 'soocool-for-woocommerce') + ' ' + String(result.api_base_url)) : null,
+          result.order_reference ? el('span', null, __('Orderreferentie:', 'soocool-for-woocommerce') + ' ' + String(result.order_reference)) : null,
+          result.soocool_order_id ? el('span', null, __('SooCool order-ID:', 'soocool-for-woocommerce') + ' ' + String(result.soocool_order_id)) : null,
+          result.portal_dates && result.portal_dates.length ? el('span', null, __('Controleer portaldatum:', 'soocool-for-woocommerce') + ' ' + result.portal_dates.join(', ')) : null
+        ),
+        el('p', { className: 'soocool-next-step' }, result.success ? __('Volgende stap: zoek in het juiste SooCool-portaal op de getoonde orderreferentie of op de getoonde ophaal-/bezorgdatum. Productieorders staan niet in het testportaal.', 'soocool-for-woocommerce') : __('Volgende stap: controleer de foutdetails en pas orderdata, API-key, timeWindow of payload aan voordat je opnieuw test.', 'soocool-for-woocommerce'))
+      ) : el(Card, null,
+        el('h3', null, __('Welke order wil je testen?', 'soocool-for-woocommerce')),
+        el('p', { className: 'soocool-field-help' }, __('Gebruik bij voorkeur staging. Een echte WooCommerce order wordt naar de actieve SooCool omgeving gestuurd en kan daar een echte order aanmaken of bijwerken.', 'soocool-for-woocommerce')),
+        el('div', { className: 'soocool-test-choice-list', role: 'radiogroup', 'aria-label': __('Type API-test', 'soocool-for-woocommerce') },
+          el('label', { className: 'soocool-test-choice', htmlFor: 'soocool_test_mode_real' },
+            el('input', { type: 'radio', name: 'test_mode', id: 'soocool_test_mode_real', value: 'real', checked: mode === 'real', onChange: function(){ setMode('real'); } }),
+            el('span', null, el('strong', null, __('Echte WooCommerce order', 'soocool-for-woocommerce')), __('Vul hieronder een WooCommerce order-ID in. Dit is de beste stagingtest.', 'soocool-for-woocommerce'))
+          ),
+          el('label', { className: 'soocool-test-choice', htmlFor: 'soocool_test_mode_dummy' },
+            el('input', { type: 'radio', name: 'test_mode', id: 'soocool_test_mode_dummy', value: 'dummy', checked: mode === 'dummy', onChange: function(){ setMode('dummy'); } }),
+            el('span', null, el('strong', null, __('Testorder', 'soocool-for-woocommerce')), __('Gebruikt een niet-opgeslagen dummy WooCommerce order. Er wordt geen order in WordPress aangemaakt.', 'soocool-for-woocommerce'))
+          )
+        ),
+        el('div', { className: 'soocool-field-grid two soocool-real-order-fields' },
+          el(c.TextControl, { type: 'number', min: 1, label: __('WooCommerce order-ID', 'soocool-for-woocommerce'), help: __('Alleen nodig bij “Echte WooCommerce order”. De plugin haalt deze order op via wc_get_order() en bouwt de normale SooCool payload.', 'soocool-for-woocommerce'), value: orderId, disabled: mode !== 'real', onChange: function(v){ setOrderId(v); } })
+        ),
+        el('div', { className: 'soocool-actions' }, el(c.Button, { variant: 'primary', className: 'soocool-manual-submit soocool-primary-action', isBusy: busy, disabled: busy || (mode === 'real' && !Number(orderId || 0)), onClick: submit }, busy ? __('API-test draait…', 'soocool-for-woocommerce') : __('Start API-test naar SooCool', 'soocool-for-woocommerce')))
+      ),
+      result && result.errors && result.errors.length ? el(Card, null, el('h3', null, __('SooCool-fouten', 'soocool-for-woocommerce')), el('ul', { className: 'soocool-manual-errors' }, result.errors.map(function(error, index){ return el('li', { key: index }, String(error)); }))) : null,
+      result && typeof result.payload !== 'undefined' ? el(JsonCard, { title: __('Verzonden payload', 'soocool-for-woocommerce'), value: result.payload }) : null,
+      result && typeof result.body !== 'undefined' ? el(JsonCard, { title: __('SooCool-reactie', 'soocool-for-woocommerce'), value: result.body }) : null,
+      result ? el('div', { className: 'soocool-actions' }, el(c.Button, { variant: 'primary', className: 'soocool-primary-action', onClick: reset }, __('Nieuwe API-test starten', 'soocool-for-woocommerce'))) : null
+    );
+  }
+
   function LogsTable(props){
     return el('div', { className: 'soocool-table-wrap' }, el('table', { className: 'widefat striped soocool-logs', 'aria-label': __('SooCool-activiteitenlogs', 'soocool-for-woocommerce') },
       el('thead', null, el('tr', null, el('th', { scope: 'col' }, __('Tijd', 'soocool-for-woocommerce')), el('th', { scope: 'col' }, __('Niveau', 'soocool-for-woocommerce')), el('th', { scope: 'col' }, __('Melding', 'soocool-for-woocommerce')), el('th', { scope: 'col' }, __('Details', 'soocool-for-woocommerce')))),
@@ -781,8 +887,11 @@
     { name: 'labels', title: __('Verzendlabels', 'soocool-for-woocommerce') },
     { name: 'logs', title: __('Activiteitenlogs', 'soocool-for-woocommerce') }
   ];
+  if (manualTestsEnabled) {
+    tabs.splice(5, 0, { name: 'api_test', title: __('API-test', 'soocool-for-woocommerce') });
+  }
   function activeFromHash(){ var hash = (window.location.hash || '').replace('#', ''); return tabs.some(function(tab){ return tab.name === hash; }) ? hash : 'connection'; }
-  function renderTabContent(active){ if (active === 'mapping') { return el(MappingScreen); } if (active === 'delivery_days') { return el(DeliveryDaysScreen); } if (active === 'automation') { return el(AutomationScreen); } if (active === 'labels') { return el(LabelsScreen); } if (active === 'logs') { return el(LogsScreen); } return el(ConnectionScreen); }
+  function renderTabContent(active){ if (active === 'mapping') { return el(MappingScreen); } if (active === 'delivery_days') { return el(DeliveryDaysScreen); } if (active === 'automation') { return el(AutomationScreen); } if (active === 'labels') { return el(LabelsScreen); } if (manualTestsEnabled && active === 'api_test') { return el(ApiTestScreen); } if (active === 'logs') { return el(LogsScreen); } return el(ConnectionScreen); }
   function App(){
     var activeState = useState(activeFromHash());
     var active = activeState[0];

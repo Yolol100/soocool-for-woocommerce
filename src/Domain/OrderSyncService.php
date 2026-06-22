@@ -8,9 +8,7 @@ use SooCool\WooCommerce\Api\ApiClient;
 use SooCool\WooCommerce\Api\ApiException;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Shared SooCool sync primitives used by both the REST sync endpoint and the

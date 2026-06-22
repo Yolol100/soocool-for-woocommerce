@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.4.91
+Stable tag: 0.5.6
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -25,11 +25,12 @@ Main features:
 * Optional automatic order submission when an order reaches a configured WooCommerce status.
 * Optional pickup plus delivery task support for collection workflows; delivery-only is the safe default.
 * Fixed 08:00-18:00 delivery time window for delivery tasks, matching the confirmed SooCool connection requirements.
-* Customer-facing delivery moment selection for the classic WooCommerce checkout with configurable delivery days, time slots, cut-off times, blocked dates and optional hiding of expired slots. Checkout Blocks are not supported by this release.
+* Customer-facing delivery moment selection for the classic WooCommerce checkout with configurable delivery days, fixed dayparts, cut-off times, blocked dates and optional hiding of expired slots. Checkout Blocks are not supported by this release.
 * Configurable pickup address and pickup time window.
 * WooCommerce HPOS compatible order metadata handling.
 * A6 and Collated A4 SooCool shipping label downloads.
 * Bulk SooCool label download from the WooCommerce orders list.
+* SooCool label PDF attachments for the WooCommerce admin new-order email when labels already exist at send time.
 * Sanitized activity logs and masked API key handling.
 
 = External service: SooCool API =
@@ -43,7 +44,7 @@ Official API hosts used by the plugin:
 
 The plugin sends the configured API key in the `X-API-Key` header. The API key is not intentionally exposed in the WordPress admin UI, REST responses, frontend markup or logs.
 
-Data sent to SooCool can include WooCommerce order reference, billing/shipping name, address, country, email address, phone/mobile number, pickup address, package/goods description, pickup and delivery dates, pickup time window and the fixed 08:00-18:00 delivery time window. The customer-selected checkout time slot is stored on the WooCommerce order for shop/customer communication; the SooCool API delivery task window remains fixed for this connection.
+Data sent to SooCool can include WooCommerce order reference, billing/shipping name, address, country, email address, phone/mobile number, pickup address, package/goods description, pickup and delivery dates, pickup time window and the fixed 08:00-18:00 delivery time window. The customer-selected checkout daypart is stored on the WooCommerce order for shop/customer communication; the SooCool API delivery task window remains fixed for this connection.
 
 Data is sent only for configured SooCool actions. No tracking, advertising or unrelated external assets are loaded by this plugin.
 
@@ -51,7 +52,7 @@ Please review SooCool's own service terms, data processing terms and privacy inf
 
 = Source and build notes =
 
-This production package contains the runtime PHP source, readable CSS/JS assets, production minified assets, documentation and translation template required to install and run the plugin. The plugin loads `.min` assets by default and falls back to readable assets when `SCRIPT_DEBUG` is enabled. Use the matching development repository for reproducible asset builds and coding-standard checks.
+This production package contains the runtime PHP source, readable CSS/JS assets, `.min` runtime assets, documentation and translation template required to install and run the plugin. The plugin loads `.min` assets by default and falls back to readable assets when `SCRIPT_DEBUG` is enabled. Use the matching development repository for reproducible asset builds and coding-standard checks.
 
 == Installation ==
 
@@ -93,9 +94,9 @@ The plugin supports the SooCool order-level shipping label formats `a6` and `col
 
 = How is the webhook secured? =
 
-The webhook receiver requires the stored SooCool webhook token and, by default, HMAC verification headers. Configure SooCool to send `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp` and `X-SooCool-Webhook-Signature`. The signature is `hash_hmac('sha256', timestamp + '.' + raw_body, webhook_secret)` and may be sent as the hex digest or `sha256=<hex>`. `X-SooCool-Webhook-Id` is optional but recommended for duplicate-delivery protection.
+The webhook receiver requires the stored SooCool webhook token. The default generated webhook URL includes the token as a query parameter because the SooCool OpenAPI callback model posts to the supplied `webhook.webhookUrl` and does not define custom authentication headers.
 
-For legacy callback systems, a developer can explicitly disable required signatures with the `soocool_require_webhook_signature` filter and re-enable query-token webhook URLs with the `soocool_allow_query_token_webhook_url` filter. Only use those fallbacks when HMAC/header authentication is not available, because URL tokens may appear in logs, browser history, analytics or screenshots.
+If SooCool enables header delivery for this account, the receiver also supports `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp`, `X-SooCool-Webhook-Signature` and optional `X-SooCool-Webhook-Id`. Projects can require HMAC verification with the `soocool_require_webhook_signature` filter after this has been confirmed and tested.
 
 == Privacy ==
 
@@ -111,6 +112,40 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 
 == Changelog ==
 
+= 0.5.6 =
+* Tightened production readiness after the v16 audit: corrected admin `wp_die()` response handling, replaced direct temporary PDF writes with WordPress filesystem handling, and aligned release asset documentation.
+
+= 0.5.5 =
+* Split the manual API-test UI into an opt-in admin-test asset so the default production admin bundle stays clean.
+* Added screen-reader-only unavailable status text and aria labels for disabled checkout delivery dates.
+* Standardized direct-access protection style across PHP files.
+* Removed an unreachable duplicate return in API-key resolution.
+
+= 0.5.4 =
+* Production-readiness cleanup: remove AI-specific generator wording from the translation template metadata.
+
+= 0.5.3 =
+* Removed the select-control container margin override and added an 8px top margin.
+* Added maintenance comments around select-field and label `!important` overrides.
+* Reworded maintenance comments into direct technical comments.
+
+= 0.5.2 =
+* Aligned admin dropdown field styling with the existing text/search input styling using scoped `!important` CSS overrides.
+* Aligned dropdown labels with the same typography as the other settings labels.
+
+= 0.5.1 =
+* Fixed Plugin Check/WPCS translator comments and direct file access detection.
+
+= 0.5.0 =
+* Refactored order sync, checkout delivery helpers, shipping label helpers and task factories.
+
+= 0.4.95 =
+* Updated checkout delivery text and improved unavailable date styling.
+
+= 0.4.92 =
+* Added SooCool order-label and good-label PDF attachments to the WooCommerce admin new-order email when labels already exist at send time.
+* Kept customer emails limited to delivery date, daypart and a generic Track & Trace availability notice.
+
 = 0.4.89 =
 * Made the Bezorgschema admin accordion single-open by default: only the first delivery day opens on initial load, and opening another day closes the previous one.
 * Kept the final admin polish styling while making the default schedule overview calmer.
@@ -122,10 +157,10 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 * Kept backend data, checkout behavior, order meta, validation and the SooCool API window unchanged.
 
 = 0.4.78 =
-* Added configurable delivery time slots to the classic WooCommerce checkout.
-* Customers now choose a delivery date and then an available time slot.
-* Added backend settings for time slot start/end time, per-slot cut-off time, weekdays and hiding expired/unavailable slots.
-* Saved the selected delivery time slot to WooCommerce order meta and displayed the full delivery moment in the order admin, customer order details and order emails.
+* Added configurable delivery fixed dayparts to the classic WooCommerce checkout.
+* Customers now choose a delivery date and then an available daypart.
+* Added backend settings for daypart start/end time, per-slot cut-off time, weekdays and hiding expired/unavailable slots.
+* Saved the selected delivery daypart to WooCommerce order meta and displayed the full delivery moment in the order admin and customer order details, and sent the delivery date and dagdeel in order emails.
 * Kept the SooCool API delivery task timeWindow fixed at 08:00-18:00 for this connection.
 
 = 0.4.76 =

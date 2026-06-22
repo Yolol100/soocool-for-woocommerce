@@ -6,16 +6,14 @@ namespace SooCool\WooCommerce\Rest;
 
 use WP_REST_Controller;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 abstract class AbstractRestController extends WP_REST_Controller {
 
 	/**
 	 * REST API namespace.
 	 *
-	 * Keep inherited WP_REST_Controller properties untyped. WordPress core
+	 * Inherited WP_REST_Controller properties stay untyped. WordPress core
 	 * declares these properties without native types; typed or readonly
 	 * redeclarations cause fatal errors on modern PHP versions.
 	 *

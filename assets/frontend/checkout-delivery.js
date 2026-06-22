@@ -40,7 +40,7 @@
     group.classList.remove('is-expanded');
     if (button) {
       button.setAttribute('aria-expanded', 'false');
-      button.textContent = button.getAttribute('data-more-label') || 'Meer tijdsloten tonen';
+      button.textContent = button.getAttribute('data-more-label') || 'Meer dagdelen tonen';
     }
   }
 
@@ -284,7 +284,7 @@
     moreButton.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     moreButton.textContent = expanded
       ? (moreButton.getAttribute('data-less-label') || 'Minder tonen')
-      : (moreButton.getAttribute('data-more-label') || 'Meer tijdsloten tonen');
+      : (moreButton.getAttribute('data-more-label') || 'Meer dagdelen tonen');
   });
 
   document.addEventListener('DOMContentLoaded', updateAll);

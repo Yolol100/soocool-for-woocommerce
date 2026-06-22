@@ -8,9 +8,7 @@ use SooCool\WooCommerce\Checkout\DeliverySchedule;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class OrderMetaBox {
 
@@ -125,18 +123,18 @@ final class OrderMetaBox {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Order ID is needed to build the nonce action and is sanitized before use; nonce is checked immediately below.
 		$order_id = isset( $_POST['order_id'] ) && is_scalar( $_POST['order_id'] ) ? absint( wp_unslash( (string) $_POST['order_id'] ) ) : 0;
 		if ( 0 >= $order_id ) {
-			wp_die( esc_html__( 'Ongeldige order.', 'soocool-for-woocommerce' ), 400 );
+			wp_die( esc_html__( 'Ongeldige order.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
 		}
 
 		check_admin_referer( 'soocool_update_delivery_date_' . $order_id );
 
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-			wp_die( esc_html__( 'Je mag deze order niet bijwerken.', 'soocool-for-woocommerce' ), 403 );
+			wp_die( esc_html__( 'Je mag deze order niet bijwerken.', 'soocool-for-woocommerce' ), '', array( 'response' => 403 ) );
 		}
 
 		$order = wc_get_order( $order_id );
 		if ( ! $order instanceof WC_Order ) {
-			wp_die( esc_html__( 'Ongeldige order.', 'soocool-for-woocommerce' ), 400 );
+			wp_die( esc_html__( 'Ongeldige order.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
 		}
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce is checked above; value is sanitized immediately on this line.
@@ -236,7 +234,7 @@ final class OrderMetaBox {
 
 		echo '</select>';
 		echo '<button type="submit" class="button button-secondary soocool-order-button">' . esc_html__( 'Bezorgmoment bijwerken', 'soocool-for-woocommerce' ) . '</button>';
-		echo '<p class="description soocool-order-action-help">' . esc_html__( 'Alleen geldige bezorgmomenten uit het huidige checkoutschema kunnen worden opgeslagen. Opnieuw verzonden WooCommerce e-mails gebruiken het bijgewerkte moment.', 'soocool-for-woocommerce' ) . '</p>';
+		echo '<p class="description soocool-order-action-help">' . esc_html__( 'Alleen geldige bezorgmomenten met ochtend of avond kunnen worden opgeslagen. Opnieuw verzonden WooCommerce e-mails gebruiken het bijgewerkte moment.', 'soocool-for-woocommerce' ) . '</p>';
 		echo '</form>';
 	}
 

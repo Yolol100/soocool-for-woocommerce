@@ -8,9 +8,7 @@ use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use WP_Error;
 use WP_REST_Request;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class WebhookAuthenticator {
 
@@ -51,18 +49,14 @@ final class WebhookAuthenticator {
 		/**
 		 * Require HMAC verification for incoming SooCool webhooks.
 		 *
-		 * Keep enabled unless the remote SooCool callback configuration cannot send
-		 * signature headers yet. Token-only fallback requires the
-		 * SOOCOOL_ALLOW_INSECURE_WEBHOOK_FALLBACK constant and a false filter value.
+		 * Default false matches the published SooCool OpenAPI callback model, which
+		 * only defines a POST to webhook.webhookUrl. If signature headers are present
+		 * they are still verified; projects can require them after SooCool confirms
+		 * header delivery for the account.
 		 *
-		 * @param bool $required Default true.
+		 * @param bool $required Default false.
 		 */
-		$required = (bool) apply_filters( 'soocool_require_webhook_signature', true );
-		if ( $required ) {
-			return true;
-		}
-
-		return ! ( defined( 'SOOCOOL_ALLOW_INSECURE_WEBHOOK_FALLBACK' ) && (bool) SOOCOOL_ALLOW_INSECURE_WEBHOOK_FALLBACK );
+		return (bool) apply_filters( 'soocool_require_webhook_signature', false );
 	}
 
 	private function verify_signature( WP_REST_Request $request, string $secret ): bool|WP_Error {

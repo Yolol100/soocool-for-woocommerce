@@ -9,9 +9,7 @@ use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Builds SooCool task objects to match the SooCool API 1.2.1 create-order schema.
@@ -29,7 +27,7 @@ final class TaskFactory {
 	private const DELIVERY_TIME_FROM = '08:00';
 	private const DELIVERY_TIME_TO   = '18:00';
 
-	public function __construct( private readonly OptionRepository $options, private readonly AddressParser $address_parser, private readonly ?DeliverySchedule $delivery_schedule = null ) {}
+	public function __construct( private readonly OptionRepository $options, private readonly TaskAddressFactory $addresses, private readonly TaskContactFactory $contacts, private readonly ?DeliverySchedule $delivery_schedule = null ) {}
 
 	/** @param array<int, int|string> $good_ids Requested good IDs to attach to every task. @return array<int, array<string, mixed>> */
 	public function create_tasks( WC_Order $order, array $good_ids = array() ): array {
@@ -101,7 +99,7 @@ final class TaskFactory {
 			}
 		}
 
-		$contact_info = $this->contact_info(
+		$contact_info = $this->contacts->from_email_phone(
 			sanitize_email( (string) $settings['pickup_email'] ),
 			sanitize_text_field( (string) $settings['pickup_phone'] )
 		);
@@ -132,16 +130,16 @@ final class TaskFactory {
 
 	/** @param array<string, mixed> $settings @param array<int, int> $good_ids @return array<string, mixed> */
 	private function delivery_task( WC_Order $order, array $settings, string $date, array $good_ids ): array {
-		$delivery_context = $this->delivery_address_context( $order );
+		$delivery_context = $this->addresses->delivery_context( $order );
 		$address          = $delivery_context['address'];
 		$postal_code      = $delivery_context['postal_code'];
 		$city             = $delivery_context['city'];
 		$country          = $delivery_context['country'];
 		$recipient_name   = $delivery_context['recipient_name'];
 
-		$missing_fields = $this->delivery_address_missing_fields( $order, $address, (string) $postal_code, (string) $city, (string) $country, (string) $recipient_name );
+		$missing_fields = $this->addresses->missing_delivery_fields( $order, $address, (string) $postal_code, (string) $city, (string) $country, (string) $recipient_name );
 		if ( array() !== $missing_fields ) {
-			$message = $this->delivery_address_error_message( $missing_fields );
+			$message = $this->addresses->missing_delivery_fields_message( $missing_fields );
 			throw new PayloadValidationException( esc_html( $message ) );
 		}
 
@@ -164,139 +162,14 @@ final class TaskFactory {
 				'city'        => sanitize_text_field( (string) $city ),
 				'country'     => $this->country_code( (string) $country ),
 			),
-			'contactInfo'  => $this->delivery_contact_info( $order ),
+			'contactInfo'  => $this->contacts->for_delivery_order( $order ),
 			'goods'        => $good_ids,
 		);
 
 		return $this->compact( $task );
 	}
 
-	/** @return array<string, string> */
-	private function delivery_contact_info( WC_Order $order ): array {
-		$info = $this->contact_info(
-			sanitize_email( $order->get_billing_email() ),
-			sanitize_text_field( $order->get_billing_phone() )
-		);
 
-		/**
-		 * Filters the SooCool task contactInfo. SooCool API 1.2.1 examples allow
-		 * email, phone and mobile. Phone-like values are normalized before sending.
-		 *
-		 * @param array<string, string> $info
-		 * @param WC_Order             $order
-		 */
-		$info = apply_filters( 'soocool_task_contact_info', $info, $order );
-		$info = is_array( $info ) ? $info : array();
-
-		return $this->sanitize_contact_info( $info );
-	}
-
-	/** @return array<string, string> */
-	private function contact_info( string $email, string $phone ): array {
-		$phone = $this->normalize_phone_number( $phone );
-		$info  = array( 'email' => sanitize_email( $email ) );
-
-		if ( '' !== $phone && $this->looks_like_phone_number( $phone ) ) {
-			$info['phone'] = $phone;
-		}
-
-		if ( '' !== $phone && $this->looks_like_mobile( $phone ) ) {
-			$info['mobile'] = $phone;
-		}
-
-		return $this->compact( $info );
-	}
-
-	/** @param array<string, mixed> $info @return array<string, string> */
-	private function sanitize_contact_info( array $info ): array {
-		$clean = array();
-
-		if ( isset( $info['email'] ) ) {
-			$clean['email'] = sanitize_email( (string) $info['email'] );
-		}
-
-		foreach ( array( 'phone', 'mobile' ) as $key ) {
-			if ( ! isset( $info[ $key ] ) ) {
-				continue;
-			}
-
-			$phone = $this->normalize_phone_number( sanitize_text_field( (string) $info[ $key ] ) );
-			if ( 'mobile' === $key && ! $this->looks_like_mobile( $phone ) ) {
-				continue;
-			}
-			if ( '' !== $phone && $this->looks_like_phone_number( $phone ) ) {
-				$clean[ $key ] = $phone;
-			}
-		}
-
-		return $this->compact( $clean );
-	}
-
-	private function normalize_phone_number( string $phone ): string {
-		$phone = preg_replace( '/[^\d+]/', '', $phone ) ?? '';
-		if ( 1 === preg_match( '/^0(\d{9})$/', $phone, $matches ) ) {
-			return '+31' . $matches[1];
-		}
-		if ( 1 === preg_match( '/^31(\d{9})$/', $phone, $matches ) ) {
-			return '+31' . $matches[1];
-		}
-		return sanitize_text_field( $phone );
-	}
-
-	private function looks_like_mobile( string $phone ): bool {
-		$normalized = (string) preg_replace( '/[^\d+]/', '', $phone );
-		$normalized = ltrim( $normalized, '+' );
-
-		return 1 === preg_match( '/^(?:31|0)6\d{8}$/', $normalized );
-	}
-
-	private function looks_like_phone_number( string $phone ): bool {
-		$normalized = (string) preg_replace( '/[^\d+]/', '', $phone );
-		return 1 === preg_match( '/^\+?\d{10,15}$/', $normalized );
-	}
-
-	/**
-	 * @param array{street:string, houseNumber:string} $address
-	 * @return array<int, string>
-	 */
-	private function delivery_address_missing_fields( WC_Order $order, array $address, string $postal_code, string $city, string $country, string $recipient_name ): array {
-		$fields = array();
-
-		if ( '' === trim( $recipient_name ) ) {
-			$fields[] = __( 'naam ontvanger', 'soocool-for-woocommerce' );
-		}
-		if ( '' === trim( (string) $address['street'] ) ) {
-			$fields[] = __( 'straatnaam', 'soocool-for-woocommerce' );
-		}
-		if ( '' === trim( (string) $address['houseNumber'] ) ) {
-			$fields[] = __( 'huisnummer', 'soocool-for-woocommerce' );
-		}
-		if ( '' === trim( $postal_code ) ) {
-			$fields[] = __( 'postcode', 'soocool-for-woocommerce' );
-		}
-		if ( '' === trim( $city ) ) {
-			$fields[] = __( 'plaats', 'soocool-for-woocommerce' );
-		}
-		if ( '' === trim( $country ) ) {
-			$fields[] = __( 'land', 'soocool-for-woocommerce' );
-		}
-		if ( array() === $this->delivery_contact_info( $order ) ) {
-			$fields[] = __( 'e-mailadres, telefoonnummer of geldig Nederlands mobiel nummer', 'soocool-for-woocommerce' );
-		}
-
-		return $fields;
-	}
-
-	/** @param array<int, string> $missing_fields */
-	private function delivery_address_error_message( array $missing_fields ): string {
-		$fields = esc_html( implode( ', ', array_map( 'sanitize_text_field', $missing_fields ) ) );
-
-		return sprintf(
-			/* translators: %s: comma-separated list of missing WooCommerce address fields. */
-			esc_html__( 'Bezorgadres is onvolledig. Ontbrekende WooCommerce-velden: %s. Vul het verzend- of factuuradres aan voordat deze order naar SooCool wordt gestuurd.', 'soocool-for-woocommerce' ),
-			$fields
-		);
-	}
 
 	/** @param array<string, mixed> $values @return array<string, mixed> */
 	private function compact( array $values ): array {
@@ -306,39 +179,6 @@ final class TaskFactory {
 		);
 	}
 
-	/** @return array{address:array{street:string,houseNumber:string},postal_code:string,city:string,country:string,recipient_name:string} */
-	private function delivery_address_context( WC_Order $order ): array {
-		$shipping_values = array(
-			$order->get_shipping_first_name(),
-			$order->get_shipping_last_name(),
-			$order->get_shipping_address_1(),
-			$order->get_shipping_address_2(),
-			$order->get_shipping_postcode(),
-			$order->get_shipping_city(),
-			$order->get_shipping_country(),
-		);
-		$has_shipping = array() !== array_filter( $shipping_values, static fn ( mixed $value ): bool => '' !== trim( (string) $value ) );
-
-		$prefix = $has_shipping ? 'shipping' : 'billing';
-		$address_1 = 'shipping' === $prefix ? $order->get_shipping_address_1() : $order->get_billing_address_1();
-		$address_2 = 'shipping' === $prefix ? $order->get_shipping_address_2() : $order->get_billing_address_2();
-
-		return array(
-			'address'        => $this->address_parser->split( (string) $address_1, (string) $address_2 ),
-			'postal_code'    => (string) ( 'shipping' === $prefix ? $order->get_shipping_postcode() : $order->get_billing_postcode() ),
-			'city'           => (string) ( 'shipping' === $prefix ? $order->get_shipping_city() : $order->get_billing_city() ),
-			'country'        => (string) ( 'shipping' === $prefix ? $order->get_shipping_country() : $order->get_billing_country() ),
-			'recipient_name' => $this->recipient_name_for_prefix( $order, $prefix ),
-		);
-	}
-
-	private function recipient_name_for_prefix( WC_Order $order, string $prefix ): string {
-		if ( 'shipping' === $prefix ) {
-			return trim( $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name() );
-		}
-
-		return trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );
-	}
 
 	private function country_code( string $country ): string {
 		$country = strtoupper( sanitize_key( $country ) );

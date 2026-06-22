@@ -6,9 +6,7 @@ namespace SooCool\WooCommerce\Admin;
 
 use SooCool\WooCommerce\WooCommerce\OrderActions;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Adds a "Naar SooCool versturen" bulk action to the HPOS and legacy orders lists.

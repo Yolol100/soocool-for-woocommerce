@@ -20,12 +20,12 @@ Privacy and external-service details are documented in `readme.txt` under the ex
 
 ## Source and build route
 
-This release package contains runtime PHP source, human-readable built admin assets, and production minified admin assets. The plugin loads `.min` admin assets by default and falls back to readable assets when `SCRIPT_DEBUG` is enabled. For public WordPress.org submission, publish the development repository or include the original source assets and build tooling so reviewers can reproduce `assets/build/admin.js`, `assets/build/admin.min.js`, `assets/build/admin.css`, and `assets/build/admin.min.css`.
+This release package contains runtime PHP source and built admin assets used by the plugin at runtime. The plugin loads `.min` assets by default and falls back to readable assets when `SCRIPT_DEBUG` is enabled. For public WordPress.org submission, publish the development repository or include the original source assets and build tooling so reviewers can reproduce `assets/build/admin.js`, `assets/build/admin.min.js`, `assets/build/admin.css`, and `assets/build/admin.min.css`.
 
 ## Features
 
 - Prevents duplicate SooCool orders by checking `GET /order?orderReference=...` before creating a new order.
-- Supports the documented order label endpoint, good-specific label endpoint, order-level bulk labels and stored-good-ID label downloads.
+- Supports the documented order label endpoint, good-specific label endpoint, order-level bulk labels, stored-good-ID label downloads and admin new-order email label attachments when labels already exist.
 - Shows the SooCool test portal link in test mode without storing portal credentials in plugin files.
 
 - WordPress admin settings under **SooCool**.
@@ -65,7 +65,7 @@ This repository is a release package and does not currently include Composer, np
 
 Do not commit API keys, portal passwords, `.env` files, production URLs with secrets, or exported logs containing customer data. Use the test environment first.
 
-The webhook receiver requires the stored SooCool webhook token and, by default, HMAC verification headers. Configure SooCool to send `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp` and `X-SooCool-Webhook-Signature`. The signature is `hash_hmac('sha256', timestamp + '.' + raw_body, webhook_secret)` and may be sent as the hex digest or `sha256=<hex>`. `X-SooCool-Webhook-Id` is optional but recommended for duplicate-delivery protection. For legacy callback systems, a developer can explicitly disable required signatures with the `soocool_require_webhook_signature` filter and re-enable query-token URLs with the `soocool_allow_query_token_webhook_url` filter.
+The webhook receiver requires the stored SooCool webhook token. The default generated webhook URL includes the token as a query parameter because the SooCool OpenAPI callback model posts to the supplied `webhook.webhookUrl` and does not define custom authentication headers. If SooCool enables header delivery for this account, the receiver also supports `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp`, `X-SooCool-Webhook-Signature` and optional `X-SooCool-Webhook-Id`. Projects can require HMAC verification with the `soocool_require_webhook_signature` filter after this has been confirmed and tested.
 
 ## Staging checklist
 

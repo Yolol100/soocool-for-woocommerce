@@ -6,9 +6,7 @@ namespace SooCool\WooCommerce\Admin;
 
 use SooCool\WooCommerce\Infrastructure\AssetResolver;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class Assets {
 
@@ -37,8 +35,10 @@ final class Assets {
 			$asset['dependencies'] = array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n' );
 		}
 
-		$script_file = AssetResolver::filename( 'assets/build', 'admin', 'js' );
-		$style_file  = AssetResolver::filename( 'assets/build', 'admin', 'css' );
+		$manual_tests_enabled = defined( 'SOOCOOL_ENABLE_MANUAL_API_TESTS' ) && true === SOOCOOL_ENABLE_MANUAL_API_TESTS;
+		$script_base          = $manual_tests_enabled ? 'admin-test' : 'admin';
+		$script_file          = AssetResolver::filename( 'assets/build', $script_base, 'js' );
+		$style_file           = AssetResolver::filename( 'assets/build', 'admin', 'css' );
 
 		if ( '' !== $style_file ) {
 			$style_dependencies = $is_settings_page ? array( 'wp-components' ) : array();
@@ -73,8 +73,9 @@ final class Assets {
 			'soocool-admin',
 			'window.sooCoolAdmin=' . wp_json_encode(
 				array(
-					'restUrl' => esc_url_raw( rest_url( 'soocool/v1' ) ),
-					'nonce'   => wp_create_nonce( 'wp_rest' ),
+					'restUrl'            => esc_url_raw( rest_url( 'soocool/v1' ) ),
+					'nonce'              => wp_create_nonce( 'wp_rest' ),
+					'manualTestsEnabled' => $manual_tests_enabled,
 				)
 			) . ';',
 			'before'

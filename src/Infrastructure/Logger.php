@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Infrastructure;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class Logger {
 
 	public const OPTION_NAME         = 'soocool_logs';
 	/**
-	 * Keep log context intentionally small. Values are still scrubbed by SecretSanitizer
+	 * Log context stays small. SecretSanitizer still scrubs values
 	 * because upstream API errors may include secrets or customer data.
 	 */
 	private const CONTEXT_ALLOW_LIST = array( 'attempt', 'error', 'errors', 'method', 'path', 'status', 'traceId', 'orderId', 'api_key_present', 'api_key_source', 'api_key_status', 'api_key_length', 'header_name_sent', 'request_url_host', 'request_path' );

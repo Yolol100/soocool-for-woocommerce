@@ -8,13 +8,11 @@ use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use WP_REST_Response;
 use WP_REST_Server;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Lets an authorized shop manager read the current webhook token
- * (so it can be configured in SooCool as header token, or as an explicit URL-token fallback) and rotate it.
+ * (so it can be configured in SooCool as the webhook URL token or optional header token) and rotate it.
  * The token is never exposed in the general settings payload; it is only returned here on demand,
  * gated behind the manage_woocommerce capability and the REST nonce.
  */

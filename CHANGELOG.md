@@ -1,3 +1,63 @@
+## 0.5.6 - 2026-06-22
+- Split the manual API-test admin UI into an opt-in admin-test asset; the default production admin bundle no longer contains the manual test route/UI code.
+- Added screen-reader-only unavailable status text and aria labels for disabled checkout delivery dates without changing the visible checkout design.
+- Standardized direct-access protection style across PHP files.
+- Removed an unreachable duplicate return in API-key resolution.
+
+## 0.5.4 - 2026-06-22
+- Production-readiness cleanup: remove AI-specific generator wording from the translation template metadata.
+
+## 0.5.3 - 2026-06-22
+- Admin styling: removed the select-control container margin override and added an 8px top margin instead.
+- Added maintenance comments around select-field and label `!important` overrides so they are not removed during cleanup/refactor work.
+- Reworded maintenance comments into direct technical comments.
+
+## 0.5.2 - 2026-06-22
+- Admin styling: align delivery schedule dropdown fields with the existing text/search input styling using scoped `!important` overrides.
+- Admin styling: align dropdown labels with the same typography as the other settings labels.
+
+## 0.5.1 - 2026-06-22
+- Fixed Plugin Check/WPCS findings for translator comments and direct file access detection.
+
+## 0.5.0 - 2026-06-22
+- Refactored SooCool order sync into a shared coordinator used by REST and WooCommerce order actions.
+- Split checkout delivery request parsing and order/email delivery details into dedicated classes.
+- Split shipping label download token, order resolution and PDF response handling into dedicated services.
+- Split task contact and address building into dedicated factories.
+
+## 0.4.98 - 2026-06-22
+- Disabled the manual SooCool API-test endpoint and settings tab by default unless `SOOCOOL_ENABLE_MANUAL_API_TESTS` is explicitly set to `true`.
+
+## 0.4.97 - 2026-06-22
+- Removed release-only markdown documentation from the production ZIP.
+- Replaced temporary email attachment cleanup with WordPress-native `wp_delete_file()`.
+
+## 0.4.96 - 2026-06-22
+- Refined checkout delivery date availability styling.
+
+## 0.4.95 - 2026-06-22
+- Updated checkout delivery text and improved unavailable date styling.
+
+## 0.4.94 - 2026-06-22
+
+- Removed actual Track & Trace codes/URLs from WooCommerce order emails.
+- Added customer-facing copy that explains the Track & Trace link is sent by e-mail once the order is on its way.
+- Kept backend order tracking data visible in the WooCommerce order screen only.
+
+## 0.4.93 - 2026-06-22
+
+- Kept label PDFs restricted to admin emails when labels are available at send time.
+- Made the generated webhook callback URL document-compatible by including the webhook token in `webhook.webhookUrl` by default.
+- Kept optional header-token and HMAC webhook verification support for SooCool accounts that can send custom headers.
+- Hardened bulk order-label downloads by checking stored SooCool order IDs before calling the bulk `/shipping-label?orderIds=...` endpoint, so missing remote IDs are skipped instead of making the full bulk request fail.
+- Updated admin copy and release notes to match the SooCool OpenAPI callback model.
+
+## 0.4.92 - 2026-06-22
+
+- Added SooCool order-label and good-label PDF attachments to the WooCommerce admin new-order email when labels already exist at send time.
+- Kept customer emails limited to delivery date, daypart and a generic Track & Trace availability notice.
+- Added non-blocking label attachment handling so missing SooCool labels do not stop WooCommerce emails from sending.
+
 ## 0.4.53-patch - Security and release hardening
 
 - Require HMAC webhook signatures by default with timestamp validation and duplicate-delivery protection.
@@ -712,3 +772,9 @@
 
 ## 0.1.0
 - Initial staging-first plugin scaffold.
+
+## Unreleased
+- Changed checkout delivery choice to the two SooCool dayparts: Ochtend (08:00 - 18:00) and Avond (17:00 - 22:00).
+- Updated checkout copy to explain that customers receive Track & Trace after ordering.
+- Kept the selected delivery moment visible in WooCommerce customer emails through the existing order meta email field.
+- Used the order-specific shipping-label endpoint when a bulk order-label download contains one order, avoiding `/shipping-label?orderIds=` for single-order downloads.

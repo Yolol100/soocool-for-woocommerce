@@ -6,9 +6,7 @@ namespace SooCool\WooCommerce\Checkout;
 
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class DeliverySchedule {
 
@@ -199,7 +197,7 @@ final class DeliverySchedule {
 			return '';
 		}
 
-		$time_label = $time_from . '-' . $time_to;
+		$time_label = $time_from . ' - ' . $time_to;
 		return '' !== $label ? trim( $label . ' (' . $time_label . ')' ) : $time_label;
 	}
 

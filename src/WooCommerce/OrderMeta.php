@@ -6,9 +6,7 @@ namespace SooCool\WooCommerce\WooCommerce;
 
 use WC_Order;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class OrderMeta {
 
@@ -275,7 +273,7 @@ final class OrderMeta {
 	private function normalize_sync_status( string $status ): string {
 		$status = sanitize_key( $status );
 
-		// Keep the local terminal state consistent with manual cancel actions and filters.
+		// Local terminal state follows manual cancel actions and filters.
 		return 'soocool_cancelled' === $status ? 'cancelled' : $status;
 	}
 }

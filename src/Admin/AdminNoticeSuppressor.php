@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Admin;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
- * Keeps the SooCool admin screens focused by hiding unrelated admin notices.
+ * Hides unrelated admin notices on SooCool settings screens.
  */
 final class AdminNoticeSuppressor {
 

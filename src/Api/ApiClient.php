@@ -8,9 +8,7 @@ use SooCool\WooCommerce\Infrastructure\Logger;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use WP_Error;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class ApiClient {
 

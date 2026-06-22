@@ -9,9 +9,7 @@ use SooCool\WooCommerce\Api\ApiException;
 use WP_REST_Response;
 use WP_REST_Server;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class ConnectionController extends AbstractRestController {
 

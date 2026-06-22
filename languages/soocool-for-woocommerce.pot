@@ -3,13 +3,13 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: SooCool for WooCommerce 0.4.91\n"
+"Project-Id-Version: SooCool for WooCommerce 0.5.6\n"
 "Report-Msgid-Bugs-To: https://webactueel.nl/\n"
-"POT-Creation-Date: 2026-06-18 00:00+0000\n"
+"POT-Creation-Date: 2026-06-22 00:00+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: ChatGPT controlled extraction\n"
+"X-Generator: SooCool release i18n extraction\n"
 "X-Domain: soocool-for-woocommerce\n"
 
 #: src/Rest/MaintenanceController.php
@@ -37,7 +37,7 @@ msgid "SooCool ondersteunt in deze release alleen de klassieke WooCommerce check
 msgstr ""
 
 #: src/Admin/Notices.php
-msgid "SooCool webhook fallback-authenticatie is actief. Gebruik dit alleen tijdelijk voor legacy-koppelingen; headers met token en HMAC-signature blijven de veilige productie-instelling."
+msgid "SooCool webhook-HMAC is verplicht gemaakt via filter. Controleer op staging of SooCool de timestamp- en signature-headers voor deze koppeling meestuurt."
 msgstr ""
 
 #: src/Rest/MaintenanceController.php
@@ -89,7 +89,7 @@ msgid "+ Bezorgdag toevoegen"
 msgstr ""
 
 #: assets/build/admin.js
-msgid "+ Tijdslot toevoegen"
+msgid "+ Dagdeel toevoegen"
 msgstr ""
 
 #: assets/build/admin.js
@@ -97,7 +97,7 @@ msgid "A6 enkel label"
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Aanbevolen: checkout blijft rustiger. Zet uit om verlopen tijdsloten subtiel als niet beschikbaar te tonen."
+msgid "Aanbevolen: checkout blijft rustiger. Zet uit om verlopen dagdelen subtiel als niet beschikbaar te tonen."
 msgstr ""
 
 #: assets/build/admin.js
@@ -113,7 +113,7 @@ msgid "Actieve SooCool-omgeving:"
 msgstr ""
 
 #: assets/build/admin.js
-msgid "actieve tijdsloten"
+msgid "actieve dagdelen"
 msgstr ""
 
 #: assets/build/admin.js
@@ -137,7 +137,7 @@ msgid "Algemene instellingen"
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Alle tijdsloten tonen"
+msgid "Alle dagdelen tonen"
 msgstr ""
 
 #: src/Admin/OrderMetaBox.php
@@ -197,7 +197,7 @@ msgid "Automatiseringsinstellingen opgeslagen."
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Beheer per bezorgdag de cut-off en tijdsloten voor de klassieke WooCommerce checkout. Checkout Blocks worden in deze release niet ondersteund."
+msgid "Beheer per bezorgdag de cut-off en dagdelen voor de klassieke WooCommerce checkout. Checkout Blocks worden in deze release niet ondersteund."
 msgstr ""
 
 #: assets/build/admin.js
@@ -233,7 +233,7 @@ msgid "Bevroren"
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Bewerk tijdslot"
+msgid "Bewerk dagdeel"
 msgstr ""
 
 #: assets/build/admin.js
@@ -258,6 +258,15 @@ msgstr ""
 
 #: src/Checkout/DeliveryOptions.php
 msgid "Bezorgdatum"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php
+#. translators: %s: delivery date label, for example donderdag 25 juni.
+msgid "%s - niet beschikbaar"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php
+msgid "Niet beschikbaar"
 msgstr ""
 
 #: assets/build/admin.js
@@ -325,7 +334,7 @@ msgid "Checkout-bezorgregels moeten minimaal één ingeschakelde regel met geldi
 msgstr ""
 
 #: src/Rest/SettingsValidator.php
-msgid "Checkout-bezorgtijdsloten moeten minimaal één ingeschakeld geldig tijdslot bevatten."
+msgid "Checkout-bezorgdagdelen moeten minimaal één ingeschakeld geldig dagdeel bevatten."
 msgstr ""
 
 #: assets/build/admin.js
@@ -333,7 +342,7 @@ msgid "Configureer ophaalgegevens, bezorgplanning en fallback-goederengegevens v
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Configureer SooCool om deze URL aan te roepen en de token plus HMAC-signature headers mee te sturen. De signature bestaat uit de timestamp, een punt en de ruwe body, ondertekend met de webhook-token. Query-token URL’s zijn alleen beschikbaar wanneer de expliciete fallback-filter is ingeschakeld."
+msgid "Configureer SooCool met deze webhook-URL. De token staat in de URL omdat de SooCool OpenAPI callback alleen webhook.webhookUrl beschrijft. Als SooCool voor deze koppeling ook headers kan meesturen, worden token- en HMAC-signature headers optioneel ondersteund."
 msgstr ""
 
 #: assets/build/admin.js
@@ -437,7 +446,7 @@ msgid "Dit probeert alle eerder mislukte orders opnieuw te synchroniseren. Doorg
 msgstr ""
 
 #: src/Checkout/DeliveryOptions.php
-msgid "Dit tijdslot is niet meer beschikbaar. Kies een ander tijdslot."
+msgid "Dit dagdeel is niet meer beschikbaar. Kies een ander dagdeel."
 msgstr ""
 
 #: src/Admin/OrderActionConfirmScript.php
@@ -489,7 +498,7 @@ msgid "Eindtijd van het ophaalvenster moet later zijn dan de starttijd van het o
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Elke bezorgdag beheert nu zijn eigen cut-off en tijdsloten. Dit voorkomt losse tabellen en maakt beheer overzichtelijker."
+msgid "Elke bezorgdag beheert nu zijn eigen cut-off en dagdelen. Dit voorkomt losse tabellen en maakt beheer overzichtelijker."
 msgstr ""
 
 #: src/Domain/OrderPayloadValidator.php
@@ -589,7 +598,7 @@ msgid "Geen SooCool-goederen-ID’s gevonden voor de geselecteerde orders."
 msgstr ""
 
 #: src/Checkout/DeliveryOptions.php
-msgid "Geen tijdsloten beschikbaar voor deze datum."
+msgid "Geen dagdelen beschikbaar voor deze datum."
 msgstr ""
 
 #: src/Domain/ShippingLabelService.php
@@ -653,7 +662,7 @@ msgid "Hersynchronisatie gestart."
 msgstr ""
 
 #: src/Rest/SettingsValidator.php
-msgid "Het checkout-bezorgschema moet minimaal één ingeschakelde bezorgdag met een geldig ingeschakeld tijdslot bevatten."
+msgid "Het checkout-bezorgschema moet minimaal één ingeschakelde bezorgdag met een geldig ingeschakeld dagdeel bevatten."
 msgstr ""
 
 #: src/Domain/TaskFactory.php
@@ -713,11 +722,11 @@ msgid "Kies bezorgmoment"
 msgstr ""
 
 #: src/Checkout/DeliveryOptions.php
-msgid "Kies een beschikbaar tijdslot voor de geselecteerde bezorgdatum."
+msgid "Kies ochtend of avond."
 msgstr ""
 
 #: src/Checkout/DeliveryOptions.php
-msgid "Kies een beschikbare bezorgdag en daarna een tijdslot."
+msgid "Je ontvangt Track & Trace zodra je bestelling onderweg is."
 msgstr ""
 
 #: src/Checkout/DeliveryOptions.php
@@ -729,7 +738,7 @@ msgid "Kies een geldig beschikbaar SooCool bezorgmoment."
 msgstr ""
 
 #: src/Checkout/DeliveryOptions.php
-msgid "Kies een tijdslot voordat je de bestelling plaatst."
+msgid "Kies een dagdeel voordat je de bestelling plaatst."
 msgstr ""
 
 #: assets/build/admin.js
@@ -749,7 +758,7 @@ msgid "Kies één test: stuur een echte WooCommerce order of gebruik een veilige
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Klanten kiezen eerst een bezorgdag en daarna een tijdslot. Het gekozen tijdslot wordt opgeslagen bij de order; de SooCool API-delivery window blijft 08:00-18:00 zolang deze koppeling dat vereist."
+msgid "Klanten kiezen eerst een bezorgdag en daarna een dagdeel. Het gekozen dagdeel wordt opgeslagen bij de order; de SooCool API-delivery window blijft 08:00-18:00 zolang deze koppeling dat vereist."
 msgstr ""
 
 #: assets/build/admin.js
@@ -901,7 +910,7 @@ msgid "Meer laden"
 msgstr ""
 
 #: src/Checkout/DeliveryOptions.php
-msgid "Meer tijdsloten tonen"
+msgid "Meer dagdelen tonen"
 msgstr ""
 
 #: assets/build/admin.js
@@ -909,7 +918,7 @@ msgid "Melding"
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Minder tijdsloten tonen"
+msgid "Minder dagdelen tonen"
 msgstr ""
 
 #: src/Checkout/DeliveryOptions.php
@@ -1069,7 +1078,7 @@ msgid "Optioneel"
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Optionele callback-URL die met de SooCool-order wordt meegestuurd. Laat leeg om de plugin-ontvanger te gebruiken. Header-token plus HMAC-signature-authenticatie is standaard verplicht; legacy fallbacks vereisen expliciete filters."
+msgid "Optionele callback-URL die met de SooCool-order wordt meegestuurd. Laat leeg om de plugin-ontvanger te gebruiken; die gebruikt standaard een HTTPS webhook-URL met token, passend bij de SooCool OpenAPI callback."
 msgstr ""
 
 #: assets/build/admin.js
@@ -1221,7 +1230,7 @@ msgid "Signature-header"
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Sluit tijdslotdetails"
+msgid "Sluit dagdeeldetails"
 msgstr ""
 
 #: assets/build/admin.js
@@ -1705,15 +1714,21 @@ msgid "Tijd"
 msgstr ""
 
 #: src/Checkout/DeliveryOptions.php
-msgid "Tijdslot"
+msgid "Dagdeel"
+msgstr ""
+
+msgid "Track & Trace"
+msgstr ""
+
+msgid "Je ontvangt Track & Trace zodra je bestelling onderweg is."
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Tijdsloten"
+msgid "Dagdelen"
 msgstr ""
 
 #: src/Checkout/DeliveryOptions.php
-msgid "Tijdsloten voor %s"
+msgid "Dagdelen voor %s"
 msgstr ""
 
 #: assets/build/admin.js
@@ -1805,7 +1820,7 @@ msgid "Verbindingstest onverwacht mislukt. Controleer de SooCool-logs en PHP-fou
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Verlopen tijdsloten verbergen"
+msgid "Verlopen dagdelen verbergen"
 msgstr ""
 
 #: assets/build/admin.js
@@ -1829,7 +1844,7 @@ msgid "Verwijder bezorgdag"
 msgstr ""
 
 #: assets/build/admin.js
-msgid "Verwijder tijdslot"
+msgid "Verwijder dagdeel"
 msgstr ""
 
 #: assets/build/admin.js
@@ -1910,6 +1925,10 @@ msgstr ""
 
 #: assets/build/admin.js
 msgid "Woensdag"
+msgstr ""
+
+#: src/Rest/ManualTestController.php
+msgid "Handmatige SooCool API-tests zijn uitgeschakeld."
 msgstr ""
 
 #: src/Rest/ManualTestController.php

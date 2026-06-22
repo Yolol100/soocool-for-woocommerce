@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\WooCommerce;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class RemoteStatusMapper {
 

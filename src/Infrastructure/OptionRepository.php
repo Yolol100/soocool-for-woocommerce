@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Infrastructure;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class OptionRepository {
+
+	private readonly OptionDefaults $defaults;
+
+	public function __construct( ?OptionDefaults $defaults = null ) {
+		$this->defaults = $defaults ?? new OptionDefaults();
+	}
 
 	public const OPTION_NAME                = 'soocool_settings';
 	private const MASK_PLACEHOLDER          = '__SOOCOOL_KEEP_CURRENT_SECRET__';
@@ -16,161 +20,22 @@ final class OptionRepository {
 
 	/** @return array<string, mixed> */
 	public function defaults(): array {
-		return array(
-			'environment'                => 'test',
-			'test_base_url'              => 'https://api.staging.soocool.nl',
-			'production_base_url'        => 'https://api.soocool.nl',
-			'api_key'                    => '',
-			'enable_pickup'              => false,
-			'order_reference_prefix'     => '',
-			'pickup_company'             => get_bloginfo( 'name' ),
-			'pickup_contact_name'        => '',
-			'pickup_email'               => get_option( 'admin_email' ),
-			'pickup_phone'               => '',
-			'pickup_street'              => '',
-			'pickup_house_number'        => '',
-			'pickup_postal_code'         => '',
-			'pickup_city'                => '',
-			'pickup_country'             => 'NL',
-			'pickup_days_offset'         => 1,
-			'pickup_time_from'           => '08:00',
-			'pickup_time_to'             => '18:00',
-			'delivery_time_from'         => '08:00',
-			'delivery_time_to'           => '18:00',
-			'delivery_days_offset'       => 1,
-			'checkout_delivery_enabled'  => true,
-			'checkout_delivery_days_ahead' => 14,
-			'checkout_delivery_holidays' => '',
-			'checkout_delivery_rules'    => $this->default_delivery_rules(),
-			'checkout_delivery_time_slots' => $this->default_delivery_time_slots(),
-			'checkout_delivery_schedule' => $this->default_delivery_schedule(),
-			'checkout_delivery_hide_unavailable_slots' => true,
-			'auto_submit_enabled'        => false,
-			'auto_submit_status'         => 'processing',
-			'allow_resubmit'             => false,
-			'label_output'               => 'a6',
-			'webhook_url'                => '',
-			'webhook_secret'             => '',
-			'goods_description_fallback' => 'WooCommerce order',
-			'packaging_type'             => 'box',
-			'temperature_regime'         => 'cooled',
-			'package_width'              => 60,
-			'package_depth'              => 40,
-			'package_height'             => 11,
-			'package_weight'             => 1600,
-			'log_retention'              => 100,
-		);
+		return $this->defaults->settings();
 	}
-
 
 	/** @return array<int, array<string, mixed>> */
 	public function default_delivery_rules(): array {
-		return array(
-			array(
-				'enabled'          => true,
-				'delivery_weekday' => 'monday',
-				'cutoff_weekday'   => 'saturday',
-				'cutoff_time'      => '13:00',
-			),
-			array(
-				'enabled'          => true,
-				'delivery_weekday' => 'thursday',
-				'cutoff_weekday'   => 'wednesday',
-				'cutoff_time'      => '13:00',
-			),
-			array(
-				'enabled'          => true,
-				'delivery_weekday' => 'saturday',
-				'cutoff_weekday'   => 'friday',
-				'cutoff_time'      => '13:00',
-			),
-		);
+		return $this->defaults->delivery_rules();
 	}
 
 	/** @return array<int, array<string, mixed>> */
 	public function default_delivery_time_slots(): array {
-		$weekdays = $this->allowed_weekdays();
-
-		return array(
-			array(
-				'enabled'     => true,
-				'label'       => '',
-				'time_from'   => '07:00',
-				'time_to'     => '11:00',
-				'cutoff_time' => '07:00',
-				'weekdays'    => $weekdays,
-				'sort_order'  => 10,
-			),
-			array(
-				'enabled'     => true,
-				'label'       => '',
-				'time_from'   => '08:00',
-				'time_to'     => '12:00',
-				'cutoff_time' => '08:00',
-				'weekdays'    => $weekdays,
-				'sort_order'  => 20,
-			),
-			array(
-				'enabled'     => true,
-				'label'       => '',
-				'time_from'   => '09:00',
-				'time_to'     => '13:00',
-				'cutoff_time' => '09:00',
-				'weekdays'    => $weekdays,
-				'sort_order'  => 30,
-			),
-			array(
-				'enabled'     => true,
-				'label'       => '',
-				'time_from'   => '14:00',
-				'time_to'     => '18:00',
-				'cutoff_time' => '14:00',
-				'weekdays'    => $weekdays,
-				'sort_order'  => 40,
-			),
-			array(
-				'enabled'     => true,
-				'label'       => '',
-				'time_from'   => '15:00',
-				'time_to'     => '19:00',
-				'cutoff_time' => '15:00',
-				'weekdays'    => $weekdays,
-				'sort_order'  => 50,
-			),
-			array(
-				'enabled'     => true,
-				'label'       => '',
-				'time_from'   => '16:00',
-				'time_to'     => '20:00',
-				'cutoff_time' => '16:00',
-				'weekdays'    => $weekdays,
-				'sort_order'  => 60,
-			),
-			array(
-				'enabled'     => true,
-				'label'       => '',
-				'time_from'   => '17:00',
-				'time_to'     => '21:00',
-				'cutoff_time' => '17:00',
-				'weekdays'    => $weekdays,
-				'sort_order'  => 70,
-			),
-			array(
-				'enabled'     => true,
-				'label'       => '',
-				'time_from'   => '18:00',
-				'time_to'     => '22:00',
-				'cutoff_time' => '18:00',
-				'weekdays'    => $weekdays,
-				'sort_order'  => 80,
-			),
-		);
+		return $this->defaults->delivery_time_slots();
 	}
-
 
 	/** @return array<int, array<string, mixed>> */
 	public function default_delivery_schedule(): array {
-		return $this->schedule_from_legacy( $this->default_delivery_rules(), $this->default_delivery_time_slots() );
+		return $this->defaults->delivery_schedule();
 	}
 
 	public function migrate_for_current_version(): void {
@@ -216,6 +81,12 @@ final class OptionRepository {
 			$changed = true;
 		}
 
+		$normalized_settings = $this->enforce_fixed_checkout_dayparts( $settings );
+		if ( $normalized_settings !== $settings ) {
+			$settings = $normalized_settings;
+			$changed  = true;
+		}
+
 		if ( $changed ) {
 			update_option( self::OPTION_NAME, $this->sanitize_settings( $settings, $this->defaults() ), false );
 		}
@@ -243,7 +114,7 @@ final class OptionRepository {
 			);
 		}
 
-		return $settings;
+		return $this->enforce_fixed_checkout_dayparts( $settings );
 	}
 
 	/** @param array<string, mixed> $settings */
@@ -331,7 +202,7 @@ final class OptionRepository {
 		$clean['package_weight']             = $this->positive_int_between( $settings['package_weight'] ?? $current['package_weight'] ?? $defaults['package_weight'], 1, 999999, (int) $defaults['package_weight'] );
 		$clean['log_retention']              = max( 20, min( 500, absint( $settings['log_retention'] ?? $current['log_retention'] ) ) );
 
-		return $clean;
+		return $this->enforce_fixed_checkout_dayparts( $clean );
 	}
 
 
@@ -588,6 +459,45 @@ final class OptionRepository {
 		return array() !== $slots ? $slots : $this->default_delivery_time_slots();
 	}
 
+
+	/** @param array<string, mixed> $settings @return array<string, mixed> */
+	private function enforce_fixed_checkout_dayparts( array $settings ): array {
+		$settings['checkout_delivery_time_slots'] = $this->default_delivery_time_slots();
+		$rules = is_array( $settings['checkout_delivery_schedule'] ?? null ) ? $settings['checkout_delivery_schedule'] : $this->default_delivery_schedule();
+		$clean = array();
+
+		foreach ( $rules as $index => $rule ) {
+			if ( ! is_array( $rule ) ) {
+				continue;
+			}
+
+			$delivery_weekday = sanitize_key( (string) ( $rule['delivery_weekday'] ?? $rule['delivery_day'] ?? '' ) );
+			if ( ! in_array( $delivery_weekday, $this->allowed_weekdays(), true ) ) {
+				continue;
+			}
+
+			$cutoff_weekday = sanitize_key( (string) ( $rule['cutoff_weekday'] ?? $rule['cutoff_day'] ?? 'saturday' ) );
+			if ( ! in_array( $cutoff_weekday, $this->allowed_weekdays(), true ) ) {
+				$cutoff_weekday = 'saturday';
+			}
+
+			$clean[] = array(
+				'enabled'          => $this->to_bool( $rule['enabled'] ?? true ),
+				'delivery_weekday' => $delivery_weekday,
+				'cutoff_weekday'   => $cutoff_weekday,
+				'cutoff_time'      => $this->sanitize_time( sanitize_text_field( (string) ( $rule['cutoff_time'] ?? '13:00' ) ), '13:00' ),
+				'sort_order'       => is_numeric( $rule['sort_order'] ?? null ) ? (int) $rule['sort_order'] : ( (int) $index + 1 ) * 10,
+				'slots'            => $this->defaults->delivery_time_slots( array( $delivery_weekday ) ),
+			);
+		}
+
+		$enabled = array_filter( $clean, static fn ( array $rule ): bool => (bool) $rule['enabled'] );
+		$settings['checkout_delivery_schedule'] = array() !== $clean && array() !== $enabled ? array_values( $clean ) : $this->default_delivery_schedule();
+		$settings['checkout_delivery_rules']    = $this->delivery_rules_from_schedule( $settings['checkout_delivery_schedule'] );
+
+		return $settings;
+	}
+
 	private function sanitize_holidays( mixed $value ): string {
 		$raw = is_array( $value ) ? implode( ',', array_map( 'strval', $value ) ) : (string) $value;
 		$dates = array();
@@ -661,7 +571,7 @@ final class OptionRepository {
 		$settings['webhook_timestamp_header_name']  = 'X-SooCool-Webhook-Timestamp';
 		$settings['webhook_signature_header_name']  = 'X-SooCool-Webhook-Signature';
 		$settings['webhook_event_id_header_name']   = 'X-SooCool-Webhook-Id';
-		$settings['webhook_signature_required']     = (bool) apply_filters( 'soocool_require_webhook_signature', true );
+		$settings['webhook_signature_required']     = (bool) apply_filters( 'soocool_require_webhook_signature', false );
 		$settings['query_token_fallback_enabled']   = $this->query_token_fallback_enabled();
 		$settings['effective_webhook_url']          = $this->effective_webhook_url();
 		unset( $settings['webhook_secret'] );
@@ -706,7 +616,7 @@ final class OptionRepository {
 		return esc_url_raw( $url );
 	}
 
-	public function legacy_webhook_url(): string {
+	public function signed_webhook_url(): string {
 		$url = add_query_arg(
 			'token',
 			$this->webhook_secret(),
@@ -716,6 +626,10 @@ final class OptionRepository {
 		return esc_url_raw( $url );
 	}
 
+	public function legacy_webhook_url(): string {
+		return $this->signed_webhook_url();
+	}
+
 	public function effective_webhook_url(): string {
 		$settings = $this->all();
 		$custom   = $this->sanitize_url_or_empty( (string) ( $settings['webhook_url'] ?? '' ) );
@@ -723,26 +637,20 @@ final class OptionRepository {
 			return $custom;
 		}
 
-		$generated = $this->query_token_fallback_enabled() ? $this->legacy_webhook_url() : $this->generated_webhook_url();
+		$generated = $this->query_token_fallback_enabled() ? $this->signed_webhook_url() : $this->generated_webhook_url();
 		return str_starts_with( $generated, 'https://' ) ? $generated : '';
 	}
 
 	public function query_token_fallback_enabled(): bool {
 		/**
-		 * Controls whether generated webhook URLs include the shared token as a query
-		 * parameter. Header-token authentication is the safer default because URL
-		 * tokens can end up in logs, browser history, analytics or screenshots. Enable
-		 * this fallback only when the remote SooCool callback configuration cannot send
-		 * the X-SooCool-Webhook-Token header. The SOOCOOL_ALLOW_QUERY_TOKEN_WEBHOOK_URL
-		 * constant must also be enabled explicitly.
+		 * SooCool OpenAPI 1.2.1 only sends the configured webhookUrl back to the site.
+		 * Query-token URLs stay enabled by default so callbacks work without custom
+		 * headers. Sites that have confirmed header/HMAC delivery with SooCool can
+		 * disable this and require signatures via filters.
 		 *
-		 * @param bool $enabled Default false.
+		 * @param bool $enabled Default true.
 		 */
-		if ( ! defined( 'SOOCOOL_ALLOW_QUERY_TOKEN_WEBHOOK_URL' ) || ! (bool) SOOCOOL_ALLOW_QUERY_TOKEN_WEBHOOK_URL ) {
-			return false;
-		}
-
-		return (bool) apply_filters( 'soocool_allow_query_token_webhook_url', false );
+		return (bool) apply_filters( 'soocool_allow_query_token_webhook_url', true );
 	}
 
 	private function sanitize_webhook_secret( mixed $value ): string {

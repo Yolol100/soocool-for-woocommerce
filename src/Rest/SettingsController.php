@@ -10,9 +10,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class SettingsController extends AbstractRestController {
 

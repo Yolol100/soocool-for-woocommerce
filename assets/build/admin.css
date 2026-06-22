@@ -1,7 +1,6 @@
 /*
- * SooCool admin CSS
- * Modern, framework-free and scoped. No Tailwind, no global reset.
- * All public classes use the .soocool-* prefix; WordPress component overrides stay inside .soocool-shell.
+ * SooCool admin CSS.
+ * Styles are scoped to .soocool-shell and .soocool-* classes so WordPress admin screens outside this plugin are not changed.
  */
 
 .soocool-shell,
@@ -377,51 +376,130 @@
   box-shadow: var(--soocool-shadow-focus);
 }
 
-.soocool-shell .components-select-control {
-  gap: 0;
-}
-
+/*! Maintenance note: do not remove the !important flags in the select-field and label rules below during refactor or cleanup. They intentionally override WordPress Components so select fields match text/search fields. */
+.soocool-shell .components-select-control,
 .soocool-shell .components-select-control > div,
 .soocool-shell .components-select-control__field {
-  gap: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  gap: 0 !important;
 }
 
 .soocool-shell .components-select-control__label,
-.soocool-shell .components-select-control label.components-input-control__label,
-.soocool-shell .components-select-control .components-input-control__container {
-  margin-top: 0;
+.soocool-shell .components-select-control label.components-input-control__label {
+  display: block !important;
+  margin: 0 0 8px !important;
+  color: var(--soocool-color-text) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  line-height: 18px !important;
+  text-transform: none !important;
 }
 
-.soocool-shell :where(.components-select-control__input, select.components-select-control__input) {
-  appearance: none;
-  padding-right: 40px;
-  padding-left: 10px;
-  background-color: transparent;
-  background-image: none;
+.soocool-shell .components-select-control .components-input-control__container {
+  position: relative !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 42px !important;
+  margin-top: 8px !important;
+  color: var(--soocool-color-text) !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  background: var(--soocool-color-surface) !important;
+  border-radius: var(--soocool-radius-xs) !important;
+  box-shadow: none !important;
+}
+
+.soocool-shell .components-select-control .components-input-control__backdrop {
+  border: 1px solid var(--soocool-color-border-strong) !important;
+  border-radius: var(--soocool-radius-xs) !important;
+  box-shadow: none !important;
+}
+
+.soocool-shell .components-select-control:hover .components-input-control__backdrop {
+  border-color: var(--soocool-color-text) !important;
+}
+
+.soocool-shell .components-select-control:focus-within .components-input-control__backdrop {
+  border-color: var(--soocool-color-accent) !important;
+  box-shadow: var(--soocool-shadow-focus) !important;
+}
+
+.soocool-shell select:not(.components-select-control__input) {
+  appearance: none !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 42px !important;
+  margin: 0 !important;
+  padding: 8px 40px 8px 12px !important;
+  color: var(--soocool-color-text) !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  background-color: var(--soocool-color-surface) !important;
+  background-image: none !important;
+  border: 1px solid var(--soocool-color-border-strong) !important;
+  border-radius: var(--soocool-radius-xs) !important;
+  box-shadow: none !important;
+}
+
+.soocool-shell .components-select-control select,
+.soocool-shell .components-select-control__input,
+.soocool-shell select.components-select-control__input {
+  appearance: none !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 42px !important;
+  margin: 0 !important;
+  padding: 8px 40px 8px 12px !important;
+  color: var(--soocool-color-text) !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: var(--soocool-radius-xs) !important;
+  box-shadow: none !important;
+}
+
+.soocool-shell select:not(.components-select-control__input):hover {
+  border-color: var(--soocool-color-text) !important;
+}
+
+.soocool-shell select:not(.components-select-control__input):focus {
+  border-color: var(--soocool-color-accent) !important;
+  box-shadow: var(--soocool-shadow-focus) !important;
+  outline: none !important;
+}
+
+.soocool-shell .components-select-control select:focus,
+.soocool-shell .components-select-control__input:focus,
+.soocool-shell select.components-select-control__input:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .soocool-shell .components-select-control .components-input-control__suffix,
 .soocool-shell .components-select-control .components-input-control__suffix > *,
 .soocool-shell .components-select-control .components-input-control__suffix svg {
-  display: none;
-}
-
-.soocool-shell .components-select-control .components-input-control__container {
-  position: relative;
+  display: none !important;
 }
 
 .soocool-shell .components-select-control .components-input-control__container::after {
-  position: absolute;
-  top: 50%;
-  right: 16px;
-  z-index: 2;
-  width: 7px;
-  height: 7px;
-  border-right: 1.5px solid var(--soocool-color-text);
-  border-bottom: 1.5px solid var(--soocool-color-text);
-  content: '';
-  pointer-events: none;
-  transform: translateY(-65%) rotate(45deg);
+  position: absolute !important;
+  top: 50% !important;
+  right: 16px !important;
+  z-index: 2 !important;
+  width: 7px !important;
+  height: 7px !important;
+  border-right: 1.5px solid var(--soocool-color-text) !important;
+  border-bottom: 1.5px solid var(--soocool-color-text) !important;
+  content: '' !important;
+  pointer-events: none !important;
+  transform: translateY(-65%) rotate(45deg) !important;
 }
 
 .soocool-shell .components-base-control__help,
@@ -956,7 +1034,7 @@
 }
 
 
-/*! Admin visual hardening: do not remove during cleanup. These rules restore the intended SooCool settings UI when WordPress component CSS changes or loads with stronger defaults. Keep this block scoped to .soocool-shell. */
+/*! Maintenance note: keep these scoped admin overrides in place. They protect the SooCool settings UI from stronger WordPress component styles. */
 .soocool-shell .soocool-fields {
   background: #f6f7f7;
 }
@@ -1115,7 +1193,7 @@
   }
 }
 
-/* Keep all SooCool form controls visually consistent. */
+/* Shared form-control shape for SooCool admin fields. */
 .soocool-shell .components-text-control__input,
 .soocool-shell .components-input-control__input,
 .soocool-shell .components-select-control__input,
@@ -1139,9 +1217,8 @@
   overflow: hidden;
 }
 
-/* Fix WordPress component focus styling on SooCool select fields.
- * WP core/components can add a blue focus ring on the input while this plugin
- * adds its red accent ring on the backdrop. Keep one consistent border/ring. */
+/* WordPress Components can add their own focus ring on select inputs.
+ * The SooCool UI uses the backdrop for the visible focus state, so the input ring is reset here. */
 .soocool-shell .components-input-control__input,
 .soocool-shell .components-select-control__input {
   outline: 0;

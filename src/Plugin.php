@@ -20,14 +20,13 @@ use SooCool\WooCommerce\Rest\WebhookController;
 use SooCool\WooCommerce\Rest\WebhookSecretController;
 use SooCool\WooCommerce\Rest\MaintenanceController;
 use SooCool\WooCommerce\WooCommerce\OrderActions;
+use SooCool\WooCommerce\WooCommerce\OrderEmailLabels;
 use SooCool\WooCommerce\WooCommerce\OrderStatusHooks;
 use SooCool\WooCommerce\WooCommerce\ShippingLabelActions;
 use SooCool\WooCommerce\Admin\OrderListColumn;
 use SooCool\WooCommerce\Admin\BulkSyncActions;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class Plugin {
 
@@ -60,7 +59,9 @@ final class Plugin {
 		add_action( 'rest_api_init', array( $provider->get( SettingsController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( ConnectionController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( LogsController::class ), 'register_routes' ) );
-		add_action( 'rest_api_init', array( $provider->get( ManualTestController::class ), 'register_routes' ) );
+		if ( $this->manual_tests_enabled() ) {
+			add_action( 'rest_api_init', array( $provider->get( ManualTestController::class ), 'register_routes' ) );
+		}
 		add_action( 'rest_api_init', array( $provider->get( OrderSyncController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( WebhookController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( WebhookSecretController::class ), 'register_routes' ) );
@@ -69,8 +70,13 @@ final class Plugin {
 		$provider->get( OrderActions::class )->register();
 		$provider->get( OrderStatusHooks::class )->register();
 		$provider->get( ShippingLabelActions::class )->register();
+		$provider->get( OrderEmailLabels::class )->register();
 		$provider->get( DeliveryOptions::class )->register();
 		$provider->get( OrderListColumn::class )->register();
 		$provider->get( BulkSyncActions::class )->register();
+	}
+
+	private function manual_tests_enabled(): bool {
+		return defined( 'SOOCOOL_ENABLE_MANUAL_API_TESTS' ) && true === SOOCOOL_ENABLE_MANUAL_API_TESTS;
 	}
 }

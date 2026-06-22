@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Rest;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class SettingsSchema {
 

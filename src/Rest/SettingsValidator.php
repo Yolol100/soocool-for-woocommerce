@@ -7,9 +7,7 @@ namespace SooCool\WooCommerce\Rest;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use WP_Error;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class SettingsValidator {
 
@@ -301,7 +299,7 @@ final class SettingsValidator {
 		}
 
 		if ( ! $this->validate_delivery_schedule( $payload['checkout_delivery_schedule'] ) ) {
-			return new WP_Error( 'soocool_invalid_checkout_delivery_schedule', __( 'Het checkout-bezorgschema moet minimaal één ingeschakelde bezorgdag met een geldig ingeschakeld tijdslot bevatten.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+			return new WP_Error( 'soocool_invalid_checkout_delivery_schedule', __( 'Het checkout-bezorgschema moet minimaal één ingeschakelde bezorgdag met een geldig ingeschakeld dagdeel bevatten.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
 		}
 
 		return null;
@@ -314,7 +312,7 @@ final class SettingsValidator {
 		}
 
 		if ( ! $this->validate_delivery_time_slots( $payload['checkout_delivery_time_slots'] ) ) {
-			return new WP_Error( 'soocool_invalid_checkout_delivery_time_slots', __( 'Checkout-bezorgtijdsloten moeten minimaal één ingeschakeld geldig tijdslot bevatten.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+			return new WP_Error( 'soocool_invalid_checkout_delivery_time_slots', __( 'Checkout-bezorgdagdelen moeten minimaal één ingeschakeld geldig dagdeel bevatten.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
 		}
 
 		return null;

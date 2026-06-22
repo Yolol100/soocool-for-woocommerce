@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Admin;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Single source of truth for how a SooCool sync status is presented in the

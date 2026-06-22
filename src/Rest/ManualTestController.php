@@ -16,9 +16,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 final class ManualTestController extends AbstractRestController {
 
@@ -32,6 +30,10 @@ final class ManualTestController extends AbstractRestController {
 	) {}
 
 	public function register_routes(): void {
+		if ( ! $this->manual_tests_enabled() ) {
+			return;
+		}
+
 		register_rest_route(
 			$this->namespace,
 			'/manual-test/order',
@@ -57,6 +59,16 @@ final class ManualTestController extends AbstractRestController {
 	}
 
 	public function run( WP_REST_Request $request ): WP_REST_Response {
+		if ( ! $this->manual_tests_enabled() ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => __( 'Handmatige SooCool API-tests zijn uitgeschakeld.', 'soocool-for-woocommerce' ),
+				),
+				404
+			);
+		}
+
 		$result = array(
 			'success' => false,
 		);
@@ -116,6 +128,10 @@ final class ManualTestController extends AbstractRestController {
 		}
 
 		return new WP_REST_Response( $result );
+	}
+
+	private function manual_tests_enabled(): bool {
+		return defined( 'SOOCOOL_ENABLE_MANUAL_API_TESTS' ) && true === SOOCOOL_ENABLE_MANUAL_API_TESTS;
 	}
 
 	/** @param array<string, mixed> $payload @return array<string, mixed> */
