@@ -1,3 +1,6 @@
+## 0.5.7 - 2026-06-22
+- Admin styling: set the WordPress Components select-control container to `margin-top: -8px !important` to match the approved field alignment.
+
 ## 0.5.6 - 2026-06-22
 - Split the manual API-test admin UI into an opt-in admin-test asset; the default production admin bundle no longer contains the manual test route/UI code.
 - Added screen-reader-only unavailable status text and aria labels for disabled checkout delivery dates without changing the visible checkout design.

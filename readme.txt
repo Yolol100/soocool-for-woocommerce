@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.5.6
+Stable tag: 0.5.7
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -112,7 +112,7 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 
 == Changelog ==
 
-= 0.5.6 =
+= 0.5.7 =
 * Tightened production readiness after the v16 audit: corrected admin `wp_die()` response handling, replaced direct temporary PDF writes with WordPress filesystem handling, and aligned release asset documentation.
 
 = 0.5.5 =

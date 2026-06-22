@@ -109,8 +109,9 @@ final class WebhookAuthenticator {
 		if ( ! is_scalar( $token ) || '' === trim( (string) $token ) ) {
 			$token = $request->get_header( 'x_webhook_token' );
 		}
-		if ( ( ! is_scalar( $token ) || '' === trim( (string) $token ) ) && $this->options->query_token_fallback_enabled() && $request->has_param( 'token' ) ) {
-			$token = $request->get_param( 'token' );
+		if ( ( ! is_scalar( $token ) || '' === trim( (string) $token ) ) && $this->options->query_token_fallback_enabled() ) {
+			$query_params = $request->get_query_params();
+			$token        = is_array( $query_params ) && isset( $query_params['token'] ) ? $query_params['token'] : '';
 		}
 
 		return is_scalar( $token ) ? trim( sanitize_text_field( (string) $token ) ) : '';
