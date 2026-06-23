@@ -783,3 +783,72 @@ button.soocool-delivery-time-more:focus,
   border-color: #c5161d;
   background: #fff2f3;
 }
+
+.soocool-order-delivery-detail {
+  margin: 0 0 32px;
+}
+
+.soocool-order-delivery-detail__title {
+  margin-top: 1rem;
+  margin-bottom: 14px;
+}
+
+.soocool-order-delivery-detail__card {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px;
+  border: 1px solid #e5e5e5;
+  border-left: 4px solid #c5161d;
+  border-radius: 8px;
+  background: #fff;
+  color: #191919;
+  box-shadow: 0 8px 24px rgba(20, 20, 20, 0.06);
+}
+
+.soocool-order-delivery-detail__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  color: #191919;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.soocool-order-delivery-detail__row span {
+  color: #555;
+}
+
+.soocool-order-delivery-detail__row strong {
+  color: #191919;
+  text-align: right;
+}
+
+.soocool-order-delivery-detail__trace {
+  margin: 8px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #eeeeee;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.soocool-order-delivery-detail__trace strong {
+  color: #191919;
+}
+
+@media (max-width: 600px) {
+  .soocool-order-delivery-detail__card {
+    padding: 16px;
+  }
+
+  .soocool-order-delivery-detail__row {
+    display: block;
+  }
+
+  .soocool-order-delivery-detail__row strong {
+    display: block;
+    margin-top: 2px;
+    text-align: left;
+  }
+}

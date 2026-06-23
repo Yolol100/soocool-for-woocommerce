@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SooCool\WooCommerce\Admin;
 
 use SooCool\WooCommerce\Checkout\DeliverySchedule;
+use SooCool\WooCommerce\Domain\OrderSyncCoordinator;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 
@@ -15,7 +16,8 @@ final class OrderMetaBox {
 	public function __construct(
 		private readonly OrderMeta $meta,
 		private readonly OrderStatusPresenter $presenter,
-		private readonly DeliverySchedule $schedule
+		private readonly DeliverySchedule $schedule,
+		private readonly OrderSyncCoordinator $coordinator
 	) {}
 
 	public function register(): void {
@@ -39,13 +41,10 @@ final class OrderMetaBox {
 		$status           = (string) $order->get_meta( OrderMeta::SYNC_STATUS, true );
 		$error            = (string) $order->get_meta( OrderMeta::LAST_ERROR, true );
 		$tracking_code    = (string) $order->get_meta( OrderMeta::TRACKING_CODE, true );
-		$tracking_url     = (string) $order->get_meta( OrderMeta::TRACKING_URL, true );
 		$good_ids         = $this->meta->get_good_ids( $order );
-		$delivery_label = $this->meta->get_requested_delivery_label( $order );
-		$delivery_date  = $this->meta->get_requested_delivery_date( $order );
-		$time_from      = $this->meta->get_requested_delivery_time_from( $order );
-		$time_to        = $this->meta->get_requested_delivery_time_to( $order );
-		$time_label     = $this->meta->get_requested_delivery_time_label( $order );
+		$delivery_label  = $this->meta->get_requested_delivery_label( $order );
+		$delivery_date   = $this->meta->get_requested_delivery_date( $order );
+		$time_label      = $this->meta->get_requested_delivery_time_label( $order );
 
 		echo '<div class="soocool-order-card">';
 		echo '<div class="soocool-order-card__header"><span class="soocool-order-card__kicker">' . esc_html__( 'SooCool-status', 'soocool-for-woocommerce' ) . '</span><span class="' . esc_attr( $this->presenter->badge_class( $status ) ) . '">' . esc_html( $this->presenter->label( $status ) ) . '</span></div>';
@@ -68,40 +67,45 @@ final class OrderMetaBox {
 		echo '</dl>';
 
 		if ( current_user_can( 'manage_woocommerce' ) ) {
-			$this->render_delivery_date_editor( $order, $delivery_date, $delivery_label, $time_from, $time_to );
-		}
-
-		if ( '' !== $tracking_url ) {
-			echo '<p class="soocool-order-actions"><a class="button" href="' . esc_url( $tracking_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Track & trace openen', 'soocool-for-woocommerce' ) . '</a></p>';
+			$this->render_label_actions( $order, $good_ids );
 		}
 
 		if ( '' !== $error ) {
 			echo '<div class="soocool-order-alert is-error"><strong>' . esc_html__( 'Laatste fout', 'soocool-for-woocommerce' ) . '</strong><br />' . esc_html( $error ) . '</div>';
 		}
+		echo '</div>';
+	}
 
-		if ( '' !== $soocool_order_id && current_user_can( 'manage_woocommerce' ) ) {
-			echo '<div class="soocool-order-action-group">';
-			echo '<div class="soocool-order-action-group__title">' . esc_html__( 'Labels', 'soocool-for-woocommerce' ) . '</div>';
-			echo '<div class="soocool-order-button-stack">';
-			$url = wp_nonce_url(
-				admin_url( 'admin-post.php?action=soocool_download_label&order_id=' . absint( $order->get_id() ) ),
-				'soocool_download_label_' . absint( $order->get_id() )
-			);
-			echo '<a class="button button-secondary soocool-order-button" href="' . esc_url( $url ) . '">' . esc_html__( 'Orderlabel', 'soocool-for-woocommerce' ) . '</a>';
 
-			if ( array() !== $good_ids ) {
-				$good_label_url = wp_nonce_url(
-					admin_url( 'admin-post.php?action=soocool_download_label&order_id=' . absint( $order->get_id() ) . '&good_ids=' . rawurlencode( implode( ',', $good_ids ) ) ),
-					'soocool_download_good_labels_' . absint( $order->get_id() )
-				);
-				echo '<a class="button button-secondary soocool-order-button" href="' . esc_url( $good_label_url ) . '">' . esc_html__( 'Goederenlabels', 'soocool-for-woocommerce' ) . '</a>';
-			}
-			echo '</div>';
-			echo '<p class="description soocool-order-action-help">' . esc_html__( 'Deze downloads gebruiken de gekozen labeluitvoerinstelling.', 'soocool-for-woocommerce' ) . '</p>';
-			echo '</div>';
-		} elseif ( '' === $soocool_order_id ) {
-			echo '<p class="description">' . esc_html__( 'Gebruik eerst de orderactie “SooCool: order aanmaken/versturen” voordat je labels downloadt.', 'soocool-for-woocommerce' ) . '</p>';
+	/** @param array<int, int> $good_ids */
+	private function render_label_actions( WC_Order $order, array $good_ids ): void {
+		if ( ! $this->meta->is_synced( $order ) ) {
+			return;
 		}
+
+		$order_id = absint( $order->get_id() );
+		if ( 0 >= $order_id ) {
+			return;
+		}
+
+		$order_url = wp_nonce_url(
+			admin_url( 'admin-post.php?action=soocool_download_label&order_id=' . $order_id ),
+			'soocool_download_label_' . $order_id
+		);
+
+		echo '<div class="soocool-order-action-group">';
+		echo '<div class="soocool-order-button-stack">';
+		echo '<a class="button button-secondary soocool-order-button" href="' . esc_url( $order_url ) . '">' . esc_html__( 'Download orderlabel', 'soocool-for-woocommerce' ) . '</a>';
+
+		if ( array() !== $good_ids ) {
+			$good_url = wp_nonce_url(
+				admin_url( 'admin-post.php?action=soocool_download_label&order_id=' . $order_id . '&good_ids=' . rawurlencode( implode( ',', $good_ids ) ) ),
+				'soocool_download_good_labels_' . $order_id
+			);
+			echo '<a class="button button-secondary soocool-order-button" href="' . esc_url( $good_url ) . '">' . esc_html__( 'Download goederenlabel', 'soocool-for-woocommerce' ) . '</a>';
+		}
+
+		echo '</div>';
 		echo '</div>';
 	}
 
@@ -158,7 +162,8 @@ final class OrderMetaBox {
 		$new_label     = $this->schedule->format_label( $date );
 		$new_time      = $this->schedule->format_time_slot_label( $time_from, $time_to );
 
-		if ( $date !== $current_date || $time_from !== $this->meta->get_requested_delivery_time_from( $order ) || $time_to !== $this->meta->get_requested_delivery_time_to( $order ) ) {
+		$changed = $date !== $current_date || $time_from !== $this->meta->get_requested_delivery_time_from( $order ) || $time_to !== $this->meta->get_requested_delivery_time_to( $order );
+		if ( $changed ) {
 			$order->update_meta_data( OrderMeta::REQUESTED_DELIVERY_DATE, $date );
 			$order->update_meta_data( OrderMeta::REQUESTED_DELIVERY_LABEL, $new_label );
 			$order->update_meta_data( OrderMeta::REQUESTED_DELIVERY_TIME_FROM, $time_from );
@@ -180,7 +185,22 @@ final class OrderMetaBox {
 			);
 		}
 
+		$this->sync_delivery_moment_to_soocool( $order );
 		$this->redirect_with_notice( $order, 'delivery_date_updated' );
+	}
+
+	private function sync_delivery_moment_to_soocool( WC_Order $order ): void {
+		if ( '' === $this->meta->get_soocool_order_id( $order ) ) {
+			return;
+		}
+
+		$result = $this->coordinator->update_order( $order );
+		if ( (bool) ( $result['success'] ?? false ) ) {
+			$order->add_order_note( __( 'SooCool-order bijgewerkt met het gekozen bezorgmoment.', 'soocool-for-woocommerce' ) );
+			return;
+		}
+
+		$order->add_order_note( sanitize_text_field( (string) ( $result['message'] ?? __( 'SooCool-update na wijziging van het bezorgmoment is mislukt.', 'soocool-for-woocommerce' ) ) ) );
 	}
 
 	private function render_delivery_date_editor( WC_Order $order, string $current_date, string $current_label, string $current_time_from, string $current_time_to ): void {

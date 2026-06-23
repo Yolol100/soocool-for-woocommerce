@@ -33,7 +33,7 @@ This release package contains runtime PHP source and built admin assets used by 
 - Manual WooCommerce order actions to send, refresh, update and cancel an order at SooCool.
 - Optional automatic order submission by WooCommerce status.
 - Optional pickup and delivery task support; delivery-only is the safe default.
-- Fixed 08:00-18:00 SooCool delivery window for every delivery task; pickup windows remain configurable.
+- Checkout delivery schedule is leading for SooCool delivery timeWindow; pickup windows remain configurable and fallback delivery window is only used for orders without a selected daypart.
 - SooCool order ID, reference, sync status and last error stored in WooCommerce order meta.
 - Shipping label download from the WooCommerce order screen.
 - HPOS compatible through WooCommerce custom order tables declaration.
@@ -79,7 +79,7 @@ The webhook receiver requires the stored SooCool webhook token. The default gene
 8. Use the order action **Send to SooCool**.
 9. Confirm SooCool order ID appears in the SooCool order box.
 10. In the SooCool test portal, confirm that delivery-only orders create one delivery task. If pickup is enabled, confirm the order creates one pickup task and one later delivery task.
-11. Confirm the delivery task uses the fixed 08:00-18:00 delivery window.
+11. Confirm the delivery task uses the selected checkout daypart as SooCool timeWindow.
 12. Use **Refresh from SooCool** after the test order exists and confirm local status/tracking/good IDs update when SooCool returns them.
 13. Download both A6 and Collated A4 labels only after SooCool accepted the order.
 14. Test webhook success/failure, token rejection, HMAC rejection, expired timestamp rejection and duplicate-delivery rejection.
@@ -101,7 +101,7 @@ node --check assets/frontend/checkout-delivery.js
 node --check assets/frontend/checkout-delivery.min.js
 ```
 
-Use WooCommerce HPOS in staging and verify the manual order action, optional status hook, `/ping` connection test, delivery-only task creation, optional pickup plus delivery task creation, fixed 08:00-18:00 delivery window and PDF label downloads before enabling production credentials.
+Use WooCommerce HPOS in staging and verify the manual order action, optional status hook, `/ping` connection test, delivery-only task creation, optional pickup plus delivery task creation, selected checkout daypart timeWindow and PDF label downloads before enabling production credentials.
 
 
 ## Release note
@@ -153,7 +153,7 @@ Before production, record evidence for:
 - HPOS-enabled order screen test.
 - SooCool `/ping` test.
 - Pickup-enabled test order in SooCool portal.
-- Delivery task uses the fixed 08:00-18:00 delivery window.
+- Delivery task uses the selected checkout daypart as timeWindow.
 - A6 and Collated A4 shipping label downloads.
 - Safe API error handling and sanitized logs.
 

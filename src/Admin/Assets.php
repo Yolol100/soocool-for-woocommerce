@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SooCool\WooCommerce\Admin;
 
 use SooCool\WooCommerce\Infrastructure\AssetResolver;
+use SooCool\WooCommerce\Infrastructure\OptionRepository;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -35,8 +36,9 @@ final class Assets {
 			$asset['dependencies'] = array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n' );
 		}
 
-		$manual_tests_enabled = defined( 'SOOCOOL_ENABLE_MANUAL_API_TESTS' ) && true === SOOCOOL_ENABLE_MANUAL_API_TESTS;
-		$script_base          = $manual_tests_enabled ? 'admin-test' : 'admin';
+		$settings             = ( new OptionRepository() )->all();
+		$manual_tests_enabled = true;
+		$script_base          = 'admin-test';
 		$script_file          = AssetResolver::filename( 'assets/build', $script_base, 'js' );
 		$style_file           = AssetResolver::filename( 'assets/build', 'admin', 'css' );
 
@@ -76,6 +78,7 @@ final class Assets {
 					'restUrl'            => esc_url_raw( rest_url( 'soocool/v1' ) ),
 					'nonce'              => wp_create_nonce( 'wp_rest' ),
 					'manualTestsEnabled' => $manual_tests_enabled,
+					'environment'         => (string) ( $settings['environment'] ?? 'test' ),
 				)
 			) . ';',
 			'before'

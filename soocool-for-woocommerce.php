@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SooCool for WooCommerce
  * Description: Connect WooCommerce orders with the SooCool transport API.
- * Version: 0.5.7
+ * Version: 0.5.18
  * Author: Webactueel
  * Text Domain: soocool-for-woocommerce
  * Domain Path: /languages
@@ -24,7 +24,25 @@ defined( 'ABSPATH' ) || exit;
 define( 'SOOCOOL_PLUGIN_FILE', __FILE__ );
 define( 'SOOCOOL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SOOCOOL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'SOOCOOL_VERSION', '0.5.7' );
+define( 'SOOCOOL_VERSION', '0.5.18' );
+
+if ( ! function_exists( 'soocool_deactivate_legacy_duplicate_plugin' ) ) {
+	function soocool_deactivate_legacy_duplicate_plugin(): void {
+		if ( ! function_exists( 'deactivate_plugins' ) || ! function_exists( 'plugin_basename' ) || ! function_exists( 'is_plugin_active' ) ) {
+			return;
+		}
+
+		$current_basename = plugin_basename( __FILE__ );
+		$legacy_basename  = 'soocool-for-woocommerce-main/soocool-for-woocommerce.php';
+		if ( 'soocool-for-woocommerce/soocool-for-woocommerce.php' !== $current_basename || $legacy_basename === $current_basename ) {
+			return;
+		}
+
+		if ( is_plugin_active( $legacy_basename ) ) {
+			deactivate_plugins( $legacy_basename, true );
+		}
+	}
+}
 
 add_action(
 	'before_woocommerce_init',
@@ -55,6 +73,8 @@ spl_autoload_register(
 	}
 );
 
+add_action( 'admin_init', 'soocool_deactivate_legacy_duplicate_plugin' );
+
 add_filter(
 	'plugin_action_links_' . plugin_basename( __FILE__ ),
 	static function ( array $links ): array {
@@ -71,6 +91,7 @@ add_filter(
 register_activation_hook(
 	__FILE__,
 	static function (): void {
+		soocool_deactivate_legacy_duplicate_plugin();
 		if ( PHP_VERSION_ID < 80100 ) {
 			deactivate_plugins( plugin_basename( __FILE__ ) );
 			wp_die( esc_html__( 'SooCool for WooCommerce vereist PHP 8.1 of hoger.', 'soocool-for-woocommerce' ) );

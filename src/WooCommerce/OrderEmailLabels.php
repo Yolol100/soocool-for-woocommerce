@@ -106,7 +106,7 @@ final class OrderEmailLabels {
 
 	/** @param array<int, string> $attachments @param array<int, int> $good_ids @return array<int, string> */
 	private function attach_good_labels( array $attachments, WC_Order $order, array $good_ids, string $output ): array {
-		$good_ids = array_values( array_unique( array_filter( array_map( 'absint', $good_ids ) ) ) );
+		$good_ids = array_values( array_unique( array_filter( $good_ids, static fn ( int $good_id ): bool => 0 !== $good_id ) ) );
 		if ( array() === $good_ids ) {
 			return $attachments;
 		}
@@ -126,7 +126,7 @@ final class OrderEmailLabels {
 			return $attachments;
 		}
 
-		$filename = 1 === count( $good_ids ) ? 'soocool-good-label-' . absint( $good_ids[0] ) . '.pdf' : 'soocool-good-labels-' . absint( $order->get_id() ) . '.pdf';
+		$filename = 1 === count( $good_ids ) ? 'soocool-good-label-' . preg_replace( '/[^0-9-]/', '', (string) $good_ids[0] ) . '.pdf' : 'soocool-good-labels-' . absint( $order->get_id() ) . '.pdf';
 		return $this->attach_pdf( $attachments, $pdf, $filename );
 	}
 

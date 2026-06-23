@@ -59,9 +59,7 @@ final class Plugin {
 		add_action( 'rest_api_init', array( $provider->get( SettingsController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( ConnectionController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( LogsController::class ), 'register_routes' ) );
-		if ( $this->manual_tests_enabled() ) {
-			add_action( 'rest_api_init', array( $provider->get( ManualTestController::class ), 'register_routes' ) );
-		}
+		add_action( 'rest_api_init', array( $provider->get( ManualTestController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( OrderSyncController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( WebhookController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( WebhookSecretController::class ), 'register_routes' ) );
@@ -76,7 +74,4 @@ final class Plugin {
 		$provider->get( BulkSyncActions::class )->register();
 	}
 
-	private function manual_tests_enabled(): bool {
-		return defined( 'SOOCOOL_ENABLE_MANUAL_API_TESTS' ) && true === SOOCOOL_ENABLE_MANUAL_API_TESTS;
-	}
 }

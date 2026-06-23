@@ -56,7 +56,7 @@ final class ApiClient {
 
 	public function get_good_shipping_label( int|string $order_id, int|string $good_id, string $output = 'a6' ): ApiResponse {
 		$output = $this->normalize_label_output( $output );
-		return $this->request( 'GET', '/order/' . $this->encode_numeric_order_id( $order_id ) . '/good/' . $this->encode_numeric_order_id( $good_id ) . '/shipping-label?output=' . rawurlencode( $output ), null, array( 'Accept' => 'application/pdf' ) );
+		return $this->request( 'GET', '/order/' . $this->encode_numeric_order_id( $order_id ) . '/good/' . rawurlencode( $this->encode_numeric_good_id( $good_id ) ) . '/shipping-label?output=' . rawurlencode( $output ), null, array( 'Accept' => 'application/pdf' ) );
 	}
 
 	/** @param array<int, int|string> $order_ids */
@@ -72,7 +72,7 @@ final class ApiClient {
 
 	/** @param array<int, int|string> $good_ids */
 	public function get_multiple_good_shipping_labels( array $good_ids, string $output = 'a6' ): ApiResponse {
-		$ids = array_values( array_unique( array_map( array( $this, 'encode_numeric_order_id' ), $good_ids ) ) );
+		$ids = array_values( array_unique( array_map( array( $this, 'encode_numeric_good_id' ), $good_ids ) ) );
 		if ( array() === $ids ) {
 			throw new ApiException( esc_html__( 'Geldige SooCool-goederen-ID’s voor labeldownload ontbreken.', 'soocool-for-woocommerce' ), 0 );
 		}
@@ -89,6 +89,15 @@ final class ApiClient {
 		$normalized = trim( sanitize_text_field( (string) $order_id ) );
 		if ( ! ctype_digit( $normalized ) || 0 >= (int) $normalized ) {
 			throw new ApiException( esc_html__( 'Geldige numerieke SooCool order-ID ontbreekt.', 'soocool-for-woocommerce' ), 0 );
+		}
+
+		return (string) (int) $normalized;
+	}
+
+	private function encode_numeric_good_id( int|string $good_id ): string {
+		$normalized = trim( sanitize_text_field( (string) $good_id ) );
+		if ( 1 !== preg_match( '/^-?\d+$/', $normalized ) || 0 === (int) $normalized ) {
+			throw new ApiException( esc_html__( 'Geldig numeriek SooCool-goederen-ID ontbreekt.', 'soocool-for-woocommerce' ), 0 );
 		}
 
 		return (string) (int) $normalized;

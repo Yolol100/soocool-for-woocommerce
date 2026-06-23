@@ -121,6 +121,16 @@ final class SettingsSchema {
 				'required'          => false,
 				'sanitize_callback' => $text,
 			),
+			'test_api_key'               => array(
+				'type'              => 'string',
+				'required'          => false,
+				'sanitize_callback' => $text,
+			),
+			'production_api_key'         => array(
+				'type'              => 'string',
+				'required'          => false,
+				'sanitize_callback' => $text,
+			),
 			'enable_pickup'              => array(
 				'type'              => 'boolean',
 				'required'          => false,
@@ -222,7 +232,7 @@ final class SettingsSchema {
 				'type'              => 'integer',
 				'required'          => false,
 				'sanitize_callback' => $int,
-				'validate_callback' => $range_validate( 7, 60 ),
+				'validate_callback' => $range_validate( 7, 92 ),
 			),
 			'checkout_delivery_holidays' => array(
 				'type'              => 'string',

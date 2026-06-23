@@ -105,7 +105,7 @@ final class OrderListColumn {
 		);
 
 		echo '<div class="soocool-list-label-actions">';
-		echo '<a href="' . esc_url( $order_url ) . '">' . esc_html__( 'Orderlabel', 'soocool-for-woocommerce' ) . '</a>';
+		echo '<a class="soocool-list-label-actions__link" href="' . esc_url( $order_url ) . '">' . esc_html__( 'Download orderlabel', 'soocool-for-woocommerce' ) . '</a>';
 
 		$good_ids = $this->meta->get_good_ids( $order );
 		if ( array() !== $good_ids ) {
@@ -113,7 +113,7 @@ final class OrderListColumn {
 				admin_url( 'admin-post.php?action=soocool_download_label&order_id=' . $order_id . '&good_ids=' . rawurlencode( implode( ',', $good_ids ) ) ),
 				'soocool_download_good_labels_' . $order_id
 			);
-			echo '<span aria-hidden="true"> | </span><a href="' . esc_url( $good_url ) . '">' . esc_html__( 'Goederenlabels', 'soocool-for-woocommerce' ) . '</a>';
+			echo '<a class="soocool-list-label-actions__link" href="' . esc_url( $good_url ) . '">' . esc_html__( 'Download goederenlabel', 'soocool-for-woocommerce' ) . '</a>';
 		}
 
 		echo '</div>';

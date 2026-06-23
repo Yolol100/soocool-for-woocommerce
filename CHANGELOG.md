@@ -1,3 +1,42 @@
+## 0.5.18 - 2026-06-23
+
+- Orders: wijziging van het gekozen bezorgmoment in de WooCommerce-order werkt nu direct de bestaande SooCool-order bij.
+- Sync: opnieuw opslaan van hetzelfde bezorgmoment pusht de actuele payload opnieuw naar SooCool wanneer de order al gekoppeld is.
+
+## 0.5.17 - 2026-06-23
+
+- Fixed: detecteer en deactiveer de oude dubbele pluginmap `soocool-for-woocommerce-main` wanneer de canonieke plugin `soocool-for-woocommerce` actief is. Dit voorkomt dubbele SooCool-menu-items en oude sync-code die nog verkeerde levertijdsvensters naar SooCool kan sturen.
+- Confirmed: nieuwe syncs blijven de gekozen WooCommerce-bezorgdatum en het gekozen dagdeel gebruiken met Europe/Amsterdam-tijdzone.
+
+## 0.5.16 - 2026-06-23
+
+- Fixed: SooCool pickup- en delivery-timeWindow gebruiken nu Europe/Amsterdam in plaats van de WordPress-site-tijdzone. Dit voorkomt dat een gekozen bezorgmoment zoals 17:00 - 22:00 in SooCool verschuift naar 22:00 - 03:00 wanneer de site-tijdzone verkeerd staat.
+- Confirmed: backend-selected bezorgdatum en tijdslot blijven de bron voor de delivery task payload.
+
+## 0.5.15 - 2026-06-23
+
+- Email/UI: `Track & Trace:`-label verwijderd uit bezorgtekst; de uitlegtekst blijft zichtbaar.
+- Email: bezorgingstitel gecentreerd in HTML-orderemails.
+
+## 0.5.14 - 2026-06-23
+
+- Frontend: `margin-top: 1rem` toegevoegd boven de titel Bezorging in de orderdetailweergave.
+- Admin: labeltitel boven de downloadknoppen verwijderd en downloadlinks in de orderlijst netter gestyled.
+- Packaging: distributie-ZIP gebruikt de pluginmap `soocool-for-woocommerce/` zodat vervangen via upload goed werkt.
+
+## 0.5.11 - 2026-06-23
+- Restored document-compatible single label downloads through `/order/{orderId}/shipping-label` and `/order/{orderId}/good/{goodId}/shipping-label`.
+- Preserved signed SooCool good IDs instead of converting negative requested IDs to positive IDs.
+- Replaced the WooCommerce order metabox delivery editor/track-and-trace button with stacked label download buttons.
+- Stacked the order-list label links and updated their labels.
+- Stopped dummy manual-test orders from registering a webhook URL and acknowledged unmatched webhooks with 202 to prevent repeated retry errors.
+- Fixed webhook order-number fallback lookup by using the actual order reference variable.
+
+## 0.5.8 - 2026-06-23
+- Made the checkout delivery schedule the leading source for the SooCool delivery `timeWindow`; selected dayparts now override the legacy fallback delivery window.
+- Reworded Planning & goederen fields so delivery offsets/windows are clearly fallback-only.
+- Increased checkout planning range to 92 days and made billing phone required in the classic checkout.
+
 ## 0.5.7 - 2026-06-22
 - Admin styling: set the WordPress Components select-control container to `margin-top: -8px !important` to match the approved field alignment.
 

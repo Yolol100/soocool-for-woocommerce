@@ -207,7 +207,7 @@ final class ShippingLabelActions {
 			wp_die( esc_html__( 'SooCool bulkdownload van goederenlabels mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
 		}
 
-		$filename = count( $good_ids ) > 1 ? 'soocool-good-labels.pdf' : 'soocool-good-label-' . absint( $good_ids[0] ) . '.pdf';
+		$filename = count( $good_ids ) > 1 ? 'soocool-good-labels.pdf' : 'soocool-good-label-' . preg_replace( '/[^0-9-]/', '', (string) $good_ids[0] ) . '.pdf';
 		$this->pdf_response->send( $pdf, $filename );
 	}
 
@@ -219,18 +219,18 @@ final class ShippingLabelActions {
 			wp_die( esc_html__( 'Order niet gevonden.', 'soocool-for-woocommerce' ) );
 		}
 
-		$good_id = $this->query_int( 'good_id' );
-		if ( $good_id > 0 && ! in_array( $good_id, $this->order_resolver->stored_good_ids( $order ), true ) ) {
+		$good_id = $this->query_signed_int( 'good_id' );
+		if ( null !== $good_id && ! in_array( $good_id, $this->order_resolver->stored_good_ids( $order ), true ) ) {
 			wp_die( esc_html__( 'De gevraagde SooCool-goederen-ID hoort niet bij deze order.', 'soocool-for-woocommerce' ) );
 		}
 
 		try {
-			$pdf = $good_id > 0 ? $this->labels->get_good_label( $order, $good_id, $output ) : $this->labels->get_label( $order, $output );
+			$pdf = null !== $good_id ? $this->labels->get_good_label( $order, $good_id, $output ) : $this->labels->get_label( $order, $output );
 		} catch ( \Throwable ) {
 			wp_die( esc_html__( 'SooCool labeldownload mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
 		}
 
-		$filename = $good_id > 0 ? 'soocool-label-' . absint( $order_id ) . '-good-' . absint( $good_id ) . '.pdf' : 'soocool-label-' . absint( $order_id ) . '.pdf';
+		$filename = null !== $good_id ? 'soocool-label-' . absint( $order_id ) . '-good-' . preg_replace( '/[^0-9-]/', '', (string) $good_id ) . '.pdf' : 'soocool-label-' . absint( $order_id ) . '.pdf';
 		$this->pdf_response->send( $pdf, $filename );
 	}
 
@@ -248,7 +248,7 @@ final class ShippingLabelActions {
 		$ids = array();
 		foreach ( explode( ',', $good_ids ) as $good_id ) {
 			$good_id = trim( $good_id );
-			if ( '' === $good_id || ! ctype_digit( $good_id ) || 0 >= (int) $good_id ) {
+			if ( '' === $good_id || 1 !== preg_match( '/^-?\d+$/', $good_id ) || 0 === (int) $good_id ) {
 				return array();
 			}
 			$ids[] = (int) $good_id;
@@ -275,5 +275,14 @@ final class ShippingLabelActions {
 
 	private function query_int( string $key ): int {
 		return absint( $this->query_string( $key ) );
+	}
+
+	private function query_signed_int( string $key ): ?int {
+		$value = trim( $this->query_string( $key ) );
+		if ( '' === $value || 1 !== preg_match( '/^-?\d+$/', $value ) || 0 === (int) $value ) {
+			return null;
+		}
+
+		return (int) $value;
 	}
 }

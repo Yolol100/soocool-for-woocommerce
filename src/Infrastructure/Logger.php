@@ -13,7 +13,7 @@ final class Logger {
 	 * Log context stays small. SecretSanitizer still scrubs values
 	 * because upstream API errors may include secrets or customer data.
 	 */
-	private const CONTEXT_ALLOW_LIST = array( 'attempt', 'error', 'errors', 'method', 'path', 'status', 'traceId', 'orderId', 'api_key_present', 'api_key_source', 'api_key_status', 'api_key_length', 'header_name_sent', 'request_url_host', 'request_path' );
+	private const CONTEXT_ALLOW_LIST = array( 'attempt', 'error', 'errors', 'method', 'path', 'status', 'traceId', 'orderId', 'orderReference', 'wcOrderId', 'api_key_present', 'api_key_source', 'api_key_status', 'api_key_length', 'header_name_sent', 'request_url_host', 'request_path' );
 
 	public function __construct( private readonly SecretSanitizer $sanitizer, private readonly OptionRepository $options ) {}
 

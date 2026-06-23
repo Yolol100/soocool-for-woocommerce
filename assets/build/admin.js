@@ -24,13 +24,18 @@
     delete payload.api_key_source;
     delete payload.api_key_length;
     delete payload.api_key_status;
-    var keyValue = payload.api_key == null ? '' : String(payload.api_key).trim();
-    var uuidMatch = keyValue.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-    if (uuidMatch) {
-      payload.api_key = uuidMatch[0].toLowerCase();
-    } else if (!keyValue || keyValue.indexOf('***') !== -1 || keyValue.indexOf('•') !== -1) {
-      delete payload.api_key;
-    }
+    delete payload.active_api_key_field;
+    delete payload.test_api_key_present;
+    delete payload.production_api_key_present;
+    ['api_key', 'test_api_key', 'production_api_key'].forEach(function(field){
+      var keyValue = payload[field] == null ? '' : String(payload[field]).trim();
+      var uuidMatch = keyValue.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+      if (uuidMatch) {
+        payload[field] = uuidMatch[0].toLowerCase();
+      } else if (!keyValue || keyValue.indexOf('***') !== -1 || keyValue.indexOf('•') !== -1) {
+        delete payload[field];
+      }
+    });
     return payload;
   }
   function api(path, method, data){
@@ -259,7 +264,7 @@
     return { settings: settings, setSettings: setSettings, loading: loading, saving: saving, saved: saved, errorMessage: errorMessage, save: save };
   }
 
-  function ConnectionScreen(){
+  function ConnectionScreen(props){
     var s = useSettings(__('Kon de SooCool-instellingen niet laden.', 'soocool-for-woocommerce'));
     var testingState = useState(false);
     var testing = testingState[0];
@@ -269,13 +274,15 @@
     var setStatus = statusState[1];
     var settings = s.settings;
     var setSettings = s.setSettings;
+    var currentEnvironment = settings.environment || (props && props.environment) || 'test';
     useEffect(function(){
       if (s.loading) { return; }
       if (settings.api_key_status === 'invalid_masked_or_corrupt') {
         emitToast(__('De opgeslagen API-key is ongeldig of bevat nog een gemaskeerde waarde. Plak de echte SooCool API-key en sla opnieuw op.', 'soocool-for-woocommerce'), 'error');
       }
     }, [s.loading, settings.api_key_status]);
-    function upd(key, value){ var next = Object.assign({}, settings); next[key] = value; setSettings(next); }
+    function upd(key, value){ var next = Object.assign({}, settings); next[key] = value; setSettings(next); if (key === 'environment' && props && typeof props.onEnvironmentChange === 'function') { props.onEnvironmentChange(value); } }
+    useEffect(function(){ if (!s.loading && settings.environment && props && typeof props.onEnvironmentChange === 'function') { props.onEnvironmentChange(settings.environment); } }, [s.loading, settings.environment]);
     function ping(){
       if (testing) { return; }
       setTesting(true);
@@ -304,15 +311,17 @@
       s.errorMessage ? el(ErrorNotice, { message: s.errorMessage }) : null,
       el(Card, null,
         el('div', { className: 'soocool-field-grid two' },
-          el(c.SelectControl, { label: __('SooCool-omgeving', 'soocool-for-woocommerce'), value: settings.environment || 'test', options: [{ label: 'Test', value: 'test' }, { label: __('Productie', 'soocool-for-woocommerce'), value: 'production' }], onChange: function(v){ upd('environment', v); } }),
-          el(c.TextControl, { type: 'password', label: __('SooCool API-key', 'soocool-for-woocommerce'), help: settings.api_key_present ? __('Er is een API-key opgeslagen en als bolletjes weergegeven. Klik in het veld om de bolletjes te wissen en plak alleen een nieuwe key wanneer je deze wilt vervangen.', 'soocool-for-woocommerce') : __('Plak de X-API-Key waarde voor de gekozen SooCool-omgeving.', 'soocool-for-woocommerce'), value: settings.api_key || settings.api_key_masked || '', onFocus: function(){ if (settings.api_key_masked && settings.api_key === settings.api_key_masked) { upd('api_key', ''); } }, onClick: function(){ if (settings.api_key_masked && settings.api_key === settings.api_key_masked) { upd('api_key', ''); } }, onChange: function(v){ upd('api_key', v); } }),
-          el(c.TextControl, { type: 'url', label: __('SooCool test-API-URL', 'soocool-for-woocommerce'), help: __('Standaard worden alleen officiële SooCool API-hosts geaccepteerd.', 'soocool-for-woocommerce'), value: settings.test_base_url || '', onChange: function(v){ upd('test_base_url', v); } }),
-          el(c.TextControl, { type: 'url', label: __('SooCool productie-API-URL', 'soocool-for-woocommerce'), help: __('Gebruik de officiële productie-API-host, tenzij SooCool een andere goedgekeurde host aanlevert.', 'soocool-for-woocommerce'), value: settings.production_base_url || '', onChange: function(v){ upd('production_base_url', v); } })
+          el(c.SelectControl, { label: __('SooCool-omgeving', 'soocool-for-woocommerce'), value: currentEnvironment, options: [{ label: 'Test', value: 'test' }, { label: __('Productie', 'soocool-for-woocommerce'), value: 'production' }], help: __('De actieve omgeving bepaalt automatisch welke API-key en basis-URL gebruikt worden.', 'soocool-for-woocommerce'), onChange: function(v){ upd('environment', v); } }),
+          currentEnvironment === 'test'
+            ? el(c.TextControl, { type: 'password', label: __('Test API-key', 'soocool-for-woocommerce'), help: __('Actief: deze key wordt gebruikt voor testaanvragen.', 'soocool-for-woocommerce'), value: settings.test_api_key || '', onFocus: function(){ if (settings.test_api_key && settings.test_api_key.indexOf('•') !== -1) { upd('test_api_key', ''); } }, onClick: function(){ if (settings.test_api_key && settings.test_api_key.indexOf('•') !== -1) { upd('test_api_key', ''); } }, onChange: function(v){ upd('test_api_key', v); } })
+            : el(c.TextControl, { type: 'password', label: __('Productie API-key', 'soocool-for-woocommerce'), help: __('Actief: deze key wordt gebruikt voor productieaanvragen.', 'soocool-for-woocommerce'), value: settings.production_api_key || '', onFocus: function(){ if (settings.production_api_key && settings.production_api_key.indexOf('•') !== -1) { upd('production_api_key', ''); } }, onClick: function(){ if (settings.production_api_key && settings.production_api_key.indexOf('•') !== -1) { upd('production_api_key', ''); } }, onChange: function(v){ upd('production_api_key', v); } }),
+          el(c.TextControl, { type: 'url', label: __('SooCool test-API-URL', 'soocool-for-woocommerce'), help: __('Wordt gebruikt wanneer de testomgeving actief is.', 'soocool-for-woocommerce'), value: settings.test_base_url || '', onChange: function(v){ upd('test_base_url', v); } }),
+          el(c.TextControl, { type: 'url', label: __('SooCool productie-API-URL', 'soocool-for-woocommerce'), help: __('Wordt gebruikt wanneer de productieomgeving actief is.', 'soocool-for-woocommerce'), value: settings.production_base_url || '', onChange: function(v){ upd('production_base_url', v); } })
         ),
         null
       ),
       status ? el(Status, { tone: status.tone, message: status.message }) : null,
-      el('div', { className: 'soocool-actions' }, el(SaveButton, { isSaving: s.saving, onClick: function(){ s.save(__('Kon de instellingen niet opslaan. Controleer de ingevulde waarden.', 'soocool-for-woocommerce'), __('API-instellingen opgeslagen.', 'soocool-for-woocommerce')); } }), el(c.Button, { variant: 'secondary', isBusy: testing, disabled: s.saving || testing || s.loading, onClick: ping }, __('Verbinding testen', 'soocool-for-woocommerce')), settings.environment === 'test' ? el(c.Button, { variant: 'link', href: 'https://orders-test.soocool.nl:8443/#/authenticate/login', target: '_blank', rel: 'noreferrer noopener' }, __('SooCool testportaal openen', 'soocool-for-woocommerce')) : null),
+      el('div', { className: 'soocool-actions' }, el(SaveButton, { isSaving: s.saving, onClick: function(){ s.save(__('Kon de instellingen niet opslaan. Controleer de ingevulde waarden.', 'soocool-for-woocommerce'), __('API-instellingen opgeslagen.', 'soocool-for-woocommerce')); } }), el(c.Button, { variant: 'secondary', isBusy: testing, disabled: s.saving || testing || s.loading, onClick: ping }, __('Verbinding testen', 'soocool-for-woocommerce')), currentEnvironment === 'test' ? el(c.Button, { variant: 'link', href: 'https://orders-test.soocool.nl:8443/#/authenticate/login', target: '_blank', rel: 'noreferrer noopener' }, __('SooCool testportaal openen', 'soocool-for-woocommerce')) : null),
     );
   }
 
@@ -321,7 +330,7 @@
     var settings = s.settings;
     var setSettings = s.setSettings;
     function upd(key, value){ var next = Object.assign({}, settings); next[key] = value; setSettings(next); }
-    return el(FieldGroup, { title: __('Ophalen & bezorgen', 'soocool-for-woocommerce'), badge: __('Orders', 'soocool-for-woocommerce'), description: __('Configureer ophaalgegevens, bezorgplanning en fallback-goederengegevens voor SooCool-orders.', 'soocool-for-woocommerce') },
+    return el(FieldGroup, { title: __('Ophalen & bezorgen', 'soocool-for-woocommerce'), badge: __('Orders', 'soocool-for-woocommerce'), description: __('Configureer ophaalgegevens, pickupvensters en fallback-gegevens. Het Bezorgschema is leidend voor checkout en SooCool.', 'soocool-for-woocommerce') },
       s.loading ? el(Loading) : null,
       s.errorMessage ? el(ErrorNotice, { message: s.errorMessage }) : null,
       el(Card, { soft: true }, el('div', { className: 'soocool-compact-row' },
@@ -351,11 +360,11 @@
             el('h3', null, __('Planning & goederen', 'soocool-for-woocommerce')),
             el('div', { className: 'soocool-field-grid two' },
               el(c.TextControl, { type: 'number', min: 0, max: 30, label: __('Ophaaldatum-offset in dagen', 'soocool-for-woocommerce'), value: String(settings.pickup_days_offset == null ? 1 : settings.pickup_days_offset), onChange: function(v){ upd('pickup_days_offset', Number(v)); } }),
-              el(c.TextControl, { type: 'number', min: 0, max: 30, label: __('Bezorgdatum-offset in dagen', 'soocool-for-woocommerce'), value: String(settings.delivery_days_offset == null ? 2 : settings.delivery_days_offset), onChange: function(v){ upd('delivery_days_offset', Number(v)); } }),
+              el(c.TextControl, { type: 'number', min: 0, max: 30, label: __('Fallback bezorgdatum-offset in dagen', 'soocool-for-woocommerce'), value: String(settings.delivery_days_offset == null ? 1 : settings.delivery_days_offset), onChange: function(v){ upd('delivery_days_offset', Number(v)); } }),
               el(c.TextControl, { type: 'time', label: __('Ophaalvenster start', 'soocool-for-woocommerce'), value: settings.pickup_time_from || '', onChange: function(v){ upd('pickup_time_from', v); } }),
               el(c.TextControl, { type: 'time', label: __('Ophaalvenster eindigt', 'soocool-for-woocommerce'), value: settings.pickup_time_to || '', onChange: function(v){ upd('pickup_time_to', v); } }),
-              el(c.TextControl, { type: 'time', label: __('Bezorgvenster start', 'soocool-for-woocommerce'), help: __('SooCool vereist voor deze koppeling bezorgtaken met exact 08:00-18:00.', 'soocool-for-woocommerce'), value: '08:00', disabled: true, onChange: function(){} }),
-              el(c.TextControl, { type: 'time', label: __('Bezorgvenster eindigt', 'soocool-for-woocommerce'), help: __('SooCool vereist voor deze koppeling bezorgtaken met exact 08:00-18:00.', 'soocool-for-woocommerce'), value: '18:00', disabled: true, onChange: function(){} })
+              el(c.TextControl, { type: 'time', label: __('Fallback bezorgvenster start', 'soocool-for-woocommerce'), help: __('Alleen gebruikt voor orders zonder gekozen dagdeel. Het Bezorgschema is leidend voor checkout en SooCool.', 'soocool-for-woocommerce'), value: '08:00', disabled: true, onChange: function(){} }),
+              el(c.TextControl, { type: 'time', label: __('Fallback bezorgvenster eindigt', 'soocool-for-woocommerce'), help: __('Alleen gebruikt voor orders zonder gekozen dagdeel. Het Bezorgschema is leidend voor checkout en SooCool.', 'soocool-for-woocommerce'), value: '18:00', disabled: true, onChange: function(){} })
             ),
             el('div', { className: 'soocool-field-grid two' },
               el(c.TextControl, { label: __('Fallback goederenomschrijving', 'soocool-for-woocommerce'), value: settings.goods_description_fallback || '', onChange: function(v){ upd('goods_description_fallback', v); } }),
@@ -541,8 +550,8 @@
               el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--toggle' }, el(c.ToggleControl, { label: __('Verlopen dagdelen verbergen', 'soocool-for-woocommerce'), checked: settings.checkout_delivery_hide_unavailable_slots !== false, onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_hide_unavailable_slots: v }); setSettings(next); } }))
             ),
             el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--number' },
-              el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Aantal dagen vooruit tonen', 'soocool-for-woocommerce')), el('p', null, __('Bepaalt hoeveel toekomstige bezorgdagen zichtbaar zijn in checkout.', 'soocool-for-woocommerce'))),
-              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 7, max: 60, label: __('Aantal dagen vooruit tonen', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_days_ahead == null ? 14 : settings.checkout_delivery_days_ahead), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_days_ahead: Number(v) }); setSettings(next); } }))
+              el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Aantal dagen vooruit tonen', 'soocool-for-woocommerce')), el('p', null, __('Bepaalt hoeveel toekomstige bezorgdagen zichtbaar zijn in checkout. Voor Haknes staat dit op maximaal 3 maanden.', 'soocool-for-woocommerce'))),
+              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 7, max: 92, label: __('Aantal dagen vooruit tonen', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_days_ahead == null ? 92 : settings.checkout_delivery_days_ahead), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_days_ahead: Number(v) }); setSettings(next); } }))
             ),
             el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--holidays' },
               el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Geblokkeerde datums / feestdagen', 'soocool-for-woocommerce')), el('p', null, __('Komma-gescheiden datums in YYYY-MM-DD, bijvoorbeeld 2026-12-25, 2026-12-26.', 'soocool-for-woocommerce'))),

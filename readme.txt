@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.5.7
+Stable tag: 0.5.18
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -13,7 +13,7 @@ Connect WooCommerce orders with the SooCool transport API.
 
 == Description ==
 
-SooCool for WooCommerce lets authorized WooCommerce shop managers submit WooCommerce orders to the SooCool transport API, create pickup and delivery tasks, and download SooCool shipping labels from the WooCommerce order screen.
+SooCool for WooCommerce lets authorized WooCommerce shop managers submit WooCommerce orders to the SooCool transport API, create pickup and delivery tasks, and download SooCool shipping labels from the WooCommerce orders list and bulk actions.
 
 The plugin is intended for stores that use SooCool for transport and delivery operations. It does not send order data until the plugin is configured and an authorized shop manager manually submits an order, or automatic submission is explicitly enabled in the plugin settings.
 
@@ -24,7 +24,7 @@ Main features:
 * Manual WooCommerce order action to submit an order to SooCool.
 * Optional automatic order submission when an order reaches a configured WooCommerce status.
 * Optional pickup plus delivery task support for collection workflows; delivery-only is the safe default.
-* Fixed 08:00-18:00 delivery time window for delivery tasks, matching the confirmed SooCool connection requirements.
+* Checkout delivery schedule is leading for delivery task timeWindow; fallback delivery window is only used when an order has no selected daypart.
 * Customer-facing delivery moment selection for the classic WooCommerce checkout with configurable delivery days, fixed dayparts, cut-off times, blocked dates and optional hiding of expired slots. Checkout Blocks are not supported by this release.
 * Configurable pickup address and pickup time window.
 * WooCommerce HPOS compatible order metadata handling.
@@ -44,7 +44,7 @@ Official API hosts used by the plugin:
 
 The plugin sends the configured API key in the `X-API-Key` header. The API key is not intentionally exposed in the WordPress admin UI, REST responses, frontend markup or logs.
 
-Data sent to SooCool can include WooCommerce order reference, billing/shipping name, address, country, email address, phone/mobile number, pickup address, package/goods description, pickup and delivery dates, pickup time window and the fixed 08:00-18:00 delivery time window. The customer-selected checkout daypart is stored on the WooCommerce order for shop/customer communication; the SooCool API delivery task window remains fixed for this connection.
+Data sent to SooCool can include WooCommerce order reference, billing/shipping name, address, country, email address, phone/mobile number, pickup address, package/goods description, pickup and delivery dates, pickup time window and the selected checkout delivery daypart. The SooCool API delivery task timeWindow follows the customer-selected checkout daypart when present; the fallback delivery window is only used for orders without a selected daypart.
 
 Data is sent only for configured SooCool actions. No tracking, advertising or unrelated external assets are loaded by this plugin.
 
@@ -90,7 +90,7 @@ Yes. The plugin declares WooCommerce custom order table compatibility and uses W
 
 = Which label formats are supported? =
 
-The plugin supports the SooCool order-level shipping label formats `a6` and `collated_a4`. When SooCool returns positive good IDs in order responses, the WooCommerce order metabox can also offer a stored-good-label download through the documented `goodIds` label endpoint.
+The plugin supports the SooCool shipping label formats `a6` and `collated_a4` through the documented `orderIds` and `goodIds` label query endpoints. When SooCool returns positive good IDs in order responses, WooCommerce order-list links and bulk actions can download stored-good labels.
 
 = How is the webhook secured? =
 
@@ -112,8 +112,43 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 
 == Changelog ==
 
-= 0.5.7 =
-* Tightened production readiness after the v16 audit: corrected admin `wp_die()` response handling, replaced direct temporary PDF writes with WordPress filesystem handling, and aligned release asset documentation.
+= 0.5.18 =
+* Orders: wanneer het bezorgmoment in de WooCommerce-order wordt bijgewerkt, wordt de bestaande SooCool-order direct mee bijgewerkt.
+
+
+= 0.5.17 =
+* Compatibiliteit: de oude dubbele pluginmap soocool-for-woocommerce-main wordt automatisch gedeactiveerd wanneer de canonieke pluginmap actief is. Dit voorkomt dubbele SooCool-menus, dubbele hooks en oude timezone-payloads.
+
+
+= 0.5.16 =
+* SooCool-tijdvensters worden nu met de Nederlandse SooCool-tijdzone verstuurd, zodat het gekozen bezorgmoment uit WooCommerce niet verschuift in het SooCool-dashboard.
+
+
+= 0.5.15 =
+* E-mail/UI: Track & Trace-label weggehaald, tekst behouden en e-mailtitel gecentreerd.
+
+
+= 0.5.14 =
+* Frontend: extra marge boven de titel Bezorging op de orderdetailweergave toegevoegd.
+* Admin: labeltitel boven de downloadknoppen verwijderd en downloadlinks in de orderlijst netter gestyled.
+
+
+= 0.5.12 =
+* Restored single order and good label downloads to the documented per-order SooCool endpoints.
+* Preserved signed SooCool good IDs for label downloads.
+* Replaced the WooCommerce order metabox delivery editor/track-and-trace button with stacked label download buttons.
+* Changed unmatched webhooks to a non-retrying 202 response and removed dummy-test webhook registration.
+
+= 0.5.10 =
+* Removed the label download button group from the WooCommerce order metabox. Order-list label links and bulk actions remain available.
+* Routed single order-label downloads through the SooCool `orderIds` label query endpoint.
+* Routed single good-label downloads through the SooCool `goodIds` label query endpoint.
+* Removed the order lookup preflight from bulk label downloads.
+
+= 0.5.8 =
+* Made the checkout delivery schedule leading for the SooCool delivery timeWindow.
+* Clarified fallback-only delivery fields under Planning & goederen.
+* Increased the checkout planning range to 92 days and made billing phone required in classic checkout.
 
 = 0.5.5 =
 * Split the manual API-test UI into an opt-in admin-test asset so the default production admin bundle stays clean.
@@ -161,7 +196,7 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 * Customers now choose a delivery date and then an available daypart.
 * Added backend settings for daypart start/end time, per-slot cut-off time, weekdays and hiding expired/unavailable slots.
 * Saved the selected delivery daypart to WooCommerce order meta and displayed the full delivery moment in the order admin and customer order details, and sent the delivery date and dagdeel in order emails.
-* Kept the SooCool API delivery task timeWindow fixed at 08:00-18:00 for this connection.
+* Updated the SooCool API delivery task timeWindow so it follows the selected checkout daypart when present.
 
 = 0.4.76 =
 * Updated WooCommerce compatibility metadata for WooCommerce 10.8.
@@ -206,7 +241,7 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 * Reworked the checkout delivery selector into a compact date grid with disabled unavailable dates.
 * Added dynamic admin delivery rules with add and remove controls.
 * Removed the stored delivery-rule cap so additional rules persist and are read by the schedule.
-* Kept the SooCool delivery window fixed at 08:00-18:00 and HPOS ordermeta storage unchanged.
+* Kept HPOS ordermeta storage unchanged and made the selected checkout daypart leading for the SooCool delivery timeWindow.
 
 = 0.4.57 =
 * Moved the checkout delivery settings into a dedicated, customer-friendly "Bezorgdagen" admin tab next to "Pickup & delivery".

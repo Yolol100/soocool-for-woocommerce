@@ -207,8 +207,8 @@ final class OrderMeta {
 
 		$ids = array();
 		foreach ( explode( ',', sanitize_text_field( (string) $value ) ) as $good_id ) {
-			$id = absint( $good_id );
-			if ( $id > 0 ) {
+			$id = $this->normalize_good_id( $good_id );
+			if ( null !== $id ) {
 				$ids[] = $id;
 			}
 		}
@@ -240,8 +240,8 @@ final class OrderMeta {
 
 				foreach ( array( 'goodId', 'id' ) as $key ) {
 					if ( isset( $good[ $key ] ) && ! is_array( $good[ $key ] ) && ! is_object( $good[ $key ] ) ) {
-						$id = absint( $good[ $key ] );
-						if ( $id > 0 ) {
+						$id = $this->normalize_good_id( $good[ $key ] );
+						if ( null !== $id ) {
 							$ids[] = $id;
 						}
 					}
@@ -250,6 +250,19 @@ final class OrderMeta {
 		}
 
 		return array_values( array_unique( $ids ) );
+	}
+
+	private function normalize_good_id( mixed $value ): ?int {
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return null;
+		}
+
+		$normalized = trim( sanitize_text_field( (string) $value ) );
+		if ( 1 !== preg_match( '/^-?\d+$/', $normalized ) || 0 === (int) $normalized ) {
+			return null;
+		}
+
+		return (int) $normalized;
 	}
 
 	public function get_soocool_order_id( WC_Order $order ): string {

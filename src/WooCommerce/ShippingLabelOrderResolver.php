@@ -27,7 +27,7 @@ final class ShippingLabelOrderResolver {
 
 	/** @return array<int, int> */
 	public function stored_good_ids( WC_Order $order ): array {
-		return array_values( array_unique( array_filter( array_map( 'absint', $this->meta->get_good_ids( $order ) ) ) ) );
+		return $this->meta->get_good_ids( $order );
 	}
 
 	/** @param array<int, WC_Order> $orders @return array<int, int> */
@@ -39,6 +39,6 @@ final class ShippingLabelOrderResolver {
 			}
 		}
 
-		return array_values( array_unique( array_filter( array_map( 'absint', $good_ids ) ) ) );
+		return array_values( array_unique( $good_ids ) );
 	}
 }

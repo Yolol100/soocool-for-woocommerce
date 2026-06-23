@@ -143,8 +143,9 @@ final class TaskFactory {
 			throw new PayloadValidationException( esc_html( $message ) );
 		}
 
-		$time_from    = ! empty( $settings['delivery_time_from'] ) ? (string) $settings['delivery_time_from'] : self::DELIVERY_TIME_FROM;
-		$time_to      = ! empty( $settings['delivery_time_to'] ) ? (string) $settings['delivery_time_to'] : self::DELIVERY_TIME_TO;
+		$time_slot    = $this->requested_delivery_time_slot( $order, $settings );
+		$time_from    = $time_slot['time_from'];
+		$time_to      = $time_slot['time_to'];
 		$instructions = sanitize_text_field( wp_strip_all_tags( (string) $order->get_customer_note() ) );
 
 		$task = array(
@@ -167,6 +168,37 @@ final class TaskFactory {
 		);
 
 		return $this->compact( $task );
+	}
+
+
+	/** @param array<string, mixed> $settings @return array{time_from:string,time_to:string} */
+	private function requested_delivery_time_slot( WC_Order $order, array $settings ): array {
+		$requested_from = $this->requested_delivery_time( $order, OrderMeta::REQUESTED_DELIVERY_TIME_FROM );
+		$requested_to   = $this->requested_delivery_time( $order, OrderMeta::REQUESTED_DELIVERY_TIME_TO );
+		if ( '' !== $requested_from && '' !== $requested_to && $requested_to > $requested_from ) {
+			return array(
+				'time_from' => $requested_from,
+				'time_to'   => $requested_to,
+			);
+		}
+
+		$settings_from = $this->sanitize_time_for_window( (string) ( $settings['delivery_time_from'] ?? self::DELIVERY_TIME_FROM ) );
+		$settings_to   = $this->sanitize_time_for_window( (string) ( $settings['delivery_time_to'] ?? self::DELIVERY_TIME_TO ) );
+
+		return array(
+			'time_from' => $settings_from,
+			'time_to'   => $settings_to > $settings_from ? $settings_to : self::DELIVERY_TIME_TO,
+		);
+	}
+
+	private function requested_delivery_time( WC_Order $order, string $meta_key ): string {
+		$value = $order->get_meta( $meta_key, true );
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		$time = sanitize_text_field( (string) $value );
+		return preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $time ) ? $time : '';
 	}
 
 
@@ -198,8 +230,8 @@ final class TaskFactory {
 		}
 
 		try {
-			$timezone = function_exists( 'wp_timezone' ) ? wp_timezone() : new \DateTimeZone( 'UTC' );
-			$now      = function_exists( 'current_datetime' ) ? current_datetime() : new \DateTimeImmutable( 'now', $timezone );
+			$timezone = $this->soocool_timezone();
+			$now      = new \DateTimeImmutable( 'now', $timezone );
 			$end      = new \DateTimeImmutable( $this->date_for_offset( 0 ) . ' ' . $this->sanitize_time_for_window( $time_to ), $timezone );
 		} catch ( \Exception ) {
 			return $days;
@@ -214,10 +246,8 @@ final class TaskFactory {
 
 	private function date_time_for_api( string $date, string $time ): string {
 		$time = preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $time ) ? $time : self::DELIVERY_TIME_FROM;
-		$timezone = function_exists( 'wp_timezone' ) ? wp_timezone() : new \DateTimeZone( 'UTC' );
-
 		try {
-			$date_time = new \DateTimeImmutable( $date . ' ' . $time, $timezone );
+			$date_time = new \DateTimeImmutable( $date . ' ' . $time, $this->soocool_timezone() );
 		} catch ( \Exception ) {
 			throw new PayloadValidationException( esc_html__( 'SooCool taaktijd kon niet worden gegenereerd.', 'soocool-for-woocommerce' ) );
 		}
@@ -227,13 +257,16 @@ final class TaskFactory {
 
 	private function date_for_offset( int $days ): string {
 		try {
-			$base = function_exists( 'current_datetime' ) ? current_datetime() : new \DateTimeImmutable( 'now', function_exists( 'wp_timezone' ) ? wp_timezone() : new \DateTimeZone( 'UTC' ) );
-			$date = $base->modify( '+' . max( 0, $days ) . ' days' );
+			$date = ( new \DateTimeImmutable( 'now', $this->soocool_timezone() ) )->modify( '+' . max( 0, $days ) . ' days' );
 		} catch ( \Exception ) {
-			$date = ( new \DateTimeImmutable( 'now', function_exists( 'wp_timezone' ) ? wp_timezone() : new \DateTimeZone( 'UTC' ) ) )->modify( '+' . max( 0, $days ) . ' days' );
+			$date = ( new \DateTimeImmutable( 'now', new \DateTimeZone( 'Europe/Amsterdam' ) ) )->modify( '+' . max( 0, $days ) . ' days' );
 		}
 
 		return $date->format( 'Y-m-d' );
+	}
+
+	private function soocool_timezone(): \DateTimeZone {
+		return new \DateTimeZone( 'Europe/Amsterdam' );
 	}
 
 	/** @param array<int, int|string> $good_ids @return array<int, int> */

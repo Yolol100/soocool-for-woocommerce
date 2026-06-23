@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Admin;
 
+use SooCool\WooCommerce\Checkout\DeliverySchedule;
+use SooCool\WooCommerce\WooCommerce\OrderMeta;
+
 defined( 'ABSPATH' ) || exit;
 
 final class DummyOrderFactory {
+
+	public function __construct( private readonly DeliverySchedule $schedule ) {}
 
 	public function create(): \WC_Order {
 		if ( ! class_exists( '\\WC_Order' ) || ! class_exists( '\\WC_Order_Item_Product' ) ) {
@@ -36,6 +41,7 @@ final class DummyOrderFactory {
 		$order->set_shipping_city( 'Amsterdam' );
 		$order->set_shipping_country( 'NL' );
 		$order->set_customer_note( 'Dummy testorder: gekoeld afleveren bij de hoofdingang.' );
+		$this->apply_delivery_moment( $order );
 
 		foreach ( $this->items() as $item_data ) {
 			$item = new \WC_Order_Item_Product();
@@ -47,6 +53,32 @@ final class DummyOrderFactory {
 		}
 
 		return $order;
+	}
+
+
+	private function apply_delivery_moment( \WC_Order $order ): void {
+		foreach ( $this->schedule->available_options() as $option ) {
+			$date = sanitize_text_field( (string) ( $option['date'] ?? '' ) );
+			if ( '' === $date ) {
+				continue;
+			}
+
+			$slots = $this->schedule->available_time_slots_for_date( $date );
+			foreach ( $slots as $slot ) {
+				$time_from = sanitize_text_field( (string) ( $slot['time_from'] ?? '' ) );
+				$time_to   = sanitize_text_field( (string) ( $slot['time_to'] ?? '' ) );
+				if ( '' === $time_from || '' === $time_to ) {
+					continue;
+				}
+
+				$order->update_meta_data( OrderMeta::REQUESTED_DELIVERY_DATE, $date );
+				$order->update_meta_data( OrderMeta::REQUESTED_DELIVERY_LABEL, $this->schedule->format_label( $date ) );
+				$order->update_meta_data( OrderMeta::REQUESTED_DELIVERY_TIME_FROM, $time_from );
+				$order->update_meta_data( OrderMeta::REQUESTED_DELIVERY_TIME_TO, $time_to );
+				$order->update_meta_data( OrderMeta::REQUESTED_DELIVERY_TIME_LABEL, $this->schedule->format_time_slot_label( $time_from, $time_to ) );
+				return;
+			}
+		}
 	}
 
 	/** @return array<int, array{name:string, quantity:int, subtotal:string, total:string}> */

@@ -69,7 +69,7 @@ final class DeliverySchedule {
 
 		$now        = $this->now();
 		$today      = $now->setTime( 0, 0, 0 );
-		$days_ahead = max( 7, min( 60, absint( $settings['checkout_delivery_days_ahead'] ?? 14 ) ) );
+		$days_ahead = max( 7, min( 92, absint( $settings['checkout_delivery_days_ahead'] ?? 92 ) ) );
 		$last_day   = $today->modify( '+' . $days_ahead . ' days' );
 		$holidays   = $this->holiday_dates( (string) ( $settings['checkout_delivery_holidays'] ?? '' ) );
 		$rules      = $this->rules( $settings['checkout_delivery_rules'] ?? $this->default_rules() );

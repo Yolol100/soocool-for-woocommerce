@@ -52,8 +52,7 @@ final class OptionRepository {
 			$changed                   = true;
 		}
 
-		// SooCool confirmed delivery tasks must use the exact 08:00-18:00 window for this connection.
-		// Normalize legacy or manually changed delivery windows before new orders are sent.
+		// Keep the legacy fallback delivery window predictable for orders without a selected checkout daypart.
 		if ( '08:00' !== (string) ( $settings['delivery_time_from'] ?? '' ) || '18:00' !== (string) ( $settings['delivery_time_to'] ?? '' ) ) {
 			$settings['delivery_time_from'] = '08:00';
 			$settings['delivery_time_to']   = '18:00';
@@ -103,7 +102,7 @@ final class OptionRepository {
 			$settings['test_base_url'] = 'https://api.staging.soocool.nl';
 		}
 
-		// SooCool requires delivery tasks for this connection to use the exact 08:00-18:00 window.
+		// The checkout delivery schedule is leading; this fallback is only used when an order has no selected daypart.
 		$settings['delivery_time_from'] = '08:00';
 		$settings['delivery_time_to']   = '18:00';
 
@@ -137,6 +136,8 @@ final class OptionRepository {
 		$clean['test_base_url']       = $this->sanitize_url( (string) ( $settings['test_base_url'] ?? $current['test_base_url'] ), (string) $defaults['test_base_url'] );
 		$clean['production_base_url'] = $this->sanitize_url( (string) ( $settings['production_base_url'] ?? $current['production_base_url'] ), (string) $defaults['production_base_url'] );
 		$clean['api_key']             = $this->api_key_is_managed_by_constant() ? (string) $current['api_key'] : $this->sanitize_secret( $settings['api_key'] ?? null, (string) $current['api_key'] );
+		$clean['test_api_key']        = $this->api_key_is_managed_by_constant() ? (string) ( $current['test_api_key'] ?? '' ) : $this->sanitize_secret( $settings['test_api_key'] ?? null, (string) ( $current['test_api_key'] ?? '' ) );
+		$clean['production_api_key']  = $this->api_key_is_managed_by_constant() ? (string) ( $current['production_api_key'] ?? '' ) : $this->sanitize_secret( $settings['production_api_key'] ?? null, (string) ( $current['production_api_key'] ?? '' ) );
 
 		$clean['enable_pickup']          = $this->to_bool( $settings['enable_pickup'] ?? $current['enable_pickup'] );
 		$clean['order_reference_prefix'] = sanitize_key( (string) ( $settings['order_reference_prefix'] ?? $current['order_reference_prefix'] ) );
@@ -153,7 +154,7 @@ final class OptionRepository {
 		$clean['pickup_days_offset'] = max( 0, min( 30, absint( $settings['pickup_days_offset'] ?? $current['pickup_days_offset'] ) ) );
 		$clean['pickup_time_from']   = $this->sanitize_time( (string) ( $settings['pickup_time_from'] ?? $current['pickup_time_from'] ), '08:00' );
 		$clean['pickup_time_to']     = $this->sanitize_time( (string) ( $settings['pickup_time_to'] ?? $current['pickup_time_to'] ), '18:00' );
-		// SooCool requires delivery tasks for this connection to be sent with exactly 08:00-18:00.
+		// Fallback only; selected checkout dayparts override this in the SooCool payload.
 		$clean['delivery_time_from'] = '08:00';
 		$clean['delivery_time_to']   = '18:00';
 
@@ -169,7 +170,7 @@ final class OptionRepository {
 		$clean['delivery_days_offset'] = min( 30, $delivery_days_offset );
 
 		$clean['checkout_delivery_enabled']    = $this->to_bool( $settings['checkout_delivery_enabled'] ?? $current['checkout_delivery_enabled'] );
-		$clean['checkout_delivery_days_ahead'] = max( 7, min( 60, absint( $settings['checkout_delivery_days_ahead'] ?? $current['checkout_delivery_days_ahead'] ) ) );
+		$clean['checkout_delivery_days_ahead'] = max( 7, min( 92, absint( $settings['checkout_delivery_days_ahead'] ?? $current['checkout_delivery_days_ahead'] ) ) );
 		$clean['checkout_delivery_holidays']   = $this->sanitize_holidays( $settings['checkout_delivery_holidays'] ?? $current['checkout_delivery_holidays'] ?? '' );
 		$current_schedule = is_array( $current['checkout_delivery_schedule'] ?? null ) ? $current['checkout_delivery_schedule'] : $this->schedule_from_legacy(
 			is_array( $current['checkout_delivery_rules'] ?? null ) ? $current['checkout_delivery_rules'] : $this->default_delivery_rules(),
@@ -538,6 +539,11 @@ final class OptionRepository {
 			return $constant_api_key;
 		}
 
+		$environment_key = $this->normalized_environment_api_key();
+		if ( '' !== $environment_key ) {
+			return $environment_key;
+		}
+
 		return $this->normalized_stored_api_key();
 	}
 
@@ -558,12 +564,16 @@ final class OptionRepository {
 	/** @return array<string, mixed> */
 	public function public_settings(): array {
 		$settings                    = $this->all();
-		$settings['api_key_present']  = '' !== $this->api_key();
-		$settings['api_key_source']   = $this->api_key_source();
-		$settings['api_key_length']   = $this->api_key_length();
-		$settings['api_key_status']   = $this->api_key_status();
-		$settings['api_key_masked']   = $this->masked_api_key();
-		$settings['api_key']          = $settings['api_key_present'] ? $settings['api_key_masked'] : '';
+		$settings['api_key_present']       = '' !== $this->api_key();
+		$settings['api_key_source']        = $this->api_key_source();
+		$settings['api_key_length']        = $this->api_key_length();
+		$settings['api_key_status']        = $this->api_key_status();
+		$settings['api_key_masked']        = $this->masked_api_key();
+		$settings['test_api_key_present']  = '' !== $this->normalized_stored_api_key_for_environment( 'test' );
+		$settings['production_api_key_present'] = '' !== $this->normalized_stored_api_key_for_environment( 'production' );
+		$settings['api_key']               = $settings['api_key_present'] ? $settings['api_key_masked'] : '';
+		$settings['test_api_key']          = $settings['test_api_key_present'] ? self::MASK_PLACEHOLDER : '';
+		$settings['production_api_key']    = $settings['production_api_key_present'] ? self::MASK_PLACEHOLDER : '';
 		$settings['effective_base_url'] = $this->base_url();
 		$settings['api_base_url']       = $settings['effective_base_url'];
 		$settings['generated_webhook_url']          = $this->generated_webhook_url();
@@ -675,11 +685,18 @@ final class OptionRepository {
 			return 'constant';
 		}
 
+		if ( '' !== $this->normalized_environment_api_key() ) {
+			return $this->active_api_key_field();
+		}
+
 		if ( '' !== $this->normalized_stored_api_key() ) {
 			return 'settings';
 		}
 
-		$raw_stored = trim( (string) $this->all()['api_key'] );
+		$raw_stored = trim( (string) $this->all()[ $this->active_api_key_field() ] );
+		if ( '' === $raw_stored ) {
+			$raw_stored = trim( (string) $this->all()['api_key'] );
+		}
 		return $this->is_masked_or_invalid_secret( $raw_stored ) ? 'masked-value-rejected' : 'none';
 	}
 
@@ -717,6 +734,26 @@ final class OptionRepository {
 
 		$constant_api_key = constant( 'SOOCOOL_API_KEY' );
 		return is_string( $constant_api_key ) ? $this->normalize_secret( $constant_api_key ) : '';
+	}
+
+	private function normalized_environment_api_key(): string {
+		return $this->normalized_stored_api_key_for_environment( (string) $this->all()['environment'] );
+	}
+
+	public function active_api_key_field(): string {
+		return 'production' === (string) $this->all()['environment'] ? 'production_api_key' : 'test_api_key';
+	}
+
+	public function normalized_stored_api_key_for_environment( string $environment ): string {
+		$settings = $this->all();
+		$field    = 'production' === $environment ? 'production_api_key' : 'test_api_key';
+		$key      = $this->normalize_secret( (string) ( $settings[ $field ] ?? '' ) );
+
+		if ( '' !== $key ) {
+			return $key;
+		}
+
+		return $this->normalize_secret( (string) ( $settings['api_key'] ?? '' ) );
 	}
 
 	private function normalized_stored_api_key(): string {

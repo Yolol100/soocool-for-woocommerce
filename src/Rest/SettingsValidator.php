@@ -102,7 +102,7 @@ final class SettingsValidator {
 		$to   = array_key_exists( 'delivery_time_to', $payload ) ? sanitize_text_field( (string) $payload['delivery_time_to'] ) : '18:00';
 
 		if ( $this->payload_touches_any( $payload, array( 'delivery_time_from', 'delivery_time_to' ) ) && ( '08:00' !== $from || '18:00' !== $to ) ) {
-			return new WP_Error( 'soocool_invalid_delivery_window_fixed', __( 'SooCool-bezorgtaken moeten voor deze koppeling exact het bezorgvenster 08:00-18:00 gebruiken.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+			return new WP_Error( 'soocool_invalid_delivery_window_fixed', __( 'Het fallback-bezorgvenster blijft 08:00-18:00. Het gekozen dagdeel uit Bezorgschema is leidend voor nieuwe checkout-orders.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
 		}
 
 		return null;

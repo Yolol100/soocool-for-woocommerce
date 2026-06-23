@@ -63,14 +63,16 @@ final class DeliveryOptions {
 	public function register(): void {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'woocommerce_review_order_before_payment', array( $this, 'render_checkout_field' ) );
+		add_filter( 'woocommerce_checkout_fields', array( $this, 'require_checkout_phone' ) );
 		add_action( 'woocommerce_after_checkout_validation', array( $this, 'validate_checkout_field' ), 10, 2 );
 		add_action( 'woocommerce_checkout_create_order', array( $this, 'save_to_order' ), 10, 2 );
 		add_filter( 'woocommerce_email_order_meta_fields', array( $this, 'email_order_meta_fields' ), 10, 3 );
+		add_action( 'woocommerce_email_order_meta', array( $this, 'render_email_order_detail' ), 10, 4 );
 		add_action( 'woocommerce_order_details_after_order_table', array( $this, 'render_customer_order_detail' ) );
 	}
 
 	public function enqueue_assets(): void {
-		if ( ! function_exists( 'is_checkout' ) || ! is_checkout() || ( function_exists( 'is_order_received_page' ) && is_order_received_page() ) ) {
+		if ( ! function_exists( 'is_checkout' ) || ! is_checkout() ) {
 			return;
 		}
 
@@ -99,6 +101,16 @@ final class DeliveryOptions {
 				true
 			);
 		}
+	}
+
+
+	/** @param array<string, mixed> $fields @return array<string, mixed> */
+	public function require_checkout_phone( array $fields ): array {
+		if ( isset( $fields['billing']['billing_phone'] ) && is_array( $fields['billing']['billing_phone'] ) ) {
+			$fields['billing']['billing_phone']['required'] = true;
+		}
+
+		return $fields;
 	}
 
 	public function render_checkout_field(): void {
@@ -184,6 +196,10 @@ final class DeliveryOptions {
 		return $this->order_details->email_order_meta_fields( $fields, $sent_to_admin, $order );
 	}
 
+	public function render_email_order_detail( WC_Order $order, bool $sent_to_admin, bool $plain_text, mixed $email = null ): void {
+		$this->order_details->render_email_order_detail( $order, $sent_to_admin, $plain_text );
+	}
+
 	public function render_customer_order_detail( WC_Order $order ): void {
 		$this->order_details->render_customer_order_detail( $order );
 	}
@@ -193,7 +209,7 @@ final class DeliveryOptions {
 		$cutoff_time = $this->checkout_cutoff_time_label( $settings );
 
 		echo '<div class="soocool-delivery-options__intro">';
-		echo '<p>' . esc_html__( 'Je ontvangt Track & Trace zodra je bestelling onderweg is.', 'soocool-for-woocommerce' ) . '</p>';
+		echo '<p>' . esc_html__( 'Je bestelling kun je gemakkelijk volgen via de Track & Trace die je na het bestellen ontvangt.', 'soocool-for-woocommerce' ) . '</p>';
 
 		if ( '' !== $cutoff_time ) {
 			echo '<p>' . sprintf(
@@ -280,7 +296,7 @@ final class DeliveryOptions {
 	/** @param array<string, mixed> $settings @param array<int, array<string, mixed>> $options */
 	private function render_date_picker( array $settings, array $options, string $current ): void {
 		$available  = $this->available_options_by_date( $options );
-		$days_ahead = max( 7, min( 60, absint( $settings['checkout_delivery_days_ahead'] ?? 14 ) ) );
+		$days_ahead = max( 7, min( 92, absint( $settings['checkout_delivery_days_ahead'] ?? 92 ) ) );
 		$today      = $this->today();
 		$days       = array();
 		$months     = array();

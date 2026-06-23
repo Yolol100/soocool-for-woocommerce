@@ -53,7 +53,7 @@ final class DebugRedactor {
 			array(
 				'email', 'phone', 'mobile', 'person', 'firstname', 'first_name', 'lastname', 'last_name', 'name',
 				'contactname', 'contact_name', 'street', 'housenumber', 'house_number', 'address', 'postcode',
-				'post_code', 'postalcode', 'postal_code', 'city', 'company', 'api_key', 'apikey', 'token', 'authorization',
+				'post_code', 'postalcode', 'postal_code', 'city', 'company', 'api_key', 'test_api_key', 'production_api_key', 'apikey', 'token', 'authorization',
 			),
 			true
 		);
@@ -62,8 +62,12 @@ final class DebugRedactor {
 	private function redact_string( string $value ): string {
 		$value = sanitize_text_field( $value );
 
-		$api_key = $this->options->api_key();
-		if ( '' !== $api_key ) {
+		$api_keys = array_filter( array(
+			$this->options->api_key(),
+			$this->options->normalized_stored_api_key_for_environment( 'test' ),
+			$this->options->normalized_stored_api_key_for_environment( 'production' ),
+		) );
+		foreach ( array_unique( $api_keys ) as $api_key ) {
 			$value = str_replace( $api_key, '[redacted]', $value );
 		}
 

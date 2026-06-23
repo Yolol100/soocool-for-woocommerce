@@ -44,7 +44,40 @@
     }
   }
 
+  function checkedTimeSignature(input) {
+    if (!input) {
+      return null;
+    }
+
+    return {
+      value: input.value || '',
+      label: input.getAttribute('data-time-label') || ''
+    };
+  }
+
+  function findMatchingTimeInput(group, signature) {
+    if (!group || !signature) {
+      return null;
+    }
+
+    var inputs = group.querySelectorAll('input[name="' + timeFieldName + '"]:not(:disabled)');
+    var labelFallback = null;
+
+    for (var index = 0; index < inputs.length; index++) {
+      if (signature.value && inputs[index].value === signature.value) {
+        return inputs[index];
+      }
+
+      if (!labelFallback && signature.label && inputs[index].getAttribute('data-time-label') === signature.label) {
+        labelFallback = inputs[index];
+      }
+    }
+
+    return labelFallback;
+  }
+
   function updateTimeGroups(root, changedDate) {
+    var currentTime = changedDate ? checkedTimeSignature(selectedTime(root)) : null;
     var dateInput = selectedDate(root);
     var selectedDateValue = dateInput ? dateInput.value : '';
     var groups = root ? root.querySelectorAll('[data-soocool-time-date]') : [];
@@ -59,17 +92,20 @@
         activeGroupElement = group;
       } else {
         resetMoreButton(group);
-      }
-
-      if (!active && changedDate) {
-        var checked = group.querySelector('input[name="' + timeFieldName + '"]:checked');
-        if (checked) {
-          checked.checked = false;
+        if (changedDate) {
+          var checked = group.querySelector('input[name="' + timeFieldName + '"]:checked');
+          if (checked) {
+            checked.checked = false;
+          }
         }
       }
     });
 
     if (changedDate && activeGroupElement) {
+      var match = findMatchingTimeInput(activeGroupElement, currentTime);
+      if (match) {
+        match.checked = true;
+      }
       resetMoreButton(activeGroupElement);
     }
   }
