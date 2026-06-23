@@ -36,7 +36,6 @@ jobs:
           composer global require --no-progress --no-interaction \
             "squizlabs/php_codesniffer:^3.13" \
             "wp-coding-standards/wpcs:^3.2" \
-            "phpcompatibility/php-compatibilitywp:^2.1" \
             "dealerdirect/phpcodesniffer-composer-installer:^1.0"
           echo "$HOME/.composer/vendor/bin" >> "$GITHUB_PATH"
 
