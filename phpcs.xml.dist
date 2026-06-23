@@ -15,7 +15,6 @@
 	<exclude-pattern>assets/*</exclude-pattern>
 
 	<config name="minimum_supported_wp_version" value="6.5"/>
-	<config name="testVersion" value="8.1-"/>
 	<config name="text_domain" value="soocool-for-woocommerce"/>
 
 	<rule ref="WordPress"/>
