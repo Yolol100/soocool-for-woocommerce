@@ -68,6 +68,13 @@ final class OrderMetaBox {
 
 		if ( current_user_can( 'manage_woocommerce' ) ) {
 			$this->render_label_actions( $order, $good_ids );
+			$this->render_delivery_date_editor(
+				$order,
+				$delivery_date,
+				$delivery_label,
+				$this->meta->get_requested_delivery_time_from( $order ),
+				$this->meta->get_requested_delivery_time_to( $order )
+			);
 		}
 
 		if ( '' !== $error ) {

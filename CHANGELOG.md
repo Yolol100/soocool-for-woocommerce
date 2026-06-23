@@ -1,3 +1,13 @@
+## 0.5.20 - 2026-06-23
+
+- Release: versies gelijkgetrokken naar 0.5.20 in plugin header, `SOOCOOL_VERSION`, `readme.txt`, admin asset metadata en vertaaltemplate.
+- Packaging: distributie-ZIP opnieuw opgebouwd met de canonieke pluginmap `soocool-for-woocommerce/`.
+
+## 0.5.19 - 2026-06-23
+
+- Admin: bezorgmoment-editor opnieuw zichtbaar gemaakt in de WooCommerce order-metabox voor shopmanagers.
+- Orders: de bestaande delivery sync-flow blijft leidend zodat het opgeslagen bezorgmoment naar SooCool kan worden bijgewerkt.
+
 ## 0.5.18 - 2026-06-23
 
 - Orders: wijziging van het gekozen bezorgmoment in de WooCommerce-order werkt nu direct de bestaande SooCool-order bij.
