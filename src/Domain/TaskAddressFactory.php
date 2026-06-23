@@ -10,27 +10,38 @@ defined( 'ABSPATH' ) || exit;
 
 final class TaskAddressFactory {
 
+	private const SPLIT_ADDRESS_META = array(
+		'billing'  => array(
+			'street'       => '_billing_street_name',
+			'house_number' => '_billing_house_number',
+			'suffix'       => '_billing_house_number_suffix',
+		),
+		'shipping' => array(
+			'street'       => '_shipping_street_name',
+			'house_number' => '_shipping_house_number',
+			'suffix'       => '_shipping_house_number_suffix',
+		),
+	);
+
 	public function __construct( private readonly AddressParser $address_parser, private readonly TaskContactFactory $contacts ) {}
 
 	/** @return array{address:array{street:string,houseNumber:string},postal_code:string,city:string,country:string,recipient_name:string} */
 	public function delivery_context( WC_Order $order ): array {
-		$shipping_values = array(
-			$order->get_shipping_first_name(),
-			$order->get_shipping_last_name(),
+		$shipping_address_values = array(
 			$order->get_shipping_address_1(),
 			$order->get_shipping_address_2(),
 			$order->get_shipping_postcode(),
 			$order->get_shipping_city(),
-			$order->get_shipping_country(),
 		);
-		$has_shipping = array() !== array_filter( $shipping_values, static fn ( mixed $value ): bool => '' !== trim( (string) $value ) );
+		$has_shipping_address = array() !== array_filter( $shipping_address_values, static fn ( mixed $value ): bool => '' !== trim( (string) $value ) );
 
-		$prefix    = $has_shipping ? 'shipping' : 'billing';
+		$prefix    = $has_shipping_address ? 'shipping' : 'billing';
 		$address_1 = 'shipping' === $prefix ? $order->get_shipping_address_1() : $order->get_billing_address_1();
 		$address_2 = 'shipping' === $prefix ? $order->get_shipping_address_2() : $order->get_billing_address_2();
+		$address   = $this->address_with_split_meta_fallback( $order, $prefix, $this->address_parser->split( (string) $address_1, (string) $address_2 ) );
 
 		return array(
-			'address'        => $this->address_parser->split( (string) $address_1, (string) $address_2 ),
+			'address'        => $address,
 			'postal_code'    => (string) ( 'shipping' === $prefix ? $order->get_shipping_postcode() : $order->get_billing_postcode() ),
 			'city'           => (string) ( 'shipping' === $prefix ? $order->get_shipping_city() : $order->get_billing_city() ),
 			'country'        => (string) ( 'shipping' === $prefix ? $order->get_shipping_country() : $order->get_billing_country() ),
@@ -78,9 +89,52 @@ final class TaskAddressFactory {
 		);
 	}
 
+	/** @param array{street:string, houseNumber:string} $address @return array{street:string, houseNumber:string} */
+	private function address_with_split_meta_fallback( WC_Order $order, string $prefix, array $address ): array {
+		$meta_keys = self::SPLIT_ADDRESS_META[ $prefix ] ?? array();
+		if ( array() === $meta_keys ) {
+			return $address;
+		}
+
+		$street       = trim( (string) $address['street'] );
+		$house_number = trim( (string) $address['houseNumber'] );
+
+		if ( '' === $street ) {
+			$street = $this->order_meta_text( $order, (string) $meta_keys['street'] );
+		}
+
+		if ( '' === $house_number ) {
+			$house_number = $this->combined_house_number_from_meta( $order, (string) $meta_keys['house_number'], (string) $meta_keys['suffix'] );
+		}
+
+		return array(
+			'street'      => $street,
+			'houseNumber' => $house_number,
+		);
+	}
+
+	private function combined_house_number_from_meta( WC_Order $order, string $number_key, string $suffix_key ): string {
+		$number = $this->order_meta_text( $order, $number_key );
+		$suffix = $this->order_meta_text( $order, $suffix_key );
+
+		return trim( $number . $suffix );
+	}
+
+	private function order_meta_text( WC_Order $order, string $key ): string {
+		$value = $order->get_meta( $key, true );
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		return trim( sanitize_text_field( wp_strip_all_tags( (string) $value ) ) );
+	}
+
 	private function recipient_name_for_prefix( WC_Order $order, string $prefix ): string {
 		if ( 'shipping' === $prefix ) {
-			return trim( $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name() );
+			$shipping_name = trim( $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name() );
+			if ( '' !== $shipping_name ) {
+				return $shipping_name;
+			}
 		}
 
 		return trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );

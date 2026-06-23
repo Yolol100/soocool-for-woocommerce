@@ -55,7 +55,10 @@ final class WebhookController extends AbstractRestController {
 
 		$soocool_order_id = $this->payloads->soocool_order_id( $payload );
 		$order_reference  = $this->payloads->order_reference( $payload );
-		$wc_order_id      = $this->webhook_wc_order_id( $request );
+		if ( '' === $order_reference ) {
+			$order_reference = $this->webhook_order_reference( $request );
+		}
+		$wc_order_id = $this->webhook_wc_order_id( $request );
 		$order            = $this->find_order( $soocool_order_id, $order_reference, $wc_order_id );
 
 		if ( ! $order instanceof WC_Order ) {
@@ -107,6 +110,15 @@ final class WebhookController extends AbstractRestController {
 		if ( '' !== $order_reference ) {
 			$order = $this->find_order_by_reference( $order_reference );
 			if ( $order instanceof WC_Order ) {
+				$this->link_known_webhook_order( $order, $soocool_order_id, $order_reference );
+				return $order;
+			}
+		}
+
+		if ( 0 < $wc_order_id ) {
+			$order = $this->find_order_by_wc_order_id( $wc_order_id );
+			if ( $order instanceof WC_Order ) {
+				$this->link_known_webhook_order( $order, $soocool_order_id, $order_reference );
 				return $order;
 			}
 		}
@@ -120,16 +132,6 @@ final class WebhookController extends AbstractRestController {
 					$this->link_remote_order( $order, $remote_order, $remote_reference );
 					return $order;
 				}
-			}
-		}
-
-		if ( 0 < $wc_order_id ) {
-			$order = $this->find_order_by_wc_order_id( $wc_order_id );
-			if ( $order instanceof WC_Order ) {
-				if ( array() !== $remote_order ) {
-					$this->link_remote_order( $order, $remote_order, $order_reference );
-				}
-				return $order;
 			}
 		}
 
@@ -225,6 +227,24 @@ final class WebhookController extends AbstractRestController {
 		return $body;
 	}
 
+	private function link_known_webhook_order( WC_Order $order, string $soocool_order_id, string $order_reference ): void {
+		if ( '' === $soocool_order_id ) {
+			return;
+		}
+
+		$current_soocool_order_id = $this->meta->get_soocool_order_id( $order );
+		if ( '' !== $current_soocool_order_id && $current_soocool_order_id !== $soocool_order_id ) {
+			return;
+		}
+
+		$body = array( 'orderId' => $soocool_order_id );
+		if ( '' !== $order_reference ) {
+			$body['orderReference'] = $order_reference;
+		}
+
+		$this->link_remote_order( $order, $body, $order_reference );
+	}
+
 	/** @param array<string, mixed> $remote_order */
 	private function link_remote_order( WC_Order $order, array $remote_order, string $order_reference ): void {
 		try {
@@ -248,6 +268,22 @@ final class WebhookController extends AbstractRestController {
 		}
 
 		return 0;
+	}
+
+	private function webhook_order_reference( WP_REST_Request $request ): string {
+		$params = $request->get_query_params();
+		if ( ! is_array( $params ) ) {
+			return '';
+		}
+
+		foreach ( array( 'order_reference', 'orderReference', 'soocool_order_reference', 'reference' ) as $key ) {
+			$value = $params[ $key ] ?? null;
+			if ( is_scalar( $value ) && '' !== trim( (string) $value ) ) {
+				return sanitize_text_field( (string) $value );
+			}
+		}
+
+		return '';
 	}
 
 	/** @param array<string, string> $data */

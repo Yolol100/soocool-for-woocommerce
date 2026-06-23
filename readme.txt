@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.5.20
+Stable tag: 0.5.21
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,6 +111,11 @@ Site owners are responsible for disclosing the use of SooCool as a transport ser
 Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. WooCommerce order meta such as SooCool order IDs, references, sync status and last errors is intentionally retained for historical order and audit continuity.
 
 == Changelog ==
+
+= 0.5.21 =
+* Verbeterd: SooCool-webhook-URL bevat nu WooCommerce order-ID en orderreferentie, zodat callbacks de juiste WooCommerce-order betrouwbaarder kunnen koppelen.
+* Verbeterd: webhook-verwerking kan orderreferentie uit de webhook-URL gebruiken en koppelt een bekende WooCommerce-order veilig aan de ontvangen SooCool order-ID.
+* Verbeterd: adresopbouw gebruikt Postcode Checker split-meta als fallback wanneer WooCommerce address_1 geen huisnummer kan leveren.
 
 = 0.5.20 =
 * Release: versies gelijkgetrokken naar 0.5.20 in plugin header, constante, readme Stable tag, asset metadata en vertaaltemplate.

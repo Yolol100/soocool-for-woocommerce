@@ -33,7 +33,7 @@ final class OrderPayloadBuilder {
 			'goods'          => $goods,
 		);
 
-		$webhook_url = $this->webhook_url_for_order( $order );
+		$webhook_url = $this->webhook_url_for_order( $order, (string) $payload['orderReference'] );
 		if ( '' !== $webhook_url ) {
 			$webhook_block = array(
 				'webhookUrl'     => esc_url_raw( $webhook_url ),
@@ -48,7 +48,7 @@ final class OrderPayloadBuilder {
 		return $payload;
 	}
 
-	private function webhook_url_for_order( WC_Order $order ): string {
+	private function webhook_url_for_order( WC_Order $order, string $order_reference ): string {
 		$webhook_url = $this->options->effective_webhook_url();
 		if ( '' === $webhook_url ) {
 			return '';
@@ -56,8 +56,10 @@ final class OrderPayloadBuilder {
 
 		return esc_url_raw(
 			add_query_arg(
-				'wc_order_id',
-				(int) $order->get_id(),
+				array(
+					'wc_order_id'     => (int) $order->get_id(),
+					'order_reference' => sanitize_text_field( $order_reference ),
+				),
 				$webhook_url
 			)
 		);

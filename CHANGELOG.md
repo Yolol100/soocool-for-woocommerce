@@ -1,3 +1,10 @@
+## 0.5.21 - 2026-06-24
+
+- Verbeterd: webhook-URL bevat naast `wc_order_id` nu ook `order_reference`, zodat SooCool-callbacks beter aan de juiste WooCommerce-order gekoppeld worden.
+- Verbeterd: webhook-resolutie gebruikt eerst veilige lokale orderkenmerken voordat een externe fallback lookup nodig is.
+- Verbeterd: adrespayload kan terugvallen op Postcode Checker split-meta voor straat, huisnummer en suffix wanneer de standaard WooCommerce adresregel onvoldoende is.
+- Verbeterd: lege verzendadresgegevens vallen terug naar factuuradresgegevens wanneer alleen verzendnaam/land aanwezig is.
+
 ## 0.5.20 - 2026-06-23
 
 - Release: versies gelijkgetrokken naar 0.5.20 in plugin header, `SOOCOOL_VERSION`, `readme.txt`, admin asset metadata en vertaaltemplate.
