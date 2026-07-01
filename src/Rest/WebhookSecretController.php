@@ -28,12 +28,12 @@ final class WebhookSecretController extends AbstractRestController {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'reveal' ),
-					'permission_callback' => array( $this, 'can_manage' ),
+					'permission_callback' => array( $this, 'can_manage_secrets' ),
 				),
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'regenerate' ),
-					'permission_callback' => array( $this, 'can_manage' ),
+					'permission_callback' => array( $this, 'can_manage_secrets' ),
 				),
 			)
 		);

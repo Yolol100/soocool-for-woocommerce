@@ -28,6 +28,27 @@ abstract class AbstractRestController extends WP_REST_Controller {
 	protected $schema = null;
 
 	public function can_manage(): bool {
-		return current_user_can( 'manage_woocommerce' );
+		return current_user_can( $this->capability_for( 'manage' ) );
+	}
+
+	public function can_manage_secrets(): bool {
+		return current_user_can( $this->capability_for( 'secrets' ) );
+	}
+
+	public function can_run_manual_tests(): bool {
+		return current_user_can( $this->capability_for( 'manual_tests' ) );
+	}
+
+	private function capability_for( string $context ): string {
+		$defaults = array(
+			'manage'       => 'manage_woocommerce',
+			'secrets'      => 'manage_woocommerce',
+			'manual_tests' => 'manage_woocommerce',
+		);
+
+		$default = $defaults[ $context ] ?? $defaults['manage'];
+		$capability = apply_filters( 'soocool_' . $context . '_capability', $default );
+
+		return is_string( $capability ) && '' !== $capability ? $capability : $default;
 	}
 }

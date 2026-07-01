@@ -80,14 +80,14 @@ final class OptionRepository {
 			$changed = true;
 		}
 
-		$normalized_settings = $this->enforce_fixed_checkout_dayparts( $settings );
+		$normalized_settings = $this->sanitize_settings( $settings, $this->defaults() );
 		if ( $normalized_settings !== $settings ) {
 			$settings = $normalized_settings;
 			$changed  = true;
 		}
 
 		if ( $changed ) {
-			update_option( self::OPTION_NAME, $this->sanitize_settings( $settings, $this->defaults() ), false );
+			update_option( self::OPTION_NAME, $settings, false );
 		}
 	}
 
@@ -96,13 +96,10 @@ final class OptionRepository {
 		$stored   = get_option( self::OPTION_NAME, array() );
 		$settings = wp_parse_args( is_array( $stored ) ? $stored : array(), $this->defaults() );
 
-		// Older builds used an undocumented test host. Normalize it at read time so
-		// existing installations follow the official SooCool OpenAPI staging server.
 		if ( 'https://api-test.soocool.nl' === untrailingslashit( (string) $settings['test_base_url'] ) ) {
 			$settings['test_base_url'] = 'https://api.staging.soocool.nl';
 		}
 
-		// The checkout delivery schedule is leading; this fallback is only used when an order has no selected daypart.
 		$settings['delivery_time_from'] = '08:00';
 		$settings['delivery_time_to']   = '18:00';
 
@@ -113,7 +110,7 @@ final class OptionRepository {
 			);
 		}
 
-		return $this->enforce_fixed_checkout_dayparts( $settings );
+		return $this->sanitize_settings( $settings, $this->defaults() );
 	}
 
 	/** @param array<string, mixed> $settings */
@@ -184,8 +181,12 @@ final class OptionRepository {
 			$clean['checkout_delivery_rules']      = $this->sanitize_delivery_rules( $settings['checkout_delivery_rules'] ?? $current['checkout_delivery_rules'] ?? array(), is_array( $current['checkout_delivery_rules'] ?? null ) ? $current['checkout_delivery_rules'] : $this->default_delivery_rules() );
 			$clean['checkout_delivery_time_slots'] = $this->sanitize_delivery_time_slots( $settings['checkout_delivery_time_slots'] ?? $current['checkout_delivery_time_slots'] ?? array(), is_array( $current['checkout_delivery_time_slots'] ?? null ) ? $current['checkout_delivery_time_slots'] : $this->default_delivery_time_slots() );
 			$clean['checkout_delivery_schedule']   = $this->schedule_from_legacy( $clean['checkout_delivery_rules'], $clean['checkout_delivery_time_slots'] );
-		}
-		$clean['checkout_delivery_hide_unavailable_slots'] = $this->to_bool( $settings['checkout_delivery_hide_unavailable_slots'] ?? $current['checkout_delivery_hide_unavailable_slots'] ?? true );
+			}
+			$clean['checkout_delivery_hide_unavailable_slots'] = $this->to_bool( $settings['checkout_delivery_hide_unavailable_slots'] ?? $current['checkout_delivery_hide_unavailable_slots'] ?? true );
+			$clean['checkout_delivery_netherlands_surcharge_amount'] = $this->money_amount( $settings['checkout_delivery_netherlands_surcharge_amount'] ?? $current['checkout_delivery_netherlands_surcharge_amount'] ?? $defaults['checkout_delivery_netherlands_surcharge_amount'], 0.0, 999.0, (float) $defaults['checkout_delivery_netherlands_surcharge_amount'] );
+			$clean['checkout_delivery_netherlands_evening_surcharge_amount'] = $this->money_amount( $settings['checkout_delivery_netherlands_evening_surcharge_amount'] ?? $current['checkout_delivery_netherlands_evening_surcharge_amount'] ?? $defaults['checkout_delivery_netherlands_evening_surcharge_amount'], 0.0, 999.0, (float) $defaults['checkout_delivery_netherlands_evening_surcharge_amount'] );
+			$clean['checkout_delivery_belgium_surcharge_amount'] = $this->money_amount( $settings['checkout_delivery_belgium_surcharge_amount'] ?? $current['checkout_delivery_belgium_surcharge_amount'] ?? $defaults['checkout_delivery_belgium_surcharge_amount'], 0.0, 999.0, (float) $defaults['checkout_delivery_belgium_surcharge_amount'] );
+			$clean['checkout_delivery_belgium_evening_surcharge_amount'] = $this->money_amount( $settings['checkout_delivery_belgium_evening_surcharge_amount'] ?? $current['checkout_delivery_belgium_evening_surcharge_amount'] ?? $defaults['checkout_delivery_belgium_evening_surcharge_amount'], 0.0, 999.0, (float) $defaults['checkout_delivery_belgium_evening_surcharge_amount'] );
 
 		$clean['auto_submit_enabled']        = $this->to_bool( $settings['auto_submit_enabled'] ?? $current['auto_submit_enabled'] );
 		$clean['auto_submit_status']         = $this->one_of( $settings['auto_submit_status'] ?? $current['auto_submit_status'], array( 'processing', 'completed', 'on-hold' ), 'processing' );
@@ -522,6 +523,25 @@ final class OptionRepository {
 		return array( 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday' );
 	}
 
+	/** @param mixed $value */
+	private function money_amount( mixed $value, float $min, float $max, float $fallback ): float {
+		$normalized = str_replace( ',', '.', sanitize_text_field( (string) $value ) );
+		if ( ! is_numeric( $normalized ) ) {
+			return $fallback;
+		}
+
+		$amount = round( (float) $normalized, 2 );
+		if ( $amount < $min ) {
+			return $min;
+		}
+
+		if ( $amount > $max ) {
+			return $max;
+		}
+
+		return $amount;
+	}
+
 	private function positive_int_between( mixed $value, int $min, int $max, int $fallback ): int {
 		if ( is_numeric( $value ) ) {
 			$int = (int) $value;
@@ -581,7 +601,7 @@ final class OptionRepository {
 		$settings['webhook_timestamp_header_name']  = 'X-SooCool-Webhook-Timestamp';
 		$settings['webhook_signature_header_name']  = 'X-SooCool-Webhook-Signature';
 		$settings['webhook_event_id_header_name']   = 'X-SooCool-Webhook-Id';
-		$settings['webhook_signature_required']     = (bool) apply_filters( 'soocool_require_webhook_signature', false );
+		$settings['webhook_signature_required']     = $this->webhook_signature_required();
 		$settings['query_token_fallback_enabled']   = $this->query_token_fallback_enabled();
 		$settings['effective_webhook_url']          = $this->effective_webhook_url();
 		unset( $settings['webhook_secret'] );
@@ -651,16 +671,68 @@ final class OptionRepository {
 		return str_starts_with( $generated, 'https://' ) ? $generated : '';
 	}
 
-	public function query_token_fallback_enabled(): bool {
+	public function webhook_signature_required(): bool {
+		$default = $this->bool_constant( 'SOOCOOL_REQUIRE_WEBHOOK_SIGNATURE', true );
+
 		/**
-		 * SooCool OpenAPI 1.2.1 only sends the configured webhookUrl back to the site.
-		 * Query-token URLs stay enabled by default so callbacks work without custom
-		 * headers. Sites that have confirmed header/HMAC delivery with SooCool can
-		 * disable this and require signatures via filters.
+		 * Require HMAC verification for incoming SooCool webhooks.
 		 *
-		 * @param bool $enabled Default true.
+		 * The production-safe default requires timestamp and signature headers. Legacy
+		 * SooCool accounts that can only call the configured webhook URL must opt out
+		 * explicitly and should do so only after accepting the replay/logging risk.
+		 *
+		 * @param bool $required Default true.
 		 */
-		return (bool) apply_filters( 'soocool_allow_query_token_webhook_url', true );
+		return (bool) apply_filters( 'soocool_require_webhook_signature', $default );
+	}
+
+	public function query_token_fallback_enabled(): bool {
+		$default = $this->bool_constant( 'SOOCOOL_ALLOW_QUERY_TOKEN_WEBHOOK_URL', false );
+
+		/**
+		 * Allow legacy webhook URLs that include the static token as a query parameter.
+		 *
+		 * Disabled by default so generated webhook URLs do not expose bearer tokens in
+		 * logs or screenshots. Enable only for SooCool accounts that cannot send
+		 * webhook token/HMAC headers yet.
+		 *
+		 * @param bool $enabled Default false.
+		 */
+		return (bool) apply_filters( 'soocool_allow_query_token_webhook_url', $default );
+	}
+
+	public function production_manual_api_tests_enabled(): bool {
+		$default = $this->bool_constant( 'SOOCOOL_ENABLE_PRODUCTION_MANUAL_API_TESTS', false );
+
+		/**
+		 * Allow manual API-test requests to target the production SooCool environment.
+		 *
+		 * Disabled by default so an opt-in test route cannot create real production
+		 * SooCool orders unless a developer has made that risk decision explicitly.
+		 *
+		 * @param bool $enabled Default false.
+		 */
+		return (bool) apply_filters( 'soocool_enable_production_manual_api_tests', $default );
+	}
+
+	private function bool_constant( string $name, bool $default ): bool {
+		if ( ! defined( $name ) ) {
+			return $default;
+		}
+
+		$value = constant( $name );
+		if ( is_bool( $value ) ) {
+			return $value;
+		}
+
+		if ( is_scalar( $value ) ) {
+			$normalized = filter_var( (string) $value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE );
+			if ( null !== $normalized ) {
+				return $normalized;
+			}
+		}
+
+		return $default;
 	}
 
 	private function sanitize_webhook_secret( mixed $value ): string {

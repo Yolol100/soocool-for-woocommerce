@@ -16,6 +16,8 @@ final class SettingsSchema {
 		$key            = static fn ( $value ): string => sanitize_key( (string) $value );
 		$bool           = static fn ( $value ): bool => filter_var( $value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE ) ?? (bool) $value;
 		$int            = static fn ( $value ): int => max( 0, absint( $value ) );
+		$money          = static fn ( $value ): float => round( (float) str_replace( ',', '.', sanitize_text_field( (string) $value ) ), 2 );
+		$money_validate = static fn ( $value ): bool => is_numeric( str_replace( ',', '.', (string) $value ) ) && (float) str_replace( ',', '.', (string) $value ) >= 0 && (float) str_replace( ',', '.', (string) $value ) <= 999;
 		$time_validate  = static fn ( $value ): bool => is_string( $value ) && preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $value ) === 1;
 		$range_validate   = static fn ( int $min, int $max ): callable => static fn ( $value ): bool => is_numeric( $value ) && (int) $value >= $min && (int) $value <= $max;
 		$time_slot_schema = array(
@@ -263,6 +265,30 @@ final class SettingsSchema {
 				'type'              => 'boolean',
 				'required'          => false,
 				'sanitize_callback' => $bool,
+			),
+			'checkout_delivery_netherlands_surcharge_amount' => array(
+				'type'              => 'number',
+				'required'          => false,
+				'sanitize_callback' => $money,
+				'validate_callback' => $money_validate,
+			),
+			'checkout_delivery_netherlands_evening_surcharge_amount' => array(
+				'type'              => 'number',
+				'required'          => false,
+				'sanitize_callback' => $money,
+				'validate_callback' => $money_validate,
+			),
+			'checkout_delivery_belgium_surcharge_amount' => array(
+				'type'              => 'number',
+				'required'          => false,
+				'sanitize_callback' => $money,
+				'validate_callback' => $money_validate,
+			),
+			'checkout_delivery_belgium_evening_surcharge_amount' => array(
+				'type'              => 'number',
+				'required'          => false,
+				'sanitize_callback' => $money,
+				'validate_callback' => $money_validate,
 			),
 			'auto_submit_enabled'        => array(
 				'type'              => 'boolean',

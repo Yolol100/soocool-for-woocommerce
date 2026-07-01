@@ -18,13 +18,13 @@
   box-sizing: border-box;
 }
 
-.soocool-delivery-options__title {
-  margin: 0 0 7px !important;
-  color: #292929 !important;
-  font-size: 17px !important;
-  font-weight: 700 !important;
-  line-height: 1.2 !important;
-  letter-spacing: normal !important;
+.soocool-delivery-options .soocool-delivery-options__title {
+  margin: 0 0 7px;
+  color: #292929;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: normal;
 }
 
 .soocool-delivery-options__intro {
@@ -79,23 +79,23 @@
   overflow-wrap: anywhere;
 }
 
-.soocool-delivery-options__change {
+.soocool-delivery-options .soocool-delivery-options__change {
   padding: 0;
   border: 0;
   background: transparent;
   color: #a5121a;
   font: inherit;
   font-weight: 700;
-  text-decoration: none !important;
+  text-decoration: none;
   cursor: pointer;
 }
 
-.soocool-delivery-options__change:hover,
-.soocool-delivery-options__change:focus {
-  text-decoration: none !important;
+.soocool-delivery-options .soocool-delivery-options__change:hover,
+.soocool-delivery-options .soocool-delivery-options__change:focus {
+  text-decoration: none;
 }
 
-.soocool-delivery-options__change:focus-visible,
+.soocool-delivery-options .soocool-delivery-options__change:focus-visible,
 .soocool-delivery-time-more:focus-visible {
   outline: 3px solid rgba(197, 22, 29, 0.2);
   outline-offset: 3px;
@@ -419,7 +419,6 @@
   background: #f1f1f1;
 }
 
-button.soocool-delivery-time-more,
 .soocool-delivery-options .soocool-delivery-time-more {
   display: inline-flex;
   align-items: center;
@@ -436,8 +435,6 @@ button.soocool-delivery-time-more,
   text-decoration: none;
 }
 
-button.soocool-delivery-time-more:hover,
-button.soocool-delivery-time-more:focus,
 .soocool-delivery-options .soocool-delivery-time-more:hover,
 .soocool-delivery-options .soocool-delivery-time-more:focus {
   background: #b61219;
@@ -672,8 +669,8 @@ button.soocool-delivery-time-more:focus,
     padding: 12px;
   }
 
-  .soocool-delivery-options__title {
-    font-size: 16px !important;
+  .soocool-delivery-options .soocool-delivery-options__title {
+    font-size: 16px;
   }
 
   .soocool-delivery-options__intro,
@@ -685,7 +682,7 @@ button.soocool-delivery-time-more:focus,
     display: grid;
   }
 
-  .soocool-delivery-options__change {
+  .soocool-delivery-options .soocool-delivery-options__change {
     width: 100%;
     min-height: 36px;
     border-radius: 6px;

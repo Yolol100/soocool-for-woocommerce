@@ -8,6 +8,8 @@ defined( 'ABSPATH' ) || exit;
 
 final class Requirements {
 
+	private const MINIMUM_WOOCOMMERCE_VERSION = '8.0';
+
 	public function is_supported(): bool {
 		return '' === $this->get_missing_message();
 	}
@@ -27,6 +29,34 @@ final class Requirements {
 
 		if ( ! class_exists( 'WooCommerce' ) ) {
 			return __( 'SooCool for WooCommerce vereist dat WooCommerce actief is.', 'soocool-for-woocommerce' );
+		}
+
+		if ( ! $this->woocommerce_version_is_supported() ) {
+			return sprintf(
+				/* translators: %s: minimum WooCommerce version. */
+				__( 'SooCool for WooCommerce vereist WooCommerce %s of hoger.', 'soocool-for-woocommerce' ),
+				self::MINIMUM_WOOCOMMERCE_VERSION
+			);
+		}
+
+		return '';
+	}
+
+	private function woocommerce_version_is_supported(): bool {
+		$version = $this->active_woocommerce_version();
+		return '' !== $version && version_compare( $version, self::MINIMUM_WOOCOMMERCE_VERSION, '>=' );
+	}
+
+	private function active_woocommerce_version(): string {
+		if ( defined( 'WC_VERSION' ) && is_scalar( constant( 'WC_VERSION' ) ) ) {
+			return (string) constant( 'WC_VERSION' );
+		}
+
+		if ( function_exists( 'WC' ) ) {
+			$woocommerce = WC();
+			if ( is_object( $woocommerce ) && isset( $woocommerce->version ) && is_scalar( $woocommerce->version ) ) {
+				return (string) $woocommerce->version;
+			}
 		}
 
 		return '';

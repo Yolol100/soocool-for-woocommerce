@@ -50,10 +50,11 @@ final class OrderEmailLabels {
 
 	public function cleanup_temporary_files(): void {
 		$temp_dir = realpath( get_temp_dir() );
+		$temp_dir = is_string( $temp_dir ) ? trailingslashit( $temp_dir ) : false;
 
 		foreach ( $this->temporary_files as $file ) {
 			$path = realpath( $file );
-			if ( false === $temp_dir || false === $path || ! str_starts_with( $path, $temp_dir ) || ! is_file( $path ) ) {
+			if ( false === $temp_dir || false === $path || ! str_starts_with( trailingslashit( dirname( $path ) ), $temp_dir ) || ! is_file( $path ) ) {
 				continue;
 			}
 

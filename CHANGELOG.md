@@ -1,3 +1,40 @@
+## 0.5.26 - 2026-07-01
+
+- Security: webhook-HMAC is now required by default and generated webhook URLs no longer include the token query parameter unless legacy fallback is explicitly enabled.
+- Security: manual API-test requests are blocked on the production SooCool environment unless production tests are explicitly enabled in code.
+- Compatibility: the SooCool admin screen no longer suppresses unrelated WordPress admin notices.
+- Hardening: REST management, webhook-secret and manual-test capabilities are now filterable while preserving the default shop-manager workflow.
+- Localization: bundled Dutch `nl_NL` gettext files are included and loaded from the plugin language directory.
+- Release: WordPress.org repository metadata is kept free of a private update source header.
+- Compatibility: activation/runtime requirements now enforce WooCommerce 8.0 or higher, matching the plugin header.
+- Fixed: the checkout phone field is only forced required while the SooCool delivery checkout is enabled.
+- Added: de klassieke checkout toont nu in het Nederlands wanneer de België-toeslag en avondtoeslag voor 17:00-22:00 gelden.
+- Added: het adminscherm toont nu ook een Nederlandse checkouttekst-samenvatting bij de toeslagvelden.
+- Added: Nederland-toeslag en Avondtoeslag Nederland zijn instelbaar boven de België-toeslagvelden en worden toegepast bij afleverland NL.
+
+## 0.5.25 - 2026-07-01
+
+- Added: België-toeslag en avondtoeslag België zijn nu instelbaar in de backend onder Bezorgschema.
+- Changed: de klassieke checkout gebruikt de opgeslagen toeslaginstellingen in plaats van vaste codewaarden.
+
+## 0.5.24 - 2026-07-01
+
+- Added: België krijgt in de klassieke checkout een bezorgtoeslag van €2,00 wanneer het afleverland BE is.
+- Added: België krijgt bij het vaste avonddagdeel 17:00-22:00 aanvullend een avondtoeslag van €1,50.
+- Changed: de checkout-bezorgmomentkiezer triggert opnieuw WooCommerce order review recalculatie wanneer klant of klantselectie het bezorgmoment wijzigt, zodat toeslagen direct zichtbaar worden.
+
+## 0.5.23 - 2026-07-01
+
+- Security: handmatige SooCool API-test REST-route wordt niet meer geregistreerd zolang `SOOCOOL_ENABLE_MANUAL_API_TESTS` niet expliciet `true` is.
+- Hardening: opgeslagen plugininstellingen worden bij lezen en migreren opnieuw genormaliseerd, zodat oude of corrupte option-data niet ongeschoond in admin/API-uitvoer terugkomt.
+- Hardening: tijdelijke e-mailbijlagen worden alleen verwijderd wanneer hun echte pad binnen de WordPress tempmap valt.
+
+## 0.5.22 - 2026-07-01
+
+- Fixed: handmatige SooCool API-test UI en REST-endpoint zijn standaard uitgeschakeld tenzij `SOOCOOL_ENABLE_MANUAL_API_TESTS` expliciet op `true` staat.
+- Fixed: productie-adminstylesheet behoudt de juiste `.soocool-shell :where(...)` descendant selectors in de minified CSS.
+- Packaging: distributie-ZIP opnieuw opgebouwd met de canonieke pluginmap `soocool-for-woocommerce/`.
+
 ## 0.5.21 - 2026-06-24
 
 - Verbeterd: webhook-URL bevat naast `wc_order_id` nu ook `order_reference`, zodat SooCool-callbacks beter aan de juiste WooCommerce-order gekoppeld worden.
@@ -64,12 +101,12 @@
 - Removed an unreachable duplicate return in API-key resolution.
 
 ## 0.5.4 - 2026-06-22
-- Production-readiness cleanup: remove AI-specific generator wording from the translation template metadata.
+- Updated the translation template metadata.
 
 ## 0.5.3 - 2026-06-22
 - Admin styling: removed the select-control container margin override and added an 8px top margin instead.
-- Added maintenance comments around select-field and label `!important` overrides so they are not removed during cleanup/refactor work.
-- Reworded maintenance comments into direct technical comments.
+- Documented why the scoped select-field and label `!important` overrides are required.
+- Kept CSS maintenance notes concise and technical.
 
 ## 0.5.2 - 2026-06-22
 - Admin styling: align delivery schedule dropdown fields with the existing text/search input styling using scoped `!important` overrides.
@@ -830,7 +867,7 @@
 - Improved REST route validation and log clearing.
 
 ## 0.1.0
-- Initial staging-first plugin scaffold.
+- Initial plugin structure for the SooCool order integration.
 
 ## Unreleased
 - Changed checkout delivery choice to the two SooCool dayparts: Ochtend (08:00 - 18:00) and Avond (17:00 - 22:00).

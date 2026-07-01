@@ -20,7 +20,7 @@ Privacy and external-service details are documented in `readme.txt` under the ex
 
 ## Source and build route
 
-This release package contains runtime PHP source and built admin assets used by the plugin at runtime. The plugin loads `.min` assets by default and falls back to readable assets when `SCRIPT_DEBUG` is enabled. For public WordPress.org submission, publish the development repository or include the original source assets and build tooling so reviewers can reproduce `assets/build/admin.js`, `assets/build/admin.min.js`, `assets/build/admin.css`, and `assets/build/admin.min.css`.
+This release package contains runtime PHP source and built assets used by the plugin at runtime. The admin JavaScript is shipped as readable `assets/build/admin.js` and `assets/build/admin-test.js`; minified frontend/order scripts and CSS are included only where they are real compressed assets. For public WordPress.org submission, publish the development repository or include the original source assets and build tooling so reviewers can reproduce the built files.
 
 ## Features
 
@@ -52,7 +52,7 @@ php -l soocool-for-woocommerce.php
 php -l uninstall.php
 find src -name "*.php" -print0 | xargs -0 -n1 php -l
 node --check assets/build/admin.js
-node --check assets/build/admin.min.js
+node --check assets/build/admin-test.js
 node --check assets/admin/order-actions.js
 node --check assets/admin/order-actions.min.js
 node --check assets/frontend/checkout-delivery.js
@@ -61,11 +61,19 @@ node --check assets/frontend/checkout-delivery.min.js
 
 This repository is a release package and does not currently include Composer, npm or CI configuration files. If you are working from a separate development repository that contains those files, run that repository's Composer, npm and build commands before copying generated assets into this package.
 
+For WordPress.org submission, keep update delivery managed by WordPress.org and do not set a private update source in the plugin header.
+
 ## Security notes
 
 Do not commit API keys, portal passwords, `.env` files, production URLs with secrets, or exported logs containing customer data. Use the test environment first.
 
-The webhook receiver requires the stored SooCool webhook token. The default generated webhook URL includes the token as a query parameter because the SooCool OpenAPI callback model posts to the supplied `webhook.webhookUrl` and does not define custom authentication headers. If SooCool enables header delivery for this account, the receiver also supports `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp`, `X-SooCool-Webhook-Signature` and optional `X-SooCool-Webhook-Id`. Projects can require HMAC verification with the `soocool_require_webhook_signature` filter after this has been confirmed and tested.
+The webhook receiver requires the stored SooCool webhook token and HMAC headers by default. Generated webhook URLs do not include the token as a query parameter unless legacy fallback is explicitly enabled. The receiver supports `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp`, `X-SooCool-Webhook-Signature` and optional `X-SooCool-Webhook-Id`. Legacy accounts that cannot send headers yet can opt in to query-token URLs with `SOOCOOL_ALLOW_QUERY_TOKEN_WEBHOOK_URL` or the `soocool_allow_query_token_webhook_url` filter, and can opt out of HMAC with `SOOCOOL_REQUIRE_WEBHOOK_SIGNATURE` or the `soocool_require_webhook_signature` filter after a documented risk decision and staging test.
+
+Manual API tests remain disabled unless `SOOCOOL_ENABLE_MANUAL_API_TESTS` is explicitly set to `true`. Even then, test requests are blocked when the active SooCool environment is production unless `SOOCOOL_ENABLE_PRODUCTION_MANUAL_API_TESTS` or the `soocool_enable_production_manual_api_tests` filter explicitly allows that risk.
+
+## Nederlandse vertaling
+
+This package includes bundled `nl_NL` gettext files and loads the plugin text domain from the `languages` directory.
 
 ## Staging checklist
 
@@ -94,7 +102,7 @@ php -l soocool-for-woocommerce.php
 php -l uninstall.php
 find src -name "*.php" -print0 | xargs -0 -n1 php -l
 node --check assets/build/admin.js
-node --check assets/build/admin.min.js
+node --check assets/build/admin-test.js
 node --check assets/admin/order-actions.js
 node --check assets/admin/order-actions.min.js
 node --check assets/frontend/checkout-delivery.js
@@ -142,6 +150,10 @@ add_filter('soocool_allowed_api_hosts', static function (array $hosts): array {
     return $hosts;
 });
 ```
+
+## Checkout delivery surcharges
+
+The backend Bezorgschema screen contains editable fields for the Netherlands and Belgium delivery surcharges and their evening surcharges. Netherlands defaults are €0.00 so no new fee is enabled until configured. Belgium defaults are €2.00 for deliveries and €1.50 extra for the fixed 17:00-22:00 evening slot. Setting any amount to 0 disables that specific fee. The classic checkout also shows a Dutch note explaining when the configured Netherlands or Belgium surcharge applies.
 
 ## Final release QA checklist
 

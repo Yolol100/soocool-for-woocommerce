@@ -10,7 +10,6 @@ use SooCool\WooCommerce\Admin\AdminMenu;
 use SooCool\WooCommerce\Admin\DebugRedactor;
 use SooCool\WooCommerce\Admin\DummyOrderFactory;
 use SooCool\WooCommerce\Admin\Assets;
-use SooCool\WooCommerce\Admin\AdminNoticeSuppressor;
 use SooCool\WooCommerce\Admin\Notices;
 use SooCool\WooCommerce\Admin\PrivacyPolicy;
 use SooCool\WooCommerce\Admin\OrderActionConfirmScript;
@@ -105,7 +104,6 @@ final class ServiceProvider {
 			DebugRedactor::class => new DebugRedactor( $this->get( OptionRepository::class ) ),
 			AdminMenu::class => new AdminMenu(),
 			Assets::class => new Assets(),
-			AdminNoticeSuppressor::class => new AdminNoticeSuppressor(),
 			Notices::class => new Notices( $this->get( Requirements::class ), $this->get( OptionRepository::class ) ),
 			PrivacyPolicy::class => new PrivacyPolicy(),
 			SettingsValidator::class => new SettingsValidator( $this->get( OptionRepository::class ) ),

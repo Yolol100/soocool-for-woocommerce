@@ -37,8 +37,8 @@ final class Assets {
 		}
 
 		$settings             = ( new OptionRepository() )->all();
-		$manual_tests_enabled = true;
-		$script_base          = 'admin-test';
+		$manual_tests_enabled = $this->manual_tests_enabled();
+		$script_base          = $manual_tests_enabled ? 'admin-test' : 'admin';
 		$script_file          = AssetResolver::filename( 'assets/build', $script_base, 'js' );
 		$style_file           = AssetResolver::filename( 'assets/build', 'admin', 'css' );
 
@@ -83,6 +83,10 @@ final class Assets {
 			) . ';',
 			'before'
 		);
+	}
+
+	private function manual_tests_enabled(): bool {
+		return defined( 'SOOCOOL_ENABLE_MANUAL_API_TESTS' ) && true === SOOCOOL_ENABLE_MANUAL_API_TESTS;
 	}
 
 	private function is_order_screen( string $hook ): bool {

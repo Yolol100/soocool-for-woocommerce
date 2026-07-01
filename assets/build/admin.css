@@ -1039,7 +1039,6 @@
   border-top: 1px solid var(--soocool-color-border);
 }
 
-.soocool-order-actions,
 .soocool-order-action-group p {
   margin: 8px 0 0;
 }
@@ -1421,10 +1420,6 @@
   gap: 10px;
 }
 
-.soocool-delivery-section--rules {
-  padding-bottom: 14px;
-}
-
 .soocool-delivery-section__header {
   display: grid;
   gap: 4px;
@@ -1490,8 +1485,7 @@
   justify-content: flex-start;
 }
 
-.soocool-delivery-setting-control--toggle .components-toggle-control,
-.soocool-delivery-rule-cell--status .components-toggle-control {
+.soocool-delivery-setting-control--toggle .components-toggle-control {
   width: auto;
   min-height: 0;
   padding: 0;
@@ -1543,148 +1537,6 @@
   box-shadow: 0 0 0 1px rgba(191, 4, 19, 0.08);
 }
 
-.soocool-delivery-rules-grid {
-  overflow: hidden;
-  border: 1px solid var(--soocool-color-border);
-  border-radius: var(--soocool-radius-md);
-}
-
-.soocool-delivery-rules-head,
-.soocool-delivery-rule-row {
-  display: grid;
-  grid-template-columns: 104px minmax(140px, 1fr) minmax(140px, 1fr) 132px 64px;
-  gap: 12px;
-  align-items: center;
-}
-
-.soocool-delivery-rules-head {
-  min-height: 36px;
-  padding: 0 14px;
-  color: #6b7280;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0;
-  background: #fafafa;
-  border-bottom: 1px solid var(--soocool-color-border);
-}
-
-.soocool-delivery-rule-row {
-  min-height: 46px;
-  padding: 5px 14px;
-  background: #fff;
-}
-
-.soocool-delivery-rule-row + .soocool-delivery-rule-row {
-  border-top: 1px solid #f0f0f1;
-}
-
-.soocool-delivery-rule-row:hover {
-  background: #fffdfb;
-}
-
-.soocool-delivery-rule-cell {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-}
-
-.soocool-delivery-rule-cell .components-base-control,
-.soocool-delivery-rule-cell .components-base-control__field,
-.soocool-delivery-rule-cell .components-toggle-control {
-  margin-bottom: 0;
-}
-
-.soocool-delivery-rule-cell:not(.soocool-delivery-rule-cell--status) .components-base-control__label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(1px, 1px, 1px, 1px);
-  border: 0;
-  word-wrap: normal;
-}
-
-
-.soocool-delivery-rule-cell .components-select-control__input {
-  padding-right: 34px;
-}
-
-.soocool-delivery-rule-cell .components-select-control .components-input-control__container::after {
-  right: 14px;
-  width: 6px;
-  height: 6px;
-  border-right-width: 1.5px;
-  border-bottom-width: 1.5px;
-  transform: translateY(-60%) rotate(45deg);
-}
-
-.soocool-delivery-rule-cell--status .components-toggle-control {
-  min-width: 0;
-}
-
-.soocool-delivery-rule-cell--status .components-toggle-control .components-base-control__field,
-.soocool-delivery-rule-cell--status .components-toggle-control .components-toggle-control__field {
-  display: flex;
-  width: auto;
-  gap: 8px;
-  align-items: center;
-}
-
-.soocool-delivery-rule-cell--status .components-toggle-control .components-toggle-control__label {
-  margin: 0;
-  white-space: nowrap;
-}
-
-.soocool-delivery-rule-cell--time input[type='time'] {
-  max-width: 120px;
-}
-
-
-.soocool-delivery-rule-cell--label input[type='text'] {
-  max-width: 180px;
-}
-
-.soocool-delivery-rule-cell--order input[type='number'] {
-  max-width: 82px;
-}
-
-.soocool-delivery-rules-head__action,
-.soocool-delivery-rule-cell--action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.soocool-delivery-rule-remove.components-button {
-  display: inline-flex;
-  width: 34px;
-  min-width: 34px;
-  height: 34px;
-  min-height: 34px;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.soocool-delivery-rule-remove.components-button .dashicons {
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
-  line-height: 18px;
-}
-
-.soocool-delivery-rule-remove.components-button:not(:disabled):hover,
-.soocool-delivery-rule-remove.components-button:not(:disabled):focus {
-  color: var(--soocool-color-danger);
-  background: #fff8f8;
-  border-color: rgba(179, 45, 46, 0.25);
-}
-
 .soocool-delivery-footer {
   display: flex;
   gap: 16px;
@@ -1698,14 +1550,6 @@
 
 .soocool-delivery-footer .soocool-primary-action.components-button {
   flex: 0 0 auto;
-}
-
-@media (max-width: 1100px) {
-  .soocool-delivery-rules-head,
-  .soocool-delivery-rule-row {
-    grid-template-columns: 96px minmax(130px, 1fr) minmax(130px, 1fr) 124px 54px;
-    gap: 10px;
-  }
 }
 
 @media (max-width: 782px) {
@@ -1740,60 +1584,6 @@
     justify-content: center;
   }
 
-  .soocool-delivery-rules-grid {
-    display: grid;
-    gap: 10px;
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-  }
-
-  .soocool-delivery-rules-head {
-    display: none;
-  }
-
-  .soocool-delivery-rule-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    min-height: 0;
-    padding: 12px;
-    border: 1px solid var(--soocool-color-border);
-    border-radius: var(--soocool-radius-md);
-  }
-
-  .soocool-delivery-rule-row + .soocool-delivery-rule-row {
-    border-top: 1px solid var(--soocool-color-border);
-  }
-
-  .soocool-delivery-rule-cell {
-    display: block;
-  }
-
-  .soocool-delivery-rule-cell--status,
-  .soocool-delivery-rule-cell--action {
-    display: flex;
-    align-items: center;
-  }
-
-  .soocool-delivery-rule-cell::before {
-    display: block;
-    margin-bottom: 4px;
-    color: var(--soocool-color-muted);
-    font-size: 12px;
-    font-weight: 600;
-    content: attr(data-label);
-  }
-
-  .soocool-delivery-rule-cell--status::before,
-  .soocool-delivery-rule-cell--action::before {
-    display: none;
-  }
-
-  .soocool-delivery-rule-cell--action,
-  .soocool-delivery-rule-cell--status {
-    justify-content: flex-start;
-  }
 }
 
 
@@ -1827,101 +1617,6 @@
   width: 100%;
   min-height: 34px;
   text-align: center;
-}
-
-.soocool-delivery-slots-grid {
-  overflow: hidden;
-  border: 1px solid var(--soocool-color-border);
-  border-radius: var(--soocool-radius-md);
-}
-
-.soocool-delivery-slots-head,
-.soocool-delivery-slot-row {
-  display: grid;
-  grid-template-columns: 104px minmax(140px, 1fr) 112px 112px 112px minmax(210px, 1fr) 88px 64px;
-  gap: 12px;
-  align-items: center;
-}
-
-.soocool-delivery-slots-head {
-  min-height: 36px;
-  padding: 0 14px;
-  color: #6b7280;
-  font-size: 11px;
-  font-weight: 500;
-  background: #fafafa;
-  border-bottom: 1px solid var(--soocool-color-border);
-}
-
-.soocool-delivery-slot-row {
-  min-height: 54px;
-  padding: 7px 14px;
-  background: #fff;
-}
-
-.soocool-delivery-slot-row + .soocool-delivery-slot-row {
-  border-top: 1px solid #f0f0f1;
-}
-
-.soocool-delivery-slot-row:hover {
-  background: #fffdfb;
-}
-
-.soocool-delivery-slot-weekdays {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-}
-
-.soocool-delivery-slot-weekdays .components-base-control,
-.soocool-delivery-slot-weekdays .components-base-control__field,
-.soocool-delivery-slot-weekdays .components-checkbox-control__input-container {
-  margin-bottom: 0;
-}
-
-.soocool-delivery-slot-weekdays .components-checkbox-control__label {
-  font-size: 12px;
-  line-height: 1.2;
-}
-
-@media (max-width: 1100px) {
-  .soocool-delivery-slots-head,
-  .soocool-delivery-slot-row {
-    grid-template-columns: 96px minmax(120px, 1fr) 96px 96px 96px minmax(170px, 1fr) 76px 54px;
-    gap: 10px;
-  }
-}
-
-@media (max-width: 782px) {
-  .soocool-delivery-slots-grid {
-    display: grid;
-    gap: 10px;
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-  }
-
-  .soocool-delivery-slots-head {
-    display: none;
-  }
-
-  .soocool-delivery-slot-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    min-height: 0;
-    padding: 12px;
-    border: 1px solid var(--soocool-color-border);
-    border-radius: var(--soocool-radius-md);
-  }
-
-  .soocool-delivery-slot-row + .soocool-delivery-slot-row {
-    border-top: 1px solid var(--soocool-color-border);
-  }
-
-  .soocool-delivery-slot-weekdays {
-    display: flex;
-  }
 }
 
 .soocool-delivery-schedule-cards {
@@ -2451,8 +2146,6 @@
   .soocool-card-header,
   .soocool-field-grid.two,
   .soocool-delivery-setting-row,
-  .soocool-delivery-rule-row,
-  .soocool-delivery-slot-row,
   .soocool-delivery-schedule-card__top,
   .soocool-delivery-schedule-fields,
   .soocool-delivery-schedule-slot__summary,

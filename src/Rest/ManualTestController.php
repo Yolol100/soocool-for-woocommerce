@@ -32,13 +32,17 @@ final class ManualTestController extends AbstractRestController {
 	) {}
 
 	public function register_routes(): void {
+		if ( ! $this->manual_tests_enabled() ) {
+			return;
+		}
+
 		register_rest_route(
 			$this->namespace,
 			'/manual-test/order',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'run' ),
-				'permission_callback' => array( $this, 'can_manage' ),
+				'permission_callback' => array( $this, 'can_run_manual_tests' ),
 				'args'                => array(
 					'test_mode'            => array(
 						'type'              => 'string',
@@ -64,6 +68,16 @@ final class ManualTestController extends AbstractRestController {
 					'message' => __( 'Handmatige SooCool API-tests zijn uitgeschakeld.', 'soocool-for-woocommerce' ),
 				),
 				404
+			);
+		}
+
+		if ( $this->targets_production_environment() && ! $this->options->production_manual_api_tests_enabled() ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => __( 'Handmatige SooCool API-tests zijn geblokkeerd op productie. Test op staging of zet productie-tests expliciet aan via code.', 'soocool-for-woocommerce' ),
+				),
+				403
 			);
 		}
 
@@ -118,9 +132,12 @@ final class ManualTestController extends AbstractRestController {
 	}
 
 	private function manual_tests_enabled(): bool {
-		$settings     = $this->options->all();
-		$environment  = (string) ( $settings['environment'] ?? 'test' );
-		return in_array( $environment, array( 'test', 'production' ), true );
+		return defined( 'SOOCOOL_ENABLE_MANUAL_API_TESTS' ) && true === SOOCOOL_ENABLE_MANUAL_API_TESTS;
+	}
+
+	private function targets_production_environment(): bool {
+		$settings = $this->options->all();
+		return 'production' === (string) ( $settings['environment'] ?? '' );
 	}
 
 	/** @param array<string, mixed> $payload @return array<string, mixed> */

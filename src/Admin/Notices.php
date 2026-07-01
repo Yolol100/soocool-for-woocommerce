@@ -47,13 +47,13 @@ final class Notices {
 	}
 
 	private function render_webhook_signature_notice(): void {
-		if ( ! (bool) apply_filters( 'soocool_require_webhook_signature', false ) ) {
+		if ( $this->options->webhook_signature_required() && ! $this->options->query_token_fallback_enabled() ) {
 			return;
 		}
 
 		printf(
 			'<div class="notice notice-warning"><p>%s</p></div>',
-			esc_html__( 'SooCool webhook-HMAC is verplicht gemaakt via filter. Controleer op staging of SooCool de timestamp- en signature-headers voor deze koppeling meestuurt.', 'soocool-for-woocommerce' )
+			esc_html__( 'SooCool webhook-HMAC is niet volledig afgedwongen of query-token fallback is ingeschakeld. Gebruik dit alleen als tijdelijke legacy-modus en test webhooks op staging.', 'soocool-for-woocommerce' )
 		);
 	}
 }

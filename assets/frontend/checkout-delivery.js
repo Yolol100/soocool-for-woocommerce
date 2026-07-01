@@ -262,6 +262,12 @@
     });
   }
 
+  function triggerCheckoutUpdate() {
+    if (window.jQuery) {
+      window.jQuery(document.body).trigger('update_checkout');
+    }
+  }
+
   document.addEventListener('change', function (event) {
     var input = event.target;
     if (!input || (input.name !== dateFieldName && input.name !== timeFieldName)) {
@@ -278,11 +284,13 @@
       updateTimeGroups(root, true);
       updateNotice(root);
       setExpanded(root, true);
+      triggerCheckoutUpdate();
       return;
     }
 
     updateNotice(root);
     setExpanded(root, false);
+    triggerCheckoutUpdate();
   });
 
   document.addEventListener('click', function (event) {

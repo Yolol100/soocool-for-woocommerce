@@ -28,7 +28,7 @@ final class WebhookAuthenticator {
 			return new WP_Error( 'soocool_webhook_forbidden', __( 'Ongeldige SooCool webhook-token.', 'soocool-for-woocommerce' ), array( 'status' => 403 ) );
 		}
 
-		if ( ! $this->signature_required() && ! $this->has_signature_headers( $request ) ) {
+		if ( ! $this->options->webhook_signature_required() && ! $this->has_signature_headers( $request ) ) {
 			return true;
 		}
 
@@ -43,20 +43,6 @@ final class WebhookAuthenticator {
 		}
 
 		return true;
-	}
-
-	private function signature_required(): bool {
-		/**
-		 * Require HMAC verification for incoming SooCool webhooks.
-		 *
-		 * Default false matches the published SooCool OpenAPI callback model, which
-		 * only defines a POST to webhook.webhookUrl. If signature headers are present
-		 * they are still verified; projects can require them after SooCool confirms
-		 * header delivery for the account.
-		 *
-		 * @param bool $required Default false.
-		 */
-		return (bool) apply_filters( 'soocool_require_webhook_signature', false );
 	}
 
 	private function verify_signature( WP_REST_Request $request, string $secret ): bool|WP_Error {

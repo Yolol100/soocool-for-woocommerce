@@ -4,12 +4,12 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.5.21
+Stable tag: 0.5.26
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Connect WooCommerce orders with the SooCool transport API.
+Koppelt WooCommerce-orders aan de SooCool transport-API.
 
 == Description ==
 
@@ -94,9 +94,11 @@ The plugin supports the SooCool shipping label formats `a6` and `collated_a4` th
 
 = How is the webhook secured? =
 
-The webhook receiver requires the stored SooCool webhook token. The default generated webhook URL includes the token as a query parameter because the SooCool OpenAPI callback model posts to the supplied `webhook.webhookUrl` and does not define custom authentication headers.
+The webhook receiver requires the stored SooCool webhook token and HMAC headers by default. The generated webhook URL does not include the token as a query parameter unless legacy fallback is explicitly enabled.
 
-If SooCool enables header delivery for this account, the receiver also supports `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp`, `X-SooCool-Webhook-Signature` and optional `X-SooCool-Webhook-Id`. Projects can require HMAC verification with the `soocool_require_webhook_signature` filter after this has been confirmed and tested.
+The receiver supports `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp`, `X-SooCool-Webhook-Signature` and optional `X-SooCool-Webhook-Id`. Legacy accounts that cannot send headers yet can opt in to query-token URLs with `SOOCOOL_ALLOW_QUERY_TOKEN_WEBHOOK_URL` or the `soocool_allow_query_token_webhook_url` filter, and can opt out of HMAC with `SOOCOOL_REQUIRE_WEBHOOK_SIGNATURE` or the `soocool_require_webhook_signature` filter after a documented risk decision and staging test.
+
+Handmatige API-tests blijven standaard volledig uitgeschakeld. Wanneer `SOOCOOL_ENABLE_MANUAL_API_TESTS` expliciet `true` is, blokkeert de plugin testorders alsnog zodra de actieve SooCool-omgeving productie is. Productie-tests kunnen alleen bewust worden toegestaan met `SOOCOOL_ENABLE_PRODUCTION_MANUAL_API_TESTS` of de `soocool_enable_production_manual_api_tests` filter.
 
 == Privacy ==
 
@@ -111,6 +113,33 @@ Site owners are responsible for disclosing the use of SooCool as a transport ser
 Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. WooCommerce order meta such as SooCool order IDs, references, sync status and last errors is intentionally retained for historical order and audit continuity.
 
 == Changelog ==
+
+= 0.5.26 =
+* Security: webhook-HMAC is now required by default and generated webhook URLs no longer include the token query parameter unless legacy fallback is explicitly enabled.
+* Security: handmatige API-testverzoeken worden geblokkeerd op de productieomgeving, tenzij productietests expliciet in code zijn toegestaan.
+* Compatibility: het SooCool-adminscherm onderdrukt geen niet-SooCool WordPress admin notices meer.
+* Localization: Nederlandse `nl_NL` taalbestanden toegevoegd en bundled language loading expliciet gemaakt.
+* Release: metadata afgestemd op WordPress.org-repositorydistributie; er staat geen private updatebron in de pluginheader.
+* Hardening: REST-beheer, webhook-secret en handmatige API-test capabilities zijn filterbaar zonder de standaard shopmanager-flow te wijzigen.
+* Compatibility: activation/runtime requirements now enforce WooCommerce 8.0 or higher, matching the plugin header.
+* Fixed: the checkout phone field is only forced required while the SooCool delivery checkout is enabled.
+* Added: de klassieke checkout toont nu in het Nederlands wanneer de België-toeslag en avondtoeslag voor 17:00-22:00 gelden.
+* Added: het adminscherm toont nu ook een Nederlandse checkouttekst-samenvatting bij de toeslagvelden.
+* Added: Nederland-toeslag en Avondtoeslag Nederland zijn instelbaar boven de België-toeslagvelden en worden toegepast bij afleverland NL.
+
+= 0.5.25 =
+* Added: België-toeslag en avondtoeslag België zijn nu instelbaar in de backend onder Bezorgschema.
+* Changed: de klassieke checkout gebruikt de opgeslagen toeslaginstellingen in plaats van vaste codewaarden.
+
+= 0.5.24 =
+* Added: België krijgt in de klassieke checkout een bezorgtoeslag van €2,00 bij afleverland BE.
+* Added: België krijgt bij het vaste avonddagdeel 17:00-22:00 aanvullend een avondtoeslag van €1,50.
+* Changed: wijziging van bezorgdag of dagdeel triggert WooCommerce checkout-herberekening, zodat de toeslag direct zichtbaar wordt.
+
+= 0.5.23 =
+* Fixed: handmatige SooCool API-test UI en REST-endpoint zijn standaard uitgeschakeld tenzij `SOOCOOL_ENABLE_MANUAL_API_TESTS` expliciet op `true` staat.
+* Fixed: productie-adminstylesheet behoudt de juiste `.soocool-shell :where(...)` descendant selectors in de minified CSS.
+* Packaging: distributie-ZIP opnieuw opgebouwd met de canonieke pluginmap `soocool-for-woocommerce/`.
 
 = 0.5.21 =
 * Verbeterd: SooCool-webhook-URL bevat nu WooCommerce order-ID en orderreferentie, zodat callbacks de juiste WooCommerce-order betrouwbaarder kunnen koppelen.
@@ -168,12 +197,12 @@ Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. W
 * Removed an unreachable duplicate return in API-key resolution.
 
 = 0.5.4 =
-* Production-readiness cleanup: remove AI-specific generator wording from the translation template metadata.
+* Updated the translation template metadata.
 
 = 0.5.3 =
 * Removed the select-control container margin override and added an 8px top margin.
-* Added maintenance comments around select-field and label `!important` overrides.
-* Reworded maintenance comments into direct technical comments.
+* Documented why the scoped select-field and label `!important` overrides are required.
+* Kept CSS maintenance notes concise and technical.
 
 = 0.5.2 =
 * Aligned admin dropdown field styling with the existing text/search input styling using scoped `!important` CSS overrides.

@@ -63,6 +63,7 @@ final class DeliveryOptions {
 	public function register(): void {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'woocommerce_review_order_before_payment', array( $this, 'render_checkout_field' ) );
+		add_action( 'woocommerce_cart_calculate_fees', array( $this, 'apply_delivery_surcharges' ) );
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'require_checkout_phone' ) );
 		add_action( 'woocommerce_after_checkout_validation', array( $this, 'validate_checkout_field' ), 10, 2 );
 		add_action( 'woocommerce_checkout_create_order', array( $this, 'save_to_order' ), 10, 2 );
@@ -106,11 +107,69 @@ final class DeliveryOptions {
 
 	/** @param array<string, mixed> $fields @return array<string, mixed> */
 	public function require_checkout_phone( array $fields ): array {
+		$settings = $this->options->all();
+		if ( ! (bool) ( $settings['checkout_delivery_enabled'] ?? true ) ) {
+			return $fields;
+		}
+
 		if ( isset( $fields['billing']['billing_phone'] ) && is_array( $fields['billing']['billing_phone'] ) ) {
 			$fields['billing']['billing_phone']['required'] = true;
 		}
 
 		return $fields;
+	}
+
+	public function apply_delivery_surcharges( mixed $cart ): void {
+		if ( is_admin() && ! wp_doing_ajax() ) {
+			return;
+		}
+
+		if ( ! is_object( $cart ) || ! method_exists( $cart, 'add_fee' ) ) {
+			return;
+		}
+
+		$settings = $this->options->all();
+		if ( ! (bool) ( $settings['checkout_delivery_enabled'] ?? true ) ) {
+			return;
+		}
+
+		$country = $this->checkout_delivery_country();
+		if ( ! in_array( $country, array( 'NL', 'BE' ), true ) ) {
+			return;
+		}
+
+		if ( 'NL' === $country ) {
+			$country_surcharge = (float) apply_filters( 'soocool_netherlands_delivery_surcharge_amount', $this->delivery_surcharge_amount( $settings, 'checkout_delivery_netherlands_surcharge_amount', 0.00 ), $cart );
+			if ( $country_surcharge > 0 ) {
+				$cart->add_fee( __( 'Nederland-toeslag bezorging', 'soocool-for-woocommerce' ), $country_surcharge, false );
+			}
+
+			$slot = $this->request->posted_time_slot();
+			if ( ! $this->is_evening_slot( $slot ) ) {
+				return;
+			}
+
+			$evening_surcharge = (float) apply_filters( 'soocool_netherlands_evening_delivery_surcharge_amount', $this->delivery_surcharge_amount( $settings, 'checkout_delivery_netherlands_evening_surcharge_amount', 0.00 ), $cart );
+			if ( $evening_surcharge > 0 ) {
+				$cart->add_fee( __( 'Avondtoeslag Nederland', 'soocool-for-woocommerce' ), $evening_surcharge, false );
+			}
+			return;
+		}
+
+		$country_surcharge = (float) apply_filters( 'soocool_belgium_delivery_surcharge_amount', $this->delivery_surcharge_amount( $settings, 'checkout_delivery_belgium_surcharge_amount', 2.00 ), $cart );
+		if ( $country_surcharge > 0 ) {
+			$cart->add_fee( __( 'België-toeslag bezorging', 'soocool-for-woocommerce' ), $country_surcharge, false );
+		}
+
+		$slot = $this->request->posted_time_slot();
+		if ( ! $this->is_evening_slot( $slot ) ) {
+			return;
+		}
+
+		$evening_surcharge = (float) apply_filters( 'soocool_belgium_evening_delivery_surcharge_amount', $this->delivery_surcharge_amount( $settings, 'checkout_delivery_belgium_evening_surcharge_amount', 1.50 ), $cart );
+		if ( $evening_surcharge > 0 ) {
+			$cart->add_fee( __( 'Avondtoeslag België', 'soocool-for-woocommerce' ), $evening_surcharge, false );
+		}
 	}
 
 	public function render_checkout_field(): void {
@@ -204,6 +263,56 @@ final class DeliveryOptions {
 		$this->order_details->render_customer_order_detail( $order );
 	}
 
+	private function checkout_delivery_country(): string {
+		$country = $this->posted_country( 'shipping_country' );
+		if ( '' !== $country ) {
+			return $country;
+		}
+
+		$country = $this->posted_country( 'billing_country' );
+		if ( '' !== $country ) {
+			return $country;
+		}
+
+		$woocommerce = function_exists( 'WC' ) ? WC() : null;
+		if ( $woocommerce && $woocommerce->customer ) {
+			$shipping_country = strtoupper( sanitize_key( (string) $woocommerce->customer->get_shipping_country() ) );
+			if ( 1 === preg_match( '/^[A-Z]{2}$/', $shipping_country ) ) {
+				return $shipping_country;
+			}
+
+			$billing_country = strtoupper( sanitize_key( (string) $woocommerce->customer->get_billing_country() ) );
+			if ( 1 === preg_match( '/^[A-Z]{2}$/', $billing_country ) ) {
+				return $billing_country;
+			}
+		}
+
+		return '';
+	}
+
+	private function posted_country( string $field ): string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce validates the checkout nonce before fee calculation; value is sanitized and allow-listed here.
+		$value   = isset( $_POST[ $field ] ) && is_scalar( $_POST[ $field ] ) ? sanitize_text_field( wp_unslash( (string) $_POST[ $field ] ) ) : '';
+		$country = strtoupper( sanitize_key( $value ) );
+
+		return 1 === preg_match( '/^[A-Z]{2}$/', $country ) ? $country : '';
+	}
+
+	/** @param array<string, mixed> $settings */
+	private function delivery_surcharge_amount( array $settings, string $key, float $fallback ): float {
+		$value = $settings[ $key ] ?? $fallback;
+		if ( ! is_numeric( $value ) ) {
+			return $fallback;
+		}
+
+		return max( 0.0, round( (float) $value, 2 ) );
+	}
+
+	/** @param array{time_from:string,time_to:string} $slot */
+	private function is_evening_slot( array $slot ): bool {
+		return '17:00' === $slot['time_from'] && '22:00' === $slot['time_to'];
+	}
+
 	/** @param array<string, mixed> $settings */
 	private function render_delivery_info( array $settings ): void {
 		$cutoff_time = $this->checkout_cutoff_time_label( $settings );
@@ -221,7 +330,73 @@ final class DeliveryOptions {
 			echo '<p>' . esc_html__( 'Kies hieronder een bezorgdag; je ziet daarbij tot welk moment je voor die dag kunt bestellen.', 'soocool-for-woocommerce' ) . '</p>';
 		}
 
+		$this->render_delivery_surcharge_info( $settings );
+
 		echo '</div>';
+	}
+
+	/** @param array<string, mixed> $settings */
+	private function render_delivery_surcharge_info( array $settings ): void {
+		$netherlands_surcharge = $this->delivery_surcharge_amount( $settings, 'checkout_delivery_netherlands_surcharge_amount', 0.00 );
+		$netherlands_evening_surcharge = $this->delivery_surcharge_amount( $settings, 'checkout_delivery_netherlands_evening_surcharge_amount', 0.00 );
+		$belgium_surcharge = $this->delivery_surcharge_amount( $settings, 'checkout_delivery_belgium_surcharge_amount', 2.00 );
+		$belgium_evening_surcharge = $this->delivery_surcharge_amount( $settings, 'checkout_delivery_belgium_evening_surcharge_amount', 1.50 );
+
+		if ( $netherlands_surcharge <= 0.0 && $netherlands_evening_surcharge <= 0.0 && $belgium_surcharge <= 0.0 && $belgium_evening_surcharge <= 0.0 ) {
+			return;
+		}
+
+		$this->render_country_delivery_surcharge_info( __( 'Nederland', 'soocool-for-woocommerce' ), $netherlands_surcharge, $netherlands_evening_surcharge );
+		$this->render_country_delivery_surcharge_info( __( 'België', 'soocool-for-woocommerce' ), $belgium_surcharge, $belgium_evening_surcharge );
+	}
+
+	private function render_country_delivery_surcharge_info( string $country_label, float $country_surcharge, float $evening_surcharge ): void {
+		if ( $country_surcharge <= 0.0 && $evening_surcharge <= 0.0 ) {
+			return;
+		}
+
+		$country_surcharge_label = $this->format_money_amount( $country_surcharge );
+		$evening_surcharge_label = $this->format_money_amount( $evening_surcharge );
+
+		if ( $country_surcharge > 0.0 && $evening_surcharge > 0.0 ) {
+			echo '<p>' . sprintf(
+				/* translators: 1: delivery country, 2: country delivery surcharge amount, 3: evening delivery surcharge amount. */
+				esc_html__( 'Voor levering naar %1$s geldt een bezorgtoeslag van %2$s. Kies je het avonddagdeel 17:00-22:00, dan komt daar %3$s avondtoeslag bij.', 'soocool-for-woocommerce' ),
+				esc_html( $country_label ),
+				esc_html( $country_surcharge_label ),
+				esc_html( $evening_surcharge_label )
+			) . '</p>';
+			return;
+		}
+
+		if ( $country_surcharge > 0.0 ) {
+			echo '<p>' . sprintf(
+				/* translators: 1: delivery country, 2: country delivery surcharge amount. */
+				esc_html__( 'Voor levering naar %1$s geldt een bezorgtoeslag van %2$s.', 'soocool-for-woocommerce' ),
+				esc_html( $country_label ),
+				esc_html( $country_surcharge_label )
+			) . '</p>';
+			return;
+		}
+
+		echo '<p>' . sprintf(
+			/* translators: 1: delivery country, 2: evening delivery surcharge amount. */
+			esc_html__( 'Voor levering naar %1$s geldt bij het avonddagdeel 17:00-22:00 een avondtoeslag van %2$s.', 'soocool-for-woocommerce' ),
+			esc_html( $country_label ),
+			esc_html( $evening_surcharge_label )
+		) . '</p>';
+	}
+
+	private function format_money_amount( float $amount ): string {
+		if ( function_exists( 'wc_price' ) ) {
+			return html_entity_decode( wp_strip_all_tags( wc_price( $amount ) ), ENT_QUOTES, get_bloginfo( 'charset' ) ?: 'UTF-8' );
+		}
+
+		if ( function_exists( 'number_format_i18n' ) ) {
+			return '€' . number_format_i18n( $amount, 2 );
+		}
+
+		return '€' . number_format( $amount, 2, ',', '.' );
 	}
 
 	/** @param array<string, mixed> $settings */
