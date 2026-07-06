@@ -51,6 +51,23 @@ final class WebhookPayloadExtractor {
 		return $this->extract_text( $payload, array( 'orderReference', 'ourReference', 'reference' ) );
 	}
 
+	/** @param array<string, mixed> $payload */
+	public function wc_order_id( array $payload ): int {
+		$value = $this->extract_text(
+			$payload,
+			array(
+				'wcOrderId',
+				'wc_order_id',
+				'wooOrderId',
+				'woo_order_id',
+				'woocommerceOrderId',
+				'woocommerce_order_id',
+			)
+		);
+
+		return ctype_digit( $value ) && 0 < (int) $value ? (int) $value : 0;
+	}
+
 	/** @param array<string, mixed> $payload @return array<string, string> */
 	public function update_data( array $payload ): array {
 		return array(

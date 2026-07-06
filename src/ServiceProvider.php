@@ -7,8 +7,6 @@ namespace SooCool\WooCommerce;
 defined( 'ABSPATH' ) || exit;
 
 use SooCool\WooCommerce\Admin\AdminMenu;
-use SooCool\WooCommerce\Admin\DebugRedactor;
-use SooCool\WooCommerce\Admin\DummyOrderFactory;
 use SooCool\WooCommerce\Admin\Assets;
 use SooCool\WooCommerce\Admin\Notices;
 use SooCool\WooCommerce\Admin\PrivacyPolicy;
@@ -39,7 +37,6 @@ use SooCool\WooCommerce\Infrastructure\Requirements;
 use SooCool\WooCommerce\Infrastructure\SecretSanitizer;
 use SooCool\WooCommerce\Rest\ConnectionController;
 use SooCool\WooCommerce\Rest\LogsController;
-use SooCool\WooCommerce\Rest\ManualTestController;
 use SooCool\WooCommerce\Rest\OrderSyncController;
 use SooCool\WooCommerce\Rest\SettingsController;
 use SooCool\WooCommerce\Rest\SettingsSchema;
@@ -96,12 +93,10 @@ final class ServiceProvider {
 			OrderSyncService::class => new OrderSyncService( $this->get( ApiClient::class ), $this->get( OrderMeta::class ) ),
 			OrderStatusPresenter::class => new OrderStatusPresenter(),
 			OrderSyncCoordinator::class => new OrderSyncCoordinator( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ), $this->get( OrderSyncService::class ), $this->get( RemoteStatusMapper::class ), $this->get( SecretSanitizer::class ) ),
-			ShippingLabelService::class => new ShippingLabelService( $this->get( ApiClient::class ), $this->get( OrderMeta::class ) ),
+			ShippingLabelService::class => new ShippingLabelService( $this->get( ApiClient::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ) ),
 			ShippingLabelBulkTokenStore::class => new ShippingLabelBulkTokenStore(),
 			ShippingLabelOrderResolver::class => new ShippingLabelOrderResolver( $this->get( OrderMeta::class ) ),
 			ShippingLabelPdfResponse::class => new ShippingLabelPdfResponse(),
-			DummyOrderFactory::class => new DummyOrderFactory( $this->get( DeliverySchedule::class ) ),
-			DebugRedactor::class => new DebugRedactor( $this->get( OptionRepository::class ) ),
 			AdminMenu::class => new AdminMenu(),
 			Assets::class => new Assets(),
 			Notices::class => new Notices( $this->get( Requirements::class ), $this->get( OptionRepository::class ) ),
@@ -112,7 +107,6 @@ final class ServiceProvider {
 			DeliveryOptions::class => new DeliveryOptions( $this->get( OptionRepository::class ), $this->get( DeliverySchedule::class ), $this->get( DeliveryCheckoutRequest::class ), $this->get( DeliveryOrderDetails::class ) ),
 			ConnectionController::class => new ConnectionController( $this->get( ApiClient::class ) ),
 			LogsController::class => new LogsController( $this->get( Logger::class ) ),
-			ManualTestController::class => new ManualTestController( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( DummyOrderFactory::class ), $this->get( DebugRedactor::class ), $this->get( Logger::class ), $this->get( OptionRepository::class ), $this->get( OrderSyncService::class ) ),
 			OrderSyncController::class => new OrderSyncController( $this->get( OrderSyncCoordinator::class ), $this->get( OptionRepository::class ) ),
 			WebhookAuthenticator::class => new WebhookAuthenticator( $this->get( OptionRepository::class ) ),
 			WebhookPayloadExtractor::class => new WebhookPayloadExtractor(),

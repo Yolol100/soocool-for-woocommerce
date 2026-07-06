@@ -1,3 +1,28 @@
+## 0.5.29 - 2026-07-06
+
+- Cleanup: removed disabled manual API-test endpoints, dummy-order factory and the optional `admin-test` bundle from the production ZIP.
+- Cleanup: added `Update URI: false` for private distribution so WordPress does not accidentally match the slug with a public directory plugin.
+- Fixed: admin asset metadata now matches the plugin version.
+- Verified: no AI/editor/agent artifacts, nested archives, obfuscated code patterns or source maps are shipped.
+
+## 0.5.28 - 2026-07-06
+
+- Fix: webhook-callbacks koppelen nu ook via WooCommerce order-ID's die in de payload zelf staan, niet alleen via route- of queryparameters.
+- Fix: SooCool API-responses worden robuuster gelezen wanneer orderId, orderReference of goods genest onder `order`, `data` of `data.order` terugkomen.
+- Fix: verzendlabel-downloads bewaren opnieuw gevonden remote orderreferenties correct, zodat labels minder snel vastlopen op oude of ontbrekende lokale meta.
+- Cleanup: dubbele API request-body assignment verwijderd.
+
+## 0.5.27 - 2026-07-06
+
+- Fix: SooCool-orderzoekopdrachten op orderreferentie accepteren alleen nog exacte referentiematches. Dit voorkomt dat labeldownloads aan een verkeerde remote order worden gekoppeld wanneer de API een bredere zoekrespons teruggeeft.
+- Fix: verzendlabeldownloads zoeken nu ook met de actuele WooCommerce orderreferentie inclusief ingestelde prefix, zodat bestaande SooCool-orders opnieuw gekoppeld kunnen worden na een gemiste lokale meta-save.
+- Fix: handmatige API-testen met een echte WooCommerce-order slaan de gevonden of aangemaakte SooCool order-ID nu direct op in de WooCommerce-order.
+- Fix: gegenereerde webhook-URL's krijgen naast queryparameters ook een order-ID in het REST-pad. De ontvanger accepteert zowel de oude als de nieuwe route, waardoor callbacks robuuster blijven als queryparameters door de externe webhookprovider niet worden teruggestuurd.
+
+- Fixed: checkout-toeslagen lezen de WooCommerce `update_order_review` formulierdata nu correct uit `post_data`, zodat landtoeslagen en avondtoeslagen direct in de klassieke checkout-totalen worden meegerekend.
+- Fixed: adminbedragen voor toeslagen accepteren nu ook decimale komma-invoer zoals `1,5` zonder dat de waarde als ongeldig of leeg wordt opgeslagen.
+- Verified: bezorgdagen vooruit blijven begrensd op maximaal 92 dagen en geblokkeerde datums worden genormaliseerd als geldige `YYYY-MM-DD`-datums.
+
 ## 0.5.26 - 2026-07-01
 
 - Security: webhook-HMAC is now required by default and generated webhook URLs no longer include the token query parameter unless legacy fallback is explicitly enabled.

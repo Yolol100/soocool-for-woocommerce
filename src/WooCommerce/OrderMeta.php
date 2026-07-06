@@ -168,16 +168,20 @@ final class OrderMeta {
 
 	/** @param array<string, mixed> $body */
 	public function extract_order_id( array $body ): string {
-		if ( ! isset( $body['orderId'] ) || is_array( $body['orderId'] ) || is_object( $body['orderId'] ) ) {
-			return '';
+		foreach ( $this->response_containers( $body ) as $container ) {
+			foreach ( array( 'orderId', 'soocoolOrderId', 'id' ) as $key ) {
+				if ( ! isset( $container[ $key ] ) || is_array( $container[ $key ] ) || is_object( $container[ $key ] ) ) {
+					continue;
+				}
+
+				$order_id = trim( sanitize_text_field( (string) $container[ $key ] ) );
+				if ( ctype_digit( $order_id ) && 0 < (int) $order_id ) {
+					return (string) (int) $order_id;
+				}
+			}
 		}
 
-		$order_id = trim( sanitize_text_field( (string) $body['orderId'] ) );
-		if ( ! ctype_digit( $order_id ) || 0 >= (int) $order_id ) {
-			return '';
-		}
-
-		return (string) (int) $order_id;
+		return '';
 	}
 
 	public function get_our_reference( WC_Order $order ): string {
@@ -218,8 +222,15 @@ final class OrderMeta {
 
 	/** @param array<string, mixed> $body */
 	private function extract_order_reference( array $body, string $fallback ): string {
-		if ( isset( $body['orderReference'] ) && ! is_array( $body['orderReference'] ) && ! is_object( $body['orderReference'] ) ) {
-			return sanitize_text_field( (string) $body['orderReference'] );
+		foreach ( $this->response_containers( $body ) as $container ) {
+			foreach ( array( 'orderReference', 'ourReference', 'reference' ) as $key ) {
+				if ( isset( $container[ $key ] ) && ! is_array( $container[ $key ] ) && ! is_object( $container[ $key ] ) ) {
+					$reference = trim( sanitize_text_field( (string) $container[ $key ] ) );
+					if ( '' !== $reference ) {
+						return $reference;
+					}
+				}
+			}
 		}
 
 		return '' !== $fallback ? sanitize_text_field( $fallback ) : '';
@@ -228,7 +239,7 @@ final class OrderMeta {
 	/** @param array<string, mixed> $body @return array<int, int> */
 	private function extract_good_ids( array $body ): array {
 		$ids = array();
-		foreach ( array( $body, $body['order'] ?? null, $body['data'] ?? null ) as $container ) {
+		foreach ( $this->response_containers( $body ) as $container ) {
 			if ( ! is_array( $container ) || ! isset( $container['goods'] ) || ! is_array( $container['goods'] ) ) {
 				continue;
 			}
@@ -250,6 +261,27 @@ final class OrderMeta {
 		}
 
 		return array_values( array_unique( $ids ) );
+	}
+
+	/** @param array<string, mixed> $body @return array<int, array<string, mixed>> */
+	private function response_containers( array $body ): array {
+		$containers = array( $body );
+
+		foreach ( array( 'order', 'data' ) as $key ) {
+			if ( isset( $body[ $key ] ) && is_array( $body[ $key ] ) ) {
+				$containers[] = $body[ $key ];
+			}
+		}
+
+		if ( isset( $body['data']['order'] ) && is_array( $body['data']['order'] ) ) {
+			$containers[] = $body['data']['order'];
+		}
+
+		if ( isset( $body['order']['data'] ) && is_array( $body['order']['data'] ) ) {
+			$containers[] = $body['order']['data'];
+		}
+
+		return $containers;
 	}
 
 	private function normalize_good_id( mixed $value ): ?int {

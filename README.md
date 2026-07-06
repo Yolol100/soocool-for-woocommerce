@@ -20,7 +20,7 @@ Privacy and external-service details are documented in `readme.txt` under the ex
 
 ## Source and build route
 
-This release package contains runtime PHP source and built assets used by the plugin at runtime. The admin JavaScript is shipped as readable `assets/build/admin.js` and `assets/build/admin-test.js`; minified frontend/order scripts and CSS are included only where they are real compressed assets. For public WordPress.org submission, publish the development repository or include the original source assets and build tooling so reviewers can reproduce the built files.
+This release package contains runtime PHP source and built assets used by the plugin at runtime. The admin JavaScript is shipped as readable `assets/build/admin.js`; minified frontend/order scripts and CSS are included only where they are real compressed assets. For public WordPress.org submission, publish the development repository or include the original source assets and build tooling so reviewers can reproduce the built files.
 
 ## Features
 
@@ -52,7 +52,6 @@ php -l soocool-for-woocommerce.php
 php -l uninstall.php
 find src -name "*.php" -print0 | xargs -0 -n1 php -l
 node --check assets/build/admin.js
-node --check assets/build/admin-test.js
 node --check assets/admin/order-actions.js
 node --check assets/admin/order-actions.min.js
 node --check assets/frontend/checkout-delivery.js
@@ -61,15 +60,13 @@ node --check assets/frontend/checkout-delivery.min.js
 
 This repository is a release package and does not currently include Composer, npm or CI configuration files. If you are working from a separate development repository that contains those files, run that repository's Composer, npm and build commands before copying generated assets into this package.
 
-For WordPress.org submission, keep update delivery managed by WordPress.org and do not set a private update source in the plugin header.
+This private release package uses `Update URI: false` to prevent accidental update collisions with a public WordPress.org plugin that might use the same slug. For WordPress.org submission, remove that private-distribution header and let WordPress.org manage updates.
 
 ## Security notes
 
 Do not commit API keys, portal passwords, `.env` files, production URLs with secrets, or exported logs containing customer data. Use the test environment first.
 
 The webhook receiver requires the stored SooCool webhook token and HMAC headers by default. Generated webhook URLs do not include the token as a query parameter unless legacy fallback is explicitly enabled. The receiver supports `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp`, `X-SooCool-Webhook-Signature` and optional `X-SooCool-Webhook-Id`. Legacy accounts that cannot send headers yet can opt in to query-token URLs with `SOOCOOL_ALLOW_QUERY_TOKEN_WEBHOOK_URL` or the `soocool_allow_query_token_webhook_url` filter, and can opt out of HMAC with `SOOCOOL_REQUIRE_WEBHOOK_SIGNATURE` or the `soocool_require_webhook_signature` filter after a documented risk decision and staging test.
-
-Manual API tests remain disabled unless `SOOCOOL_ENABLE_MANUAL_API_TESTS` is explicitly set to `true`. Even then, test requests are blocked when the active SooCool environment is production unless `SOOCOOL_ENABLE_PRODUCTION_MANUAL_API_TESTS` or the `soocool_enable_production_manual_api_tests` filter explicitly allows that risk.
 
 ## Nederlandse vertaling
 
@@ -102,7 +99,6 @@ php -l soocool-for-woocommerce.php
 php -l uninstall.php
 find src -name "*.php" -print0 | xargs -0 -n1 php -l
 node --check assets/build/admin.js
-node --check assets/build/admin-test.js
 node --check assets/admin/order-actions.js
 node --check assets/admin/order-actions.min.js
 node --check assets/frontend/checkout-delivery.js

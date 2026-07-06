@@ -27,15 +27,17 @@ final class WebhookController extends AbstractRestController {
 	) {}
 
 	public function register_routes(): void {
-		register_rest_route(
-			$this->namespace,
-			'/webhook',
-			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'receive' ),
-				'permission_callback' => array( $this, 'can_receive' ),
-			)
-		);
+		foreach ( array( '/webhook', '/webhook/(?P<wc_order_id>\d+)' ) as $route ) {
+			register_rest_route(
+				$this->namespace,
+				$route,
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'receive' ),
+					'permission_callback' => array( $this, 'can_receive' ),
+				)
+			);
+		}
 	}
 
 	public function can_receive( WP_REST_Request $request ): bool|WP_Error {
@@ -59,14 +61,17 @@ final class WebhookController extends AbstractRestController {
 			$order_reference = $this->webhook_order_reference( $request );
 		}
 		$wc_order_id = $this->webhook_wc_order_id( $request );
-		$order            = $this->find_order( $soocool_order_id, $order_reference, $wc_order_id );
+		if ( 0 >= $wc_order_id ) {
+			$wc_order_id = $this->payloads->wc_order_id( $payload );
+		}
+		$order       = $this->find_order( $soocool_order_id, $order_reference, $wc_order_id );
 
 		if ( ! $order instanceof WC_Order ) {
 			$this->logger->info(
 				'SooCool webhook genegeerd: WooCommerce-order niet gevonden.',
 				array(
 					'status'         => 202,
-					'path'           => '/webhook',
+					'path'           => sanitize_text_field( (string) $request->get_route() ),
 					'orderId'        => '' !== $soocool_order_id ? $soocool_order_id : '[missing]',
 					'orderReference' => '' !== $order_reference ? $order_reference : '[missing]',
 					'wcOrderId'      => 0 < $wc_order_id ? (string) $wc_order_id : '[missing]',
@@ -255,6 +260,11 @@ final class WebhookController extends AbstractRestController {
 	}
 
 	private function webhook_wc_order_id( WP_REST_Request $request ): int {
+		$route_value = $request->get_param( 'wc_order_id' );
+		if ( is_scalar( $route_value ) && ctype_digit( trim( (string) $route_value ) ) && 0 < (int) $route_value ) {
+			return (int) $route_value;
+		}
+
 		$params = $request->get_query_params();
 		if ( ! is_array( $params ) ) {
 			return 0;

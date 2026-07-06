@@ -54,15 +54,46 @@ final class OrderPayloadBuilder {
 			return '';
 		}
 
+		$order_id = (int) $order->get_id();
+		$webhook_url = $this->order_specific_webhook_url( $webhook_url, $order_id );
+
 		return esc_url_raw(
 			add_query_arg(
 				array(
-					'wc_order_id'     => (int) $order->get_id(),
+					'wc_order_id'     => $order_id,
 					'order_reference' => sanitize_text_field( $order_reference ),
 				),
 				$webhook_url
 			)
 		);
+	}
+
+	private function order_specific_webhook_url( string $webhook_url, int $order_id ): string {
+		if ( 0 >= $order_id || ! str_contains( $webhook_url, '/soocool/v1/webhook' ) ) {
+			return $webhook_url;
+		}
+
+		$query = '';
+		$hash = '';
+		$base = $webhook_url;
+		$hash_position = strpos( $base, '#' );
+		if ( false !== $hash_position ) {
+			$hash = substr( $base, $hash_position );
+			$base = substr( $base, 0, $hash_position );
+		}
+
+		$query_position = strpos( $base, '?' );
+		if ( false !== $query_position ) {
+			$query = substr( $base, $query_position );
+			$base = substr( $base, 0, $query_position );
+		}
+
+		$base = untrailingslashit( $base );
+		if ( ! str_ends_with( $base, '/soocool/v1/webhook' ) ) {
+			return $webhook_url;
+		}
+
+		return $base . '/' . rawurlencode( (string) $order_id ) . $query . $hash;
 	}
 
 	private function order_reference( WC_Order $order, string $prefix ): string {

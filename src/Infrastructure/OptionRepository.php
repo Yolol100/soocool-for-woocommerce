@@ -701,20 +701,6 @@ final class OptionRepository {
 		return (bool) apply_filters( 'soocool_allow_query_token_webhook_url', $default );
 	}
 
-	public function production_manual_api_tests_enabled(): bool {
-		$default = $this->bool_constant( 'SOOCOOL_ENABLE_PRODUCTION_MANUAL_API_TESTS', false );
-
-		/**
-		 * Allow manual API-test requests to target the production SooCool environment.
-		 *
-		 * Disabled by default so an opt-in test route cannot create real production
-		 * SooCool orders unless a developer has made that risk decision explicitly.
-		 *
-		 * @param bool $enabled Default false.
-		 */
-		return (bool) apply_filters( 'soocool_enable_production_manual_api_tests', $default );
-	}
-
 	private function bool_constant( string $name, bool $default ): bool {
 		if ( ! defined( $name ) ) {
 			return $default;

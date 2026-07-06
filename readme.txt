@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.5.26
+Stable tag: 0.5.29
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -52,7 +52,7 @@ Please review SooCool's own service terms, data processing terms and privacy inf
 
 = Source and build notes =
 
-This production package contains the runtime PHP source, readable CSS/JS assets, `.min` runtime assets, documentation and translation template required to install and run the plugin. The plugin loads `.min` assets by default and falls back to readable assets when `SCRIPT_DEBUG` is enabled. Use the matching development repository for reproducible asset builds and coding-standard checks.
+This production package contains the runtime PHP source, readable CSS/JS assets, `.min` runtime assets, documentation and compiled Dutch translation file required to install and run the plugin. The plugin loads `.min` assets by default and falls back to readable assets when `SCRIPT_DEBUG` is enabled. Use the matching development repository for reproducible asset builds, translation source files and coding-standard checks.
 
 == Installation ==
 
@@ -98,8 +98,6 @@ The webhook receiver requires the stored SooCool webhook token and HMAC headers 
 
 The receiver supports `X-SooCool-Webhook-Token`, `X-SooCool-Webhook-Timestamp`, `X-SooCool-Webhook-Signature` and optional `X-SooCool-Webhook-Id`. Legacy accounts that cannot send headers yet can opt in to query-token URLs with `SOOCOOL_ALLOW_QUERY_TOKEN_WEBHOOK_URL` or the `soocool_allow_query_token_webhook_url` filter, and can opt out of HMAC with `SOOCOOL_REQUIRE_WEBHOOK_SIGNATURE` or the `soocool_require_webhook_signature` filter after a documented risk decision and staging test.
 
-Handmatige API-tests blijven standaard volledig uitgeschakeld. Wanneer `SOOCOOL_ENABLE_MANUAL_API_TESTS` expliciet `true` is, blokkeert de plugin testorders alsnog zodra de actieve SooCool-omgeving productie is. Productie-tests kunnen alleen bewust worden toegestaan met `SOOCOOL_ENABLE_PRODUCTION_MANUAL_API_TESTS` of de `soocool_enable_production_manual_api_tests` filter.
-
 == Privacy ==
 
 This plugin sends WooCommerce order, address, contact and package data to the SooCool API only when needed for configured transport operations. The plugin stores SooCool sync metadata on the WooCommerce order and stores sanitized activity logs in WordPress options.
@@ -113,6 +111,16 @@ Site owners are responsible for disclosing the use of SooCool as a transport ser
 Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. WooCommerce order meta such as SooCool order IDs, references, sync status and last errors is intentionally retained for historical order and audit continuity.
 
 == Changelog ==
+
+= 0.5.29 =
+* Cleanup: removed disabled manual API-test endpoints, dummy-order factory and admin-test bundle from the production package.
+* Cleanup: added `Update URI: false` to prevent accidental WordPress.org update collisions for this private WooCommerce integration.
+* Fixed: aligned admin asset metadata with the plugin version.
+
+= 0.5.28 =
+* Fixed: checkout-toeslagen lezen de WooCommerce `update_order_review` formulierdata nu correct uit `post_data`, zodat landtoeslagen en avondtoeslagen direct in de klassieke checkout-totalen worden meegerekend.
+* Fixed: adminbedragen voor toeslagen accepteren nu ook decimale komma-invoer zoals `1,5` zonder dat de waarde als ongeldig of leeg wordt opgeslagen.
+* Verified: bezorgdagen vooruit blijven begrensd op maximaal 92 dagen en geblokkeerde datums worden genormaliseerd als geldige `YYYY-MM-DD`-datums.
 
 = 0.5.26 =
 * Security: webhook-HMAC is now required by default and generated webhook URLs no longer include the token query parameter unless legacy fallback is explicitly enabled.

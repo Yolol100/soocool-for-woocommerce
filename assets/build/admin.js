@@ -17,6 +17,15 @@
     apiFetch.use(apiFetch.createNonceMiddleware((window.sooCoolAdmin && window.sooCoolAdmin.nonce) || ''));
   }
 
+  function toMoneyAmount(value, fallback){
+    var normalized = String(value == null ? '' : value).replace(',', '.').trim();
+    var amount = normalized === '' ? NaN : Number(normalized);
+    if (!isFinite(amount)) {
+      return fallback;
+    }
+    return Math.max(0, Math.min(999, Math.round(amount * 100) / 100));
+  }
+
   function cleanPayload(settings){
     var payload = Object.assign({}, settings || {});
     delete payload.api_key_masked;
@@ -559,19 +568,19 @@
             ),
             el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--number' },
               el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Nederland-toeslag', 'soocool-for-woocommerce')), el('p', null, __('Extra bezorgkosten wanneer het afleverland Nederland is. Zet op 0 om deze toeslag uit te schakelen.', 'soocool-for-woocommerce'))),
-              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 0, max: 999, step: '0.01', label: __('Nederland-toeslag', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_netherlands_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_surcharge_amount), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_netherlands_surcharge_amount: Number(v) }); setSettings(next); } }))
+              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 0, max: 999, step: '0.01', label: __('Nederland-toeslag', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_netherlands_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_surcharge_amount), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_netherlands_surcharge_amount: toMoneyAmount(v, 0) }); setSettings(next); } }))
             ),
             el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--number' },
               el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Avondtoeslag Nederland', 'soocool-for-woocommerce')), el('p', null, __('Extra kosten bovenop de Nederland-toeslag wanneer de klant het avonddagdeel 17:00-22:00 kiest. Zet op 0 om deze toeslag uit te schakelen.', 'soocool-for-woocommerce'))),
-              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 0, max: 999, step: '0.01', label: __('Avondtoeslag Nederland', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_netherlands_evening_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_evening_surcharge_amount), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_netherlands_evening_surcharge_amount: Number(v) }); setSettings(next); } }))
+              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 0, max: 999, step: '0.01', label: __('Avondtoeslag Nederland', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_netherlands_evening_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_evening_surcharge_amount), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_netherlands_evening_surcharge_amount: toMoneyAmount(v, 0) }); setSettings(next); } }))
             ),
             el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--number' },
               el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('België-toeslag', 'soocool-for-woocommerce')), el('p', null, __('Extra bezorgkosten wanneer het afleverland België is. Zet op 0 om deze toeslag uit te schakelen.', 'soocool-for-woocommerce'))),
-              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 0, max: 999, step: '0.01', label: __('België-toeslag', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_belgium_surcharge_amount == null ? 2 : settings.checkout_delivery_belgium_surcharge_amount), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_belgium_surcharge_amount: Number(v) }); setSettings(next); } }))
+              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 0, max: 999, step: '0.01', label: __('België-toeslag', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_belgium_surcharge_amount == null ? 2 : settings.checkout_delivery_belgium_surcharge_amount), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_belgium_surcharge_amount: toMoneyAmount(v, 2) }); setSettings(next); } }))
             ),
             el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--number' },
               el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Avondtoeslag België', 'soocool-for-woocommerce')), el('p', null, __('Extra kosten bovenop de België-toeslag wanneer de klant het avonddagdeel 17:00-22:00 kiest. Zet op 0 om deze toeslag uit te schakelen.', 'soocool-for-woocommerce'))),
-              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 0, max: 999, step: '0.01', label: __('Avondtoeslag België', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_belgium_evening_surcharge_amount == null ? 1.5 : settings.checkout_delivery_belgium_evening_surcharge_amount), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_belgium_evening_surcharge_amount: Number(v) }); setSettings(next); } }))
+              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 0, max: 999, step: '0.01', label: __('Avondtoeslag België', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_belgium_evening_surcharge_amount == null ? 1.5 : settings.checkout_delivery_belgium_evening_surcharge_amount), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_belgium_evening_surcharge_amount: toMoneyAmount(v, 1.5) }); setSettings(next); } }))
             ),
             el('div', { className: 'soocool-delivery-setting-row' },
               el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Checkouttekst', 'soocool-for-woocommerce')), el('p', null, __('Klanten zien in de klassieke checkout wanneer levering naar Nederland of België een bezorgtoeslag heeft en wanneer het avonddagdeel 17:00-22:00 extra avondtoeslag krijgt.', 'soocool-for-woocommerce'))),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SooCool\WooCommerce\Domain;
 
 use SooCool\WooCommerce\Api\ApiClient;
+use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 
@@ -12,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class ShippingLabelService {
 
-	public function __construct( private readonly ApiClient $client, private readonly OrderMeta $meta ) {}
+	public function __construct( private readonly ApiClient $client, private readonly OrderMeta $meta, private readonly OptionRepository $options ) {}
 
 	public function get_label( WC_Order $order, string $output ): string {
 		$soocool_order_id = $this->resolved_soocool_order_id( $order );
@@ -78,7 +79,7 @@ final class ShippingLabelService {
 	private function resolved_soocool_order_id( WC_Order $order ): string {
 		$remote_order = $this->remote_order_by_reference( $order );
 		if ( array() !== $remote_order ) {
-			return $this->remember_remote_order( $order, $remote_order );
+			return $this->remember_remote_order( $order, $remote_order, $this->remote_reference( $remote_order ) );
 		}
 
 		$stored_order_id = $this->meta->get_soocool_order_id( $order );
@@ -88,7 +89,7 @@ final class ShippingLabelService {
 
 		$remote_order = $this->remote_order_by_id( $stored_order_id );
 		if ( array() !== $remote_order ) {
-			return $this->remember_remote_order( $order, $remote_order );
+			return $this->remember_remote_order( $order, $remote_order, $this->remote_reference( $remote_order ) );
 		}
 
 		return '';
@@ -121,14 +122,25 @@ final class ShippingLabelService {
 		}
 
 		$body = $response->body();
-		return is_array( $body ) && '' !== $this->meta->extract_order_id( $body ) ? $body : array();
+		if ( ! is_array( $body ) ) {
+			return array();
+		}
+
+		return '' !== $this->meta->extract_order_id( $body ) ? $body : array();
 	}
 
 	/** @return array<int, string> */
 	private function order_reference_candidates( WC_Order $order ): array {
+		$order_number = trim( sanitize_text_field( (string) $order->get_order_number() ) );
+		$settings     = $this->options->all();
+		$prefix       = sanitize_key( (string) ( $settings['order_reference_prefix'] ?? '' ) );
+		$prefixed     = '' !== $prefix && '' !== $order_number ? $prefix . '-' . $order_number : '';
+
 		$candidates = array(
 			$this->meta->get_order_reference( $order ),
-			(string) $order->get_order_number(),
+			$this->meta->get_our_reference( $order ),
+			$prefixed,
+			$order_number,
 		);
 
 		return array_values(
@@ -152,37 +164,66 @@ final class ShippingLabelService {
 			return array();
 		}
 
-		$first_valid = array();
-		foreach ( $body as $remote_order ) {
-			if ( ! is_array( $remote_order ) || '' === $this->meta->extract_order_id( $remote_order ) ) {
-				continue;
-			}
-
-			if ( array() === $first_valid ) {
-				$first_valid = $remote_order;
-			}
-
-			$remote_reference = isset( $remote_order['orderReference'] ) && ! is_array( $remote_order['orderReference'] ) && ! is_object( $remote_order['orderReference'] )
-				? trim( sanitize_text_field( (string) $remote_order['orderReference'] ) )
-				: '';
-
-			if ( $remote_reference === $reference ) {
+		foreach ( $this->orders_from_search_response( $body ) as $remote_order ) {
+			if ( $this->remote_reference( $remote_order ) === $reference ) {
 				return $remote_order;
 			}
 		}
 
-		return $first_valid;
+		return array();
+	}
+
+	/** @param array<string, mixed> $body @return array<int, array<string, mixed>> */
+	private function orders_from_search_response( array $body ): array {
+		$candidates = array();
+		if ( array_is_list( $body ) ) {
+			$candidates = $body;
+		} else {
+			$candidates[] = $body;
+			foreach ( array( 'order', 'data' ) as $key ) {
+				if ( isset( $body[ $key ] ) && is_array( $body[ $key ] ) ) {
+					$candidates = array_merge( $candidates, array_is_list( $body[ $key ] ) ? $body[ $key ] : array( $body[ $key ] ) );
+				}
+			}
+		}
+
+		$orders = array();
+		foreach ( $candidates as $candidate ) {
+			if ( is_array( $candidate ) && '' !== $this->meta->extract_order_id( $candidate ) ) {
+				$orders[] = $candidate;
+			}
+		}
+
+		return $orders;
 	}
 
 	/** @param array<string, mixed> $remote_order */
-	private function remember_remote_order( WC_Order $order, array $remote_order ): string {
+	private function remote_reference( array $remote_order ): string {
+		foreach ( array( 'orderReference', 'ourReference', 'reference' ) as $key ) {
+			if ( isset( $remote_order[ $key ] ) && ! is_array( $remote_order[ $key ] ) && ! is_object( $remote_order[ $key ] ) ) {
+				$reference = trim( sanitize_text_field( (string) $remote_order[ $key ] ) );
+				if ( '' !== $reference ) {
+					return $reference;
+				}
+			}
+		}
+
+		return '';
+	}
+
+	/** @param array<string, mixed> $remote_order */
+	private function remember_remote_order( WC_Order $order, array $remote_order, string $order_reference = '' ): string {
 		$soocool_order_id = $this->meta->extract_order_id( $remote_order );
 		if ( '' === $soocool_order_id ) {
 			return '';
 		}
 
+		if ( '' === $order_reference ) {
+			$order_reference = $this->meta->get_order_reference( $order );
+		}
+
 		try {
-			$this->meta->save_success( $order, $remote_order, $this->meta->get_order_reference( $order ) );
+			$this->meta->save_success( $order, $remote_order, $order_reference );
 		} catch ( \Throwable ) {
 			return $soocool_order_id;
 		}

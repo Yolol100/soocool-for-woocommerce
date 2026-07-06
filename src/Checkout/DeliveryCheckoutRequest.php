@@ -12,16 +12,14 @@ final class DeliveryCheckoutRequest {
 	public const FIELD_TIME_SLOT = 'soocool_requested_delivery_time_slot';
 
 	public function posted_delivery_date(): string {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce validates the checkout nonce before processing checkout fields; value is sanitized immediately on this line.
-		$value = isset( $_POST[ self::FIELD_DATE ] ) && is_scalar( $_POST[ self::FIELD_DATE ] ) ? sanitize_text_field( wp_unslash( (string) $_POST[ self::FIELD_DATE ] ) ) : '';
+		$value = $this->posted_value( self::FIELD_DATE );
 
 		return 1 === preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) ? $value : '';
 	}
 
 	/** @return array{time_from:string,time_to:string} */
 	public function posted_time_slot(): array {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce validates the checkout nonce before processing checkout fields; value is sanitized immediately on this line.
-		$value = isset( $_POST[ self::FIELD_TIME_SLOT ] ) && is_scalar( $_POST[ self::FIELD_TIME_SLOT ] ) ? sanitize_text_field( wp_unslash( (string) $_POST[ self::FIELD_TIME_SLOT ] ) ) : '';
+		$value = $this->posted_value( self::FIELD_TIME_SLOT );
 		if ( 1 !== preg_match( '/^([01]\d|2[0-3]):[0-5]\d\|([01]\d|2[0-3]):[0-5]\d$/', $value ) ) {
 			return array( 'time_from' => '', 'time_to' => '' );
 		}
@@ -31,6 +29,24 @@ final class DeliveryCheckoutRequest {
 			'time_from' => (string) ( $parts[0] ?? '' ),
 			'time_to'   => (string) ( $parts[1] ?? '' ),
 		);
+	}
+
+	public function posted_value( string $field ): string {
+		if ( '' === $field ) {
+			return '';
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce validates checkout nonces before checkout processing; update_order_review posts serialized checkout data and values are sanitized here.
+		if ( isset( $_POST[ $field ] ) && is_scalar( $_POST[ $field ] ) ) {
+			return sanitize_text_field( wp_unslash( (string) $_POST[ $field ] ) );
+		}
+
+		$posted_data = $this->posted_checkout_data();
+		if ( isset( $posted_data[ $field ] ) && is_scalar( $posted_data[ $field ] ) ) {
+			return sanitize_text_field( (string) $posted_data[ $field ] );
+		}
+
+		return '';
 	}
 
 	/** @param array<int, array<string, mixed>> $options */
@@ -59,5 +75,28 @@ final class DeliveryCheckoutRequest {
 		}
 
 		return $empty;
+	}
+
+	/** @return array<string, mixed> */
+	private function posted_checkout_data(): array {
+		static $posted_data = null;
+
+		if ( null !== $posted_data ) {
+			return $posted_data;
+		}
+
+		$posted_data = array();
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce update_order_review sends checkout form data in post_data; individual values are sanitized after parsing.
+		$raw = isset( $_POST['post_data'] ) && is_scalar( $_POST['post_data'] ) ? wp_unslash( (string) $_POST['post_data'] ) : '';
+		if ( '' === $raw ) {
+			return $posted_data;
+		}
+
+		wp_parse_str( $raw, $parsed );
+		if ( is_array( $parsed ) ) {
+			$posted_data = $parsed;
+		}
+
+		return $posted_data;
 	}
 }

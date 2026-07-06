@@ -291,8 +291,7 @@ final class DeliveryOptions {
 	}
 
 	private function posted_country( string $field ): string {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce validates the checkout nonce before fee calculation; value is sanitized and allow-listed here.
-		$value   = isset( $_POST[ $field ] ) && is_scalar( $_POST[ $field ] ) ? sanitize_text_field( wp_unslash( (string) $_POST[ $field ] ) ) : '';
+		$value   = $this->request->posted_value( $field );
 		$country = strtoupper( sanitize_key( $value ) );
 
 		return 1 === preg_match( '/^[A-Z]{2}$/', $country ) ? $country : '';

@@ -72,15 +72,50 @@ final class OrderSyncService {
 			return array();
 		}
 
-		$candidate = $body;
+		foreach ( $this->orders_from_search_response( $body ) as $candidate ) {
+			if ( $this->remote_reference( $candidate ) === $order_reference ) {
+				return $candidate;
+			}
+		}
+
+		return array();
+	}
+
+	/** @param array<string, mixed> $body @return array<int, array<string, mixed>> */
+	private function orders_from_search_response( array $body ): array {
+		$candidates = array();
 		if ( array_is_list( $body ) ) {
-			$candidate = is_array( $body[0] ?? null ) ? $body[0] : array();
+			$candidates = $body;
+		} else {
+			$candidates[] = $body;
+			foreach ( array( 'order', 'data' ) as $key ) {
+				if ( isset( $body[ $key ] ) && is_array( $body[ $key ] ) ) {
+					$candidates = array_merge( $candidates, array_is_list( $body[ $key ] ) ? $body[ $key ] : array( $body[ $key ] ) );
+				}
+			}
 		}
 
-		if ( ! is_array( $candidate ) || '' === $this->meta->extract_order_id( $candidate ) ) {
-			return array();
+		$orders = array();
+		foreach ( $candidates as $candidate ) {
+			if ( is_array( $candidate ) && '' !== $this->meta->extract_order_id( $candidate ) ) {
+				$orders[] = $candidate;
+			}
 		}
 
-		return $candidate;
+		return $orders;
+	}
+
+	/** @param array<string, mixed> $order */
+	private function remote_reference( array $order ): string {
+		foreach ( array( 'orderReference', 'ourReference', 'reference' ) as $key ) {
+			if ( isset( $order[ $key ] ) && ! is_array( $order[ $key ] ) && ! is_object( $order[ $key ] ) ) {
+				$reference = trim( sanitize_text_field( (string) $order[ $key ] ) );
+				if ( '' !== $reference ) {
+					return $reference;
+				}
+			}
+		}
+
+		return '';
 	}
 }
