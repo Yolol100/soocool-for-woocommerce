@@ -93,7 +93,7 @@ final class OptionDefaults {
 		return array(
 			array(
 				'enabled'     => true,
-				'label'       => 'Ochtend',
+				'label'       => 'Ochtend - Middag',
 				'time_from'   => '08:00',
 				'time_to'     => '18:00',
 				'cutoff_time' => '08:00',

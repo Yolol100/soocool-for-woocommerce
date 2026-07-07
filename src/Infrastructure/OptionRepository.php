@@ -16,7 +16,8 @@ final class OptionRepository {
 
 	public const OPTION_NAME                = 'soocool_settings';
 	private const MASK_PLACEHOLDER          = '__SOOCOOL_KEEP_CURRENT_SECRET__';
-	private const DEFAULT_ALLOWED_API_HOSTS = array( 'api.staging.soocool.nl', 'api.soocool.nl' );
+	private const DEFAULT_ALLOWED_API_HOSTS        = array( 'api.staging.soocool.nl', 'api.soocool.nl' );
+	private const DAYPART_LABEL_MIGRATION_OPTION = 'soocool_daypart_label_migration_20260707_ochtend_middag';
 
 	/** @return array<string, mixed> */
 	public function defaults(): array {
@@ -70,6 +71,15 @@ final class OptionRepository {
 		if ( empty( $settings['webhook_secret'] ) ) {
 			$settings['webhook_secret'] = $this->generate_webhook_secret();
 			$changed                    = true;
+		}
+
+		if ( ! get_option( self::DAYPART_LABEL_MIGRATION_OPTION, false ) ) {
+			$renamed_settings = $this->rename_legacy_daypart_labels( $settings );
+			if ( $renamed_settings !== $settings ) {
+				$settings = $renamed_settings;
+				$changed  = true;
+			}
+			update_option( self::DAYPART_LABEL_MIGRATION_OPTION, '1', false );
 		}
 
 		if ( ! is_array( $settings['checkout_delivery_schedule'] ?? null ) || array() === $settings['checkout_delivery_schedule'] ) {
@@ -204,7 +214,7 @@ final class OptionRepository {
 		$clean['package_weight']             = $this->positive_int_between( $settings['package_weight'] ?? $current['package_weight'] ?? $defaults['package_weight'], 1, 999999, (int) $defaults['package_weight'] );
 		$clean['log_retention']              = max( 20, min( 500, absint( $settings['log_retention'] ?? $current['log_retention'] ) ) );
 
-		return $this->enforce_fixed_checkout_dayparts( $clean );
+		return $clean;
 	}
 
 
@@ -462,42 +472,34 @@ final class OptionRepository {
 	}
 
 
+
 	/** @param array<string, mixed> $settings @return array<string, mixed> */
-	private function enforce_fixed_checkout_dayparts( array $settings ): array {
-		$settings['checkout_delivery_time_slots'] = $this->default_delivery_time_slots();
-		$rules = is_array( $settings['checkout_delivery_schedule'] ?? null ) ? $settings['checkout_delivery_schedule'] : $this->default_delivery_schedule();
-		$clean = array();
-
-		foreach ( $rules as $index => $rule ) {
-			if ( ! is_array( $rule ) ) {
-				continue;
-			}
-
-			$delivery_weekday = sanitize_key( (string) ( $rule['delivery_weekday'] ?? $rule['delivery_day'] ?? '' ) );
-			if ( ! in_array( $delivery_weekday, $this->allowed_weekdays(), true ) ) {
-				continue;
-			}
-
-			$cutoff_weekday = sanitize_key( (string) ( $rule['cutoff_weekday'] ?? $rule['cutoff_day'] ?? 'saturday' ) );
-			if ( ! in_array( $cutoff_weekday, $this->allowed_weekdays(), true ) ) {
-				$cutoff_weekday = 'saturday';
-			}
-
-			$clean[] = array(
-				'enabled'          => $this->to_bool( $rule['enabled'] ?? true ),
-				'delivery_weekday' => $delivery_weekday,
-				'cutoff_weekday'   => $cutoff_weekday,
-				'cutoff_time'      => $this->sanitize_time( sanitize_text_field( (string) ( $rule['cutoff_time'] ?? '13:00' ) ), '13:00' ),
-				'sort_order'       => is_numeric( $rule['sort_order'] ?? null ) ? (int) $rule['sort_order'] : ( (int) $index + 1 ) * 10,
-				'slots'            => $this->defaults->delivery_time_slots( array( $delivery_weekday ) ),
-			);
+	private function rename_legacy_daypart_labels( array $settings ): array {
+		if ( is_array( $settings['checkout_delivery_time_slots'] ?? null ) ) {
+			$settings['checkout_delivery_time_slots'] = $this->rename_legacy_daypart_slot_labels( $settings['checkout_delivery_time_slots'] );
 		}
 
-		$enabled = array_filter( $clean, static fn ( array $rule ): bool => (bool) $rule['enabled'] );
-		$settings['checkout_delivery_schedule'] = array() !== $clean && array() !== $enabled ? array_values( $clean ) : $this->default_delivery_schedule();
-		$settings['checkout_delivery_rules']    = $this->delivery_rules_from_schedule( $settings['checkout_delivery_schedule'] );
+		if ( is_array( $settings['checkout_delivery_schedule'] ?? null ) ) {
+			foreach ( $settings['checkout_delivery_schedule'] as $rule_index => $rule ) {
+				if ( ! is_array( $rule ) || ! is_array( $rule['slots'] ?? null ) ) {
+					continue;
+				}
+				$settings['checkout_delivery_schedule'][ $rule_index ]['slots'] = $this->rename_legacy_daypart_slot_labels( $rule['slots'] );
+			}
+		}
 
 		return $settings;
+	}
+
+	/** @param array<int, mixed> $slots @return array<int, mixed> */
+	private function rename_legacy_daypart_slot_labels( array $slots ): array {
+		foreach ( $slots as $index => $slot ) {
+			if ( is_array( $slot ) && in_array( (string) ( $slot['label'] ?? '' ), array( 'Ochtend', 'Middag' ), true ) ) {
+				$slots[ $index ]['label'] = 'Ochtend - Middag';
+			}
+		}
+
+		return $slots;
 	}
 
 	private function sanitize_holidays( mixed $value ): string {

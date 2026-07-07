@@ -1,5 +1,6 @@
 ## 0.5.29 - 2026-07-06
 
+- Fixed: legacy saved checkout daypart labels `Ochtend` and `Middag` are migrated again to `Ochtend - Middag` for existing stores that already ran the earlier label migration.
 - Cleanup: removed disabled manual API-test endpoints, dummy-order factory and the optional `admin-test` bundle from the production ZIP.
 - Cleanup: added `Update URI: false` for private distribution so WordPress does not accidentally match the slug with a public directory plugin.
 - Fixed: admin asset metadata now matches the plugin version.
@@ -895,7 +896,7 @@
 - Initial plugin structure for the SooCool order integration.
 
 ## Unreleased
-- Changed checkout delivery choice to the two SooCool dayparts: Ochtend (08:00 - 18:00) and Avond (17:00 - 22:00).
+- Changed checkout delivery choice to the two SooCool dayparts: Ochtend - Middag (08:00 - 18:00) and Avond (17:00 - 22:00).
 - Updated checkout copy to explain that customers receive Track & Trace after ordering.
 - Kept the selected delivery moment visible in WooCommerce customer emails through the existing order meta email field.
 - Used the order-specific shipping-label endpoint when a bulk order-label download contains one order, avoiding `/shipping-label?orderIds=` for single-order downloads.

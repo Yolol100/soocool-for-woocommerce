@@ -572,7 +572,7 @@ final class DeliveryOptions {
 
 		echo '<div class="soocool-delivery-options__time" id="soocool-delivery-time-panel" data-soocool-time-slots aria-hidden="true">';
 		echo '<div class="soocool-delivery-options__section-label soocool-delivery-options__step"><span class="soocool-delivery-options__step-number" aria-hidden="true">2</span><span>' . esc_html__( 'Dagdeel', 'soocool-for-woocommerce' ) . '</span></div>';
-		echo '<p class="soocool-delivery-options__time-help">' . esc_html__( 'Kies ochtend of avond.', 'soocool-for-woocommerce' ) . '</p>';
+		echo '<p class="soocool-delivery-options__time-help">' . esc_html__( 'Kies een beschikbaar dagdeel.', 'soocool-for-woocommerce' ) . '</p>';
 
 		foreach ( $options as $option ) {
 			$date       = (string) ( $option['date'] ?? '' );

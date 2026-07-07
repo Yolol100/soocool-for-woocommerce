@@ -120,7 +120,7 @@
   function defaultDeliveryTimeSlots(){
     var weekdays = soocoolWeekdayOptions.map(function(item){ return item.value; });
     return [
-      { enabled: true, label: 'Ochtend', time_from: '08:00', time_to: '18:00', cutoff_time: '08:00', weekdays: weekdays, sort_order: 10 },
+      { enabled: true, label: 'Ochtend - Middag', time_from: '08:00', time_to: '18:00', cutoff_time: '08:00', weekdays: weekdays, sort_order: 10 },
       { enabled: true, label: 'Avond', time_from: '17:00', time_to: '22:00', cutoff_time: '17:00', weekdays: weekdays, sort_order: 20 }
     ];
   }
@@ -433,7 +433,7 @@
         return Object.assign({ enabled: true, delivery_weekday: 'monday', cutoff_weekday: 'saturday', cutoff_time: '13:00', sort_order: (ruleIndex + 1) * 10 }, rule || {}, {
           delivery_weekday: deliveryWeekday,
           cutoff_weekday: rule.cutoff_weekday || rule.cutoff_day || 'saturday',
-          slots: slots.map(function(slot, slotIndex){ return Object.assign({ enabled: true, label: 'Ochtend', time_from: '08:00', time_to: '18:00', cutoff_time: '08:00', sort_order: (slotIndex + 1) * 10 }, slot || {}, { weekdays: [deliveryWeekday] }); })
+          slots: slots.map(function(slot, slotIndex){ return Object.assign({ enabled: true, label: 'Ochtend - Middag', time_from: '08:00', time_to: '18:00', cutoff_time: '08:00', sort_order: (slotIndex + 1) * 10 }, slot || {}, { weekdays: [deliveryWeekday] }); })
         });
       });
     }
@@ -458,7 +458,7 @@
     }
     function createSlot(rule){
       var slots = Array.isArray(rule.slots) ? rule.slots : [];
-      return { enabled: true, label: 'Ochtend', time_from: '08:00', time_to: '18:00', cutoff_time: '08:00', sort_order: (slots.length + 1) * 10, weekdays: [rule.delivery_weekday || 'monday'] };
+      return { enabled: true, label: 'Ochtend - Middag', time_from: '08:00', time_to: '18:00', cutoff_time: '08:00', sort_order: (slots.length + 1) * 10, weekdays: [rule.delivery_weekday || 'monday'] };
     }
     function addRule(){
       var schedule = normalizeSchedule().slice();
@@ -537,14 +537,14 @@
       setExpandedSlotLists(next);
     }
     var schedule = normalizeSchedule();
-    return el(FieldGroup, { title: __('Bezorgschema', 'soocool-for-woocommerce'), badge: __('Checkout', 'soocool-for-woocommerce'), description: __('Beheer per bezorgdag de cut-off en de twee vaste dagdelen voor de klassieke WooCommerce checkout. Checkout Blocks worden in deze release niet ondersteund.', 'soocool-for-woocommerce') },
+    return el(FieldGroup, { title: __('Bezorgschema', 'soocool-for-woocommerce'), badge: __('Checkout', 'soocool-for-woocommerce'), description: __('Beheer per bezorgdag de cut-off en de dagdelen voor de klassieke WooCommerce checkout. Checkout Blocks worden in deze release niet ondersteund.', 'soocool-for-woocommerce') },
       s.loading ? el(Loading) : null,
       s.errorMessage ? el(ErrorNotice, { message: s.errorMessage }) : null,
       el('div', { className: 'soocool-delivery-dashboard' },
         el('div', { className: 'soocool-delivery-overview' },
           el('div', null,
             el('h3', null, __('Checkout bezorgmoment', 'soocool-for-woocommerce')),
-            el('p', { className: 'soocool-muted' }, __('Klanten kiezen eerst een bezorgdag en daarna ochtend of avond. Het gekozen dagdeel wordt opgeslagen bij de order en meegestuurd in WooCommerce e-mails.', 'soocool-for-woocommerce'))
+            el('p', { className: 'soocool-muted' }, __('Klanten kiezen eerst een bezorgdag en daarna middag of avond. Het gekozen dagdeel wordt opgeslagen bij de order en meegestuurd in WooCommerce e-mails.', 'soocool-for-woocommerce'))
           )
         ),
         el('section', { className: 'soocool-delivery-section' },
@@ -626,7 +626,8 @@
                   el('div', { className: 'soocool-delivery-schedule-slots' },
                     el('div', { className: 'soocool-delivery-schedule-slots__header' },
                       el('h4', null, __('Dagdelen', 'soocool-for-woocommerce')),
-                      el('span', { className: 'soocool-field-help' }, __('Vaste dagdelen: Ochtend en Avond', 'soocool-for-woocommerce'))
+                      el('span', { className: 'soocool-field-help' }, __('Standaard dagdelen: Ochtend - Middag en Avond. Je kunt labels, tijden, cut-offs en volgorde zelf aanpassen.', 'soocool-for-woocommerce')),
+                      el(c.Button, { variant: 'secondary', onClick: function(){ addSlot(ruleIndex); }, className: 'soocool-delivery-add-slot' }, __('+ Dagdeel toevoegen', 'soocool-for-woocommerce'))
                     ),
                     (function(){
                       var allSlots = Array.isArray(rule.slots) ? rule.slots : [];
@@ -647,7 +648,7 @@
                           el('span', { className: 'soocool-delivery-schedule-slot__status' }, slot.enabled === false ? __('Uitgeschakeld', 'soocool-for-woocommerce') : __('Actief', 'soocool-for-woocommerce')),
                           el('div', { className: 'soocool-delivery-schedule-slot__actions' },
                             el(c.Button, { id: slotButtonId, variant: 'tertiary', className: 'soocool-delivery-slot-edit' + (isSlotOpen ? ' is-open' : ''), onClick: function(){ toggleSlot(ruleIndex, slotIndex); }, 'aria-expanded': isSlotOpen ? 'true' : 'false', 'aria-controls': slotPanelId, 'aria-label': isSlotOpen ? __('Sluit dagdeeldetails', 'soocool-for-woocommerce') : __('Bewerk dagdeel', 'soocool-for-woocommerce') }, el('span', { className: 'dashicons ' + (isSlotOpen ? 'dashicons-arrow-up-alt2' : 'dashicons-edit'), 'aria-hidden': true }), el('span', { className: 'screen-reader-text' }, isSlotOpen ? __('Sluiten', 'soocool-for-woocommerce') : __('Bewerken', 'soocool-for-woocommerce'))),
-                            el(c.Button, { variant: 'secondary', isDestructive: true, disabled: true, onClick: function(){}, className: 'soocool-delivery-slot-remove', 'aria-label': __('Verwijder dagdeel', 'soocool-for-woocommerce') }, el('span', { className: 'dashicons dashicons-trash', 'aria-hidden': true }))
+                            el(c.Button, { variant: 'secondary', isDestructive: true, disabled: slots.length <= 1, onClick: function(){ removeSlot(ruleIndex, slotIndex); }, className: 'soocool-delivery-slot-remove', 'aria-label': __('Verwijder dagdeel', 'soocool-for-woocommerce') }, el('span', { className: 'dashicons dashicons-trash', 'aria-hidden': true }))
                           )
                         ),
                         isSlotOpen ? el('div', { id: slotPanelId, className: 'soocool-delivery-schedule-slot__details', role: 'region', 'aria-labelledby': slotButtonId },

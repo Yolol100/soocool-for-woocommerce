@@ -261,7 +261,7 @@ final class OrderMetaBox {
 
 		echo '</select>';
 		echo '<button type="submit" class="button button-secondary soocool-order-button">' . esc_html__( 'Bezorgmoment bijwerken', 'soocool-for-woocommerce' ) . '</button>';
-		echo '<p class="description soocool-order-action-help">' . esc_html__( 'Alleen geldige bezorgmomenten met ochtend of avond kunnen worden opgeslagen. Opnieuw verzonden WooCommerce e-mails gebruiken het bijgewerkte moment.', 'soocool-for-woocommerce' ) . '</p>';
+		echo '<p class="description soocool-order-action-help">' . esc_html__( 'Alleen geldige bezorgmomenten met een actief dagdeel kunnen worden opgeslagen. Opnieuw verzonden WooCommerce e-mails gebruiken het bijgewerkte moment.', 'soocool-for-woocommerce' ) . '</p>';
 		echo '</form>';
 	}
 

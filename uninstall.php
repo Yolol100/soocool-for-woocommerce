@@ -13,6 +13,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 delete_option( 'soocool_settings' );
 delete_option( 'soocool_logs' );
+delete_option( 'soocool_daypart_label_migration_20260707' );
 
 // Remove leftover per-order sync locks and manual API-Test result transients.
 global $wpdb;
