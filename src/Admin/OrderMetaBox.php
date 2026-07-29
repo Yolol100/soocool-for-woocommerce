@@ -6,6 +6,7 @@ namespace SooCool\WooCommerce\Admin;
 
 use SooCool\WooCommerce\Checkout\DeliverySchedule;
 use SooCool\WooCommerce\Domain\OrderSyncCoordinator;
+use SooCool\WooCommerce\WooCommerce\OrderActions;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 
@@ -67,6 +68,7 @@ final class OrderMetaBox {
 		echo '</dl>';
 
 		if ( current_user_can( 'manage_woocommerce' ) ) {
+			$this->render_sync_action( $order, $status );
 			$this->render_label_actions( $order, $good_ids );
 			$this->render_delivery_date_editor(
 				$order,
@@ -83,6 +85,34 @@ final class OrderMetaBox {
 		echo '</div>';
 	}
 
+
+	private function render_sync_action( WC_Order $order, string $status ): void {
+		if ( $this->meta->is_synced( $order ) ) {
+			return;
+		}
+
+		$order_id = absint( $order->get_id() );
+		if ( 0 >= $order_id ) {
+			return;
+		}
+
+		$status       = sanitize_key( $status );
+		$is_failed   = in_array( $status, $this->presenter->failed_statuses(), true );
+		$is_pending  = in_array( $status, $this->presenter->pending_statuses(), true );
+		$button_label = $is_failed
+			? __( 'Opnieuw synchroniseren met SooCool', 'soocool-for-woocommerce' )
+			: __( 'Synchroniseer nu met SooCool', 'soocool-for-woocommerce' );
+		$help = $is_pending
+			? __( 'Er staat mogelijk al een achtergrondsynchronisatie open. Gebruik deze knop wanneer de automatische taak niet wordt uitgevoerd.', 'soocool-for-woocommerce' )
+			: __( 'Verstuurt deze order direct en veilig naar SooCool. Een bestaande SooCool-order met dezelfde orderreferentie wordt gekoppeld in plaats van dubbel aangemaakt.', 'soocool-for-woocommerce' );
+
+		echo '<div class="soocool-order-action-group soocool-order-sync-action">';
+		echo '<div class="soocool-order-action-group__title">' . esc_html__( 'Synchronisatie', 'soocool-for-woocommerce' ) . '</div>';
+		echo '<button type="button" class="button button-primary soocool-order-button" data-soocool-manual-sync="1" data-action="' . esc_attr( OrderActions::MANUAL_SYNC_AJAX_ACTION ) . '" data-order-id="' . esc_attr( (string) $order_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( OrderActions::MANUAL_SYNC_NONCE_ACTION . $order_id ) ) . '" data-soocool-confirm="' . esc_attr__( 'Deze order nu naar SooCool synchroniseren?', 'soocool-for-woocommerce' ) . '">' . esc_html( $button_label ) . '</button>';
+		echo '<p class="description soocool-order-action-help">' . esc_html( $help ) . '</p>';
+		echo '<div class="soocool-order-alert soocool-manual-sync-feedback" hidden aria-live="polite"></div>';
+		echo '</div>';
+	}
 
 	/** @param array<int, int> $good_ids */
 	private function render_label_actions( WC_Order $order, array $good_ids ): void {
@@ -127,6 +157,10 @@ final class OrderMetaBox {
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'SooCool bezorgmoment bijgewerkt.', 'soocool-for-woocommerce' ) . '</p></div>';
 		} elseif ( 'invalid_delivery_date' === $notice ) {
 			echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__( 'Kies een geldig beschikbaar SooCool bezorgmoment.', 'soocool-for-woocommerce' ) . '</p></div>';
+		} elseif ( 'sync_success' === $notice ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Order succesvol met SooCool gesynchroniseerd.', 'soocool-for-woocommerce' ) . '</p></div>';
+		} elseif ( 'sync_existing' === $notice ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Bestaande SooCool-order gevonden en aan deze WooCommerce-order gekoppeld.', 'soocool-for-woocommerce' ) . '</p></div>';
 		}
 	}
 

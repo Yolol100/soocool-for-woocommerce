@@ -188,24 +188,45 @@ final class OrderListColumn {
 	private function meta_query_clause( string $filter ): array {
 		if ( 'not_synced' === $filter ) {
 			return array(
-				'key'     => OrderMeta::SYNC_STATUS,
-				'compare' => 'NOT EXISTS',
+				'relation' => 'OR',
+				array(
+					'key'     => OrderMeta::SYNC_STATUS,
+					'compare' => 'NOT EXISTS',
+				),
+				array(
+					'key'     => OrderMeta::SYNC_STATUS,
+					'value'   => '',
+					'compare' => '=',
+				),
 			);
 		}
 
-		if ( 'cancelled' === $filter ) {
+		if ( 'synced' === $filter ) {
+			return array(
+				'relation' => 'AND',
+				array(
+					'key'     => OrderMeta::SYNC_STATUS,
+					'compare' => 'EXISTS',
+				),
+				array(
+					'key'     => OrderMeta::SYNC_STATUS,
+					'value'   => $this->presenter->non_synced_statuses(),
+					'compare' => 'NOT IN',
+				),
+			);
+		}
+
+		$status_groups = array(
+			'pending'   => $this->presenter->pending_statuses(),
+			'failed'    => $this->presenter->failed_statuses(),
+			'cancelled' => $this->presenter->cancelled_statuses(),
+		);
+
+		if ( isset( $status_groups[ $filter ] ) ) {
 			return array(
 				'key'     => OrderMeta::SYNC_STATUS,
-				'value'   => array( 'cancelled', 'soocool_cancelled' ),
+				'value'   => $status_groups[ $filter ],
 				'compare' => 'IN',
-			);
-		}
-
-		if ( in_array( $filter, array( 'synced', 'pending', 'failed' ), true ) ) {
-			return array(
-				'key'     => OrderMeta::SYNC_STATUS,
-				'value'   => $filter,
-				'compare' => '=',
 			);
 		}
 

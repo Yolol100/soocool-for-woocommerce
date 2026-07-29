@@ -2,6 +2,7 @@
   var config = window.sooCoolOrderActions || {};
   var actionMessages = config.messages || {};
   var bulkMessages = config.bulkMessages || {};
+  var manualSyncMessages = config.manualSync || {};
   var confirmedSubmits = typeof WeakMap === 'function' ? new WeakMap() : null;
 
   function closest(element, selector) {
@@ -115,7 +116,92 @@
     return true;
   }
 
+  function manualSyncFeedback(button, message, isError) {
+    var group = closest(button, '.soocool-order-sync-action');
+    var feedback = group && group.querySelector ? group.querySelector('.soocool-manual-sync-feedback') : null;
+    if (!feedback) {
+      return;
+    }
+
+    feedback.hidden = false;
+    feedback.className = 'soocool-order-alert soocool-manual-sync-feedback' + (isError ? ' is-error' : '');
+    feedback.textContent = message || '';
+  }
+
+  function manualSyncError(payload, response) {
+    if (payload && payload.data && payload.data.message) {
+      return String(payload.data.message);
+    }
+    if (response && response.status === 403) {
+      return manualSyncMessages.forbidden || 'Je mag deze order niet synchroniseren.';
+    }
+    return manualSyncMessages.failed || 'SooCool-synchronisatie mislukt. Probeer opnieuw.';
+  }
+
+  function runManualSync(button, event) {
+    if (!ask(button.getAttribute('data-soocool-confirm') || '', event)) {
+      return false;
+    }
+
+    stopAction(event);
+    if (button.getAttribute('aria-busy') === 'true') {
+      return false;
+    }
+
+    var ajaxUrl = config.ajaxUrl || window.ajaxurl || '';
+    var action = button.getAttribute('data-action') || '';
+    var orderId = button.getAttribute('data-order-id') || '';
+    var nonce = button.getAttribute('data-nonce') || '';
+    if (!ajaxUrl || !action || !orderId || !nonce || typeof window.fetch !== 'function') {
+      manualSyncFeedback(button, manualSyncMessages.failed || 'SooCool-synchronisatie kon niet worden gestart.', true);
+      return false;
+    }
+
+    var originalLabel = button.textContent;
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    button.textContent = manualSyncMessages.loading || 'Synchroniseren...';
+    manualSyncFeedback(button, manualSyncMessages.working || 'De order wordt met SooCool gesynchroniseerd.', false);
+
+    var body = new URLSearchParams();
+    body.set('action', action);
+    body.set('order_id', orderId);
+    body.set('_ajax_nonce', nonce);
+
+    window.fetch(ajaxUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: body.toString()
+    }).then(function (response) {
+      return response.json().catch(function () { return null; }).then(function (payload) {
+        return { response: response, payload: payload };
+      });
+    }).then(function (result) {
+      if (!result.response.ok || !result.payload || !result.payload.success) {
+        throw new Error(manualSyncError(result.payload, result.response));
+      }
+
+      var notice = result.payload.data && result.payload.data.notice ? result.payload.data.notice : 'sync_success';
+      var url = new URL(window.location.href);
+      url.searchParams.set('soocool_notice', notice);
+      window.location.assign(url.toString());
+    }).catch(function (error) {
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+      button.textContent = originalLabel;
+      manualSyncFeedback(button, error && error.message ? error.message : manualSyncMessages.failed, true);
+    });
+
+    return false;
+  }
+
   function confirmClick(event) {
+    var button = eventButton(event);
+    if (button && button.hasAttribute('data-soocool-manual-sync')) {
+      return runManualSync(button, event);
+    }
+
     var context = orderActionContext(event) || bulkActionContext(event);
     if (!context) {
       return true;

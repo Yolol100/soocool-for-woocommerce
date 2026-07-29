@@ -299,7 +299,7 @@ final class SettingsSchema {
 				'type'              => 'string',
 				'required'          => false,
 				'sanitize_callback' => $key,
-				'enum'              => array( 'processing', 'completed', 'on-hold' ),
+				'enum'              => array( 'pending', 'processing', 'completed', 'on-hold' ),
 				'validate_callback' => array( $this->validator, 'validate_auto_submit_status' ),
 			),
 			'allow_resubmit'             => array(

@@ -77,6 +77,7 @@ final class WebhookController extends AbstractRestController {
 					'wcOrderId'      => 0 < $wc_order_id ? (string) $wc_order_id : '[missing]',
 				)
 			);
+			$this->authenticator->mark_processed( $request );
 			return new WP_REST_Response(
 				array(
 					'success' => true,
@@ -93,6 +94,7 @@ final class WebhookController extends AbstractRestController {
 		if ( $changed ) {
 			$order->add_order_note( $this->webhook_note( $data ) );
 		}
+		$this->authenticator->mark_processed( $request );
 
 		return new WP_REST_Response(
 			array(

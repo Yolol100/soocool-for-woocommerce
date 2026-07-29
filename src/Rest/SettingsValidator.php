@@ -368,7 +368,7 @@ final class SettingsValidator {
 	}
 
 	public function validate_auto_submit_status( mixed $value ): bool {
-		return in_array( (string) $value, array( 'processing', 'completed', 'on-hold' ), true );
+		return in_array( (string) $value, array( 'pending', 'processing', 'completed', 'on-hold' ), true );
 	}
 
 	public function validate_label_output( mixed $value ): bool {

@@ -14,10 +14,11 @@ final class OptionRepository {
 		$this->defaults = $defaults ?? new OptionDefaults();
 	}
 
-	public const OPTION_NAME                = 'soocool_settings';
-	private const MASK_PLACEHOLDER          = '__SOOCOOL_KEEP_CURRENT_SECRET__';
+	public const OPTION_NAME                       = 'soocool_settings';
+	private const MASK_PLACEHOLDER                 = '__SOOCOOL_KEEP_CURRENT_SECRET__';
 	private const DEFAULT_ALLOWED_API_HOSTS        = array( 'api.staging.soocool.nl', 'api.soocool.nl' );
-	private const DAYPART_LABEL_MIGRATION_OPTION = 'soocool_daypart_label_migration_20260707_ochtend_middag';
+	private const DAYPART_LABEL_MIGRATION_OPTION   = 'soocool_daypart_label_migration_20260707_ochtend_middag';
+	private const PACKAGE_WEIGHT_MIGRATION_OPTION = 'soocool_package_weight_migration_20260729_10kg';
 
 	/** @return array<string, mixed> */
 	public function defaults(): array {
@@ -80,6 +81,15 @@ final class OptionRepository {
 				$changed  = true;
 			}
 			update_option( self::DAYPART_LABEL_MIGRATION_OPTION, '1', false );
+		}
+
+		if ( ! get_option( self::PACKAGE_WEIGHT_MIGRATION_OPTION, false ) ) {
+			$stored_package_weight = $stored['package_weight'] ?? null;
+			if ( null === $stored_package_weight || 1600 === absint( $stored_package_weight ) ) {
+				$settings['package_weight'] = 10000;
+				$changed                    = true;
+			}
+			update_option( self::PACKAGE_WEIGHT_MIGRATION_OPTION, '1', false );
 		}
 
 		if ( ! is_array( $settings['checkout_delivery_schedule'] ?? null ) || array() === $settings['checkout_delivery_schedule'] ) {
@@ -199,7 +209,7 @@ final class OptionRepository {
 			$clean['checkout_delivery_belgium_evening_surcharge_amount'] = $this->money_amount( $settings['checkout_delivery_belgium_evening_surcharge_amount'] ?? $current['checkout_delivery_belgium_evening_surcharge_amount'] ?? $defaults['checkout_delivery_belgium_evening_surcharge_amount'], 0.0, 999.0, (float) $defaults['checkout_delivery_belgium_evening_surcharge_amount'] );
 
 		$clean['auto_submit_enabled']        = $this->to_bool( $settings['auto_submit_enabled'] ?? $current['auto_submit_enabled'] );
-		$clean['auto_submit_status']         = $this->one_of( $settings['auto_submit_status'] ?? $current['auto_submit_status'], array( 'processing', 'completed', 'on-hold' ), 'processing' );
+		$clean['auto_submit_status']         = $this->one_of( $settings['auto_submit_status'] ?? $current['auto_submit_status'], array( 'pending', 'processing', 'completed', 'on-hold' ), 'pending' );
 		$clean['allow_resubmit']             = $this->to_bool( $settings['allow_resubmit'] ?? $current['allow_resubmit'] );
 		$clean['label_output']               = $this->one_of( $settings['label_output'] ?? $current['label_output'], array( 'a6', 'collated_a4' ), 'a6' );
 		$clean['webhook_url']                = $this->sanitize_url_or_empty( (string) ( $settings['webhook_url'] ?? $current['webhook_url'] ) );

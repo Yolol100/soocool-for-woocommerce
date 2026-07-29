@@ -90,6 +90,10 @@ final class BulkSyncActions {
 	}
 
 	public function render_notice(): void {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+
 		$mode = isset( $_GET[ self::MODE_PARAM ] ) ? sanitize_key( wp_unslash( (string) $_GET[ self::MODE_PARAM ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect notice.
 
 		if ( 'error' === $mode ) {

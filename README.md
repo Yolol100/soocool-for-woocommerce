@@ -24,6 +24,8 @@ This release package contains runtime PHP source and built assets used by the pl
 
 ## Features
 
+- SooCool goods are grouped into boxes by total WooCommerce product weight: one box per started 10 kg, with the final box carrying the remaining actual weight.
+
 - Prevents duplicate SooCool orders by checking `GET /order?orderReference=...` before creating a new order.
 - Supports the documented order label endpoint, good-specific label endpoint, order-level bulk labels, stored-good-ID label downloads and admin new-order email label attachments when labels already exist.
 - Shows the SooCool test portal link in test mode without storing portal credentials in plugin files.
@@ -31,7 +33,8 @@ This release package contains runtime PHP source and built assets used by the pl
 - WordPress admin settings under **SooCool**.
 - SooCool API connection test via `/ping`.
 - Manual WooCommerce order actions to send, refresh, update and cancel an order at SooCool.
-- Optional automatic order submission by WooCommerce status.
+- Direct **Synchroniseer nu met SooCool** button for orders that are not linked yet.
+- Optional automatic order submission by WooCommerce status, including immediate submission of newly created pending orders.
 - Optional pickup and delivery task support; delivery-only is the safe default.
 - Checkout delivery schedule is leading for SooCool delivery timeWindow; pickup windows remain configurable and fallback delivery window is only used for orders without a selected daypart.
 - SooCool order ID, reference, sync status and last error stored in WooCommerce order meta.
@@ -81,14 +84,14 @@ This package includes bundled `nl_NL` gettext files and loads the plugin text do
 5. Keep pickup disabled for delivery-only testing. Enable pickup only after SooCool confirms pickup task support, then fill in the pickup address completely.
 6. Save settings and run **Test connection**.
 7. Create a test WooCommerce order with shipping address.
-8. Use the order action **Send to SooCool**.
-9. Confirm SooCool order ID appears in the SooCool order box.
+8. Use **Synchroniseer nu met SooCool** in the SooCool order box and confirm the order is linked.
+9. Enable automatic submission with status **Betaling in afwachting**, place a second test order and confirm a SooCool sync action is queued immediately.
 10. In the SooCool test portal, confirm that delivery-only orders create one delivery task. If pickup is enabled, confirm the order creates one pickup task and one later delivery task.
 11. Confirm the delivery task uses the selected checkout daypart as SooCool timeWindow.
 12. Use **Refresh from SooCool** after the test order exists and confirm local status/tracking/good IDs update when SooCool returns them.
 13. Download both A6 and Collated A4 labels only after SooCool accepted the order.
 14. Test webhook success/failure, token rejection, HMAC rejection, expired timestamp rejection and duplicate-delivery rejection.
-15. Keep automatic sync disabled until manual orders are accepted consistently.
+15. Keep automatic sync on the test environment until both the direct button and the selected automatic status have completed successfully.
 
 ## Quality checks
 

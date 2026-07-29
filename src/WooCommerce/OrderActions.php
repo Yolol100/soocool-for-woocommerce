@@ -13,12 +13,14 @@ defined( 'ABSPATH' ) || exit;
 
 final class OrderActions {
 
-	public const SYNC_HOOK       = 'soocool_sync_order';
-	public const RESYNC_HOOK     = 'soocool_resync_order';
-	public const SCHEDULER_GROUP = 'soocool';
-	public const QUEUE_SCHEDULED = 'scheduled';
-	public const QUEUE_DUPLICATE = 'duplicate';
-	public const QUEUE_FAILED    = 'failed';
+	public const SYNC_HOOK                = 'soocool_sync_order';
+	public const RESYNC_HOOK              = 'soocool_resync_order';
+	public const SCHEDULER_GROUP          = 'soocool';
+	public const QUEUE_SCHEDULED          = 'scheduled';
+	public const QUEUE_DUPLICATE          = 'duplicate';
+	public const QUEUE_FAILED             = 'failed';
+	public const MANUAL_SYNC_AJAX_ACTION  = 'soocool_manual_sync_order';
+	public const MANUAL_SYNC_NONCE_ACTION = 'soocool_manual_sync_order_';
 
 	public function __construct(
 		private readonly OrderMeta $meta,
@@ -26,6 +28,17 @@ final class OrderActions {
 		private readonly OrderActionConfirmScript $confirm_script,
 		private readonly OrderSyncCoordinator $coordinator
 	) {}
+
+	public static function unschedule_all(): void {
+		if ( function_exists( 'as_unschedule_all_actions' ) ) {
+			as_unschedule_all_actions( '', array(), self::SCHEDULER_GROUP );
+		}
+
+		if ( function_exists( 'wp_unschedule_hook' ) ) {
+			wp_unschedule_hook( self::SYNC_HOOK );
+			wp_unschedule_hook( self::RESYNC_HOOK );
+		}
+	}
 
 	public function register(): void {
 		add_filter( 'woocommerce_order_actions', array( $this, 'add_order_action' ) );
@@ -37,6 +50,7 @@ final class OrderActions {
 		add_action( 'admin_post_soocool_update_delivery_date', array( $this->meta_box, 'handle_update_delivery_date' ) );
 		add_action( 'admin_notices', array( $this->meta_box, 'render_delivery_date_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( $this->confirm_script, 'enqueue' ) );
+		add_action( 'wp_ajax_' . self::MANUAL_SYNC_AJAX_ACTION, array( $this, 'handle_manual_sync' ) );
 		add_action( self::SYNC_HOOK, array( $this, 'send_order_by_id' ) );
 		add_action( self::RESYNC_HOOK, array( $this, 'resync_order_by_id' ) );
 	}
@@ -108,16 +122,43 @@ final class OrderActions {
 			return;
 		}
 
-		$result = $this->coordinator->sync_order( $order, $force );
-		if ( (bool) ( $result['success'] ?? false ) ) {
-			$note = ! empty( $result['existing'] )
-				? __( 'Bestaande SooCool-order gevonden op orderreferentie. WooCommerce-order gekoppeld zonder dubbele SooCool-order aan te maken.', 'soocool-for-woocommerce' )
-				: __( 'Resultaat: order naar SooCool verstuurd. Volgende stap: download het label of wacht op de track & trace-webhook.', 'soocool-for-woocommerce' );
-			$order->add_order_note( $note );
-			return;
+		$this->sync_order_with_note( $order, $force );
+	}
+
+	public function handle_manual_sync(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Order ID is needed to build the order-specific nonce action and is sanitized before the nonce check.
+		$order_id = isset( $_POST['order_id'] ) && is_scalar( $_POST['order_id'] ) ? absint( wp_unslash( (string) $_POST['order_id'] ) ) : 0;
+		if ( 0 >= $order_id ) {
+			wp_send_json_error( array( 'message' => __( 'Ongeldige order.', 'soocool-for-woocommerce' ) ), 400 );
 		}
 
-		$order->add_order_note( sanitize_text_field( (string) ( $result['message'] ?? __( 'SooCool-synchronisatie mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) ) ) );
+		check_ajax_referer( self::MANUAL_SYNC_NONCE_ACTION . $order_id );
+
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Je mag deze order niet synchroniseren.', 'soocool-for-woocommerce' ) ), 403 );
+		}
+
+		$order = wc_get_order( $order_id );
+		if ( ! $order instanceof WC_Order ) {
+			wp_send_json_error( array( 'message' => __( 'Order niet gevonden.', 'soocool-for-woocommerce' ) ), 404 );
+		}
+
+		$result  = $this->sync_order_with_note( $order, false );
+		$success = (bool) ( $result['success'] ?? false );
+		$message = sanitize_text_field( (string) ( $result['message'] ?? __( 'SooCool-synchronisatie mislukt.', 'soocool-for-woocommerce' ) ) );
+		$notice  = ! empty( $result['existing'] ) ? 'sync_existing' : ( $success ? 'sync_success' : 'sync_failed' );
+
+		$data = array(
+			'message' => $message,
+			'notice'  => $notice,
+		);
+
+		if ( $success ) {
+			wp_send_json_success( $data );
+		}
+
+		$status = isset( $result['status'] ) ? (int) $result['status'] : 400;
+		wp_send_json_error( $data, $status >= 400 && $status <= 599 ? $status : 400 );
 	}
 
 	public function update_at_soocool( WC_Order $order ): void {
@@ -157,6 +198,21 @@ final class OrderActions {
 				? __( 'Resultaat: SooCool-order geannuleerd. Volgende stap: controleer de fulfilmentstatus in SooCool voordat je terugbetaalt of de WooCommerce-orderstatus wijzigt.', 'soocool-for-woocommerce' )
 				: sanitize_text_field( (string) ( $result['message'] ?? __( 'SooCool-annulering mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) ) )
 		);
+	}
+
+	/** @return array<string, mixed> */
+	private function sync_order_with_note( WC_Order $order, bool $force ): array {
+		$result = $this->coordinator->sync_order( $order, $force );
+		if ( (bool) ( $result['success'] ?? false ) ) {
+			$note = ! empty( $result['existing'] )
+				? __( 'Bestaande SooCool-order gevonden op orderreferentie. WooCommerce-order gekoppeld zonder dubbele SooCool-order aan te maken.', 'soocool-for-woocommerce' )
+				: __( 'Resultaat: order naar SooCool verstuurd. Volgende stap: download het label of wacht op de track & trace-webhook.', 'soocool-for-woocommerce' );
+			$order->add_order_note( $note );
+			return $result;
+		}
+
+		$order->add_order_note( sanitize_text_field( (string) ( $result['message'] ?? __( 'SooCool-synchronisatie mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) ) ) );
+		return $result;
 	}
 
 	private function authorize_manual_order_action( WC_Order $order ): bool {

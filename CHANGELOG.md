@@ -1,3 +1,44 @@
+## 0.5.35 - 2026-07-29
+
+- Changed SooCool goods from one box per WooCommerce product unit to weight-based boxes.
+- The plugin now sums product weights and creates one SooCool good per started 10,000 grams; 20 products of 1 kg produce 2 boxes instead of 20.
+- Each full box is sent with 10,000 grams and the final box with the remaining actual weight.
+- Added a one-time migration from the former 1,600 gram default to the new 10,000 gram box capacity while preserving deliberate custom values.
+- Orders with missing product weights now stop with a clear validation error instead of sending an incorrect box count.
+
+## 0.5.34 - 2026-07-29
+
+- Fixed synchronized order filtering so legacy empty sync-status metadata cannot also appear under “Gesynchroniseerd”.
+- Fixed the order metabox retry and pending guidance for remote `soocool_failed`, `soocool_rejected` and `soocool_pending` states.
+- Fixed the missing-requirements admin notice so it is only shown to users who can manage plugin activation.
+- Fixed duplicate `0.5.33` release headings in the WordPress readme changelog.
+- Updated the Dutch translation catalog metadata to the current plugin version.
+
+## 0.5.33 - 2026-07-29
+
+- Fixed WooCommerce admin order filters so remote SooCool workflow statuses remain visible under the correct synchronized, queued, failed or cancelled filter.
+- Fixed admin badge severity and labels for remote `soocool_pending`, `soocool_failed` and `soocool_rejected` statuses.
+- Fixed legacy empty sync-status metadata so those orders remain visible under “Niet gesynchroniseerd”.
+- Fixed bulk synchronization notices so they are never rendered for users without WooCommerce management permission.
+- Fixed the confirmation script on the legacy WooCommerce order list, so bulk SooCool actions receive the same warning as HPOS order screens.
+- Cleanup: removed a duplicated webhook recovery comment found during the file-by-file audit.
+
+## 0.5.32 - 2026-07-29
+
+- Fixed lifecycle cleanup: pending SooCool Action Scheduler and WP-Cron synchronization jobs are removed on plugin deactivation and uninstall.
+
+## 0.5.31 - 2026-07-29
+
+- Fixed webhook retry handling: signed deliveries are now marked as processed only after a valid payload is accepted, so invalid or failed attempts can be retried without an incorrect replay rejection.
+
+## 0.5.30 - 2026-07-29
+
+- Fixed: automatic SooCool submission can now trigger immediately for newly created orders when `Betaling in afwachting` is selected, including classic checkout and Store API checkout flows.
+- Added: a direct, nonce-protected `Synchroniseer nu met SooCool` button in the SooCool order panel for orders that are not yet linked.
+- Fixed: manual synchronization reuses the existing order-sync coordinator and displays a clear success or failure notice after redirect.
+- Fixed: uninstall cleanup removes the current daypart migration flag and stale webhook replay transients.
+- Packaging: restored the canonical `soocool-for-woocommerce/` plugin directory in the distributable ZIP.
+
 ## 0.5.29 - 2026-07-06
 
 - Fixed: legacy saved checkout daypart labels `Ochtend` and `Middag` are migrated again to `Ochtend - Middag` for existing stores that already ran the earlier label migration.

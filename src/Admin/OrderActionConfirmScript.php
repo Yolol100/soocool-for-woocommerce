@@ -12,7 +12,7 @@ final class OrderActionConfirmScript {
 
 	public function enqueue( string $hook ): void {
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		if ( ! $screen || ! in_array( $screen->id, array( wc_get_page_screen_id( 'shop-order' ), 'shop_order' ), true ) ) {
+		if ( ! $screen || ! in_array( $screen->id, array( wc_get_page_screen_id( 'shop-order' ), 'woocommerce_page_wc-orders', 'edit-shop_order', 'shop_order' ), true ) ) {
 			return;
 		}
 
@@ -33,6 +33,13 @@ final class OrderActionConfirmScript {
 			'soocool-order-actions',
 			'window.sooCoolOrderActions=' . wp_json_encode(
 				array(
+					'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+					'manualSync'   => array(
+						'loading'   => __( 'Synchroniseren...', 'soocool-for-woocommerce' ),
+						'working'   => __( 'De order wordt met SooCool gesynchroniseerd.', 'soocool-for-woocommerce' ),
+						'failed'    => __( 'SooCool-synchronisatie mislukt. Probeer opnieuw of controleer de SooCool-logs.', 'soocool-for-woocommerce' ),
+						'forbidden' => __( 'Je mag deze order niet synchroniseren.', 'soocool-for-woocommerce' ),
+					),
 					'messages'     => array(
 						'soocool_send_to_soocool'    => __( 'Dit verstuurt deze WooCommerce-order naar SooCool en kan daar een nieuwe order aanmaken. Doorgaan?', 'soocool-for-woocommerce' ),
 						'soocool_update_at_soocool'  => __( 'Dit werkt de bestaande SooCool-order bij met de huidige WooCommerce-ordergegevens. Ga alleen door als de fulfilmentgegevens moeten wijzigen.', 'soocool-for-woocommerce' ),

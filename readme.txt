@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.5.29
+Stable tag: 0.5.35
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,8 +21,8 @@ Main features:
 
 * WordPress admin settings screen under SooCool.
 * SooCool API connection test using the documented `/ping` endpoint.
-* Manual WooCommerce order action to submit an order to SooCool.
-* Optional automatic order submission when an order reaches a configured WooCommerce status.
+* Manual WooCommerce order action and a direct order-panel button to submit an unsynced order to SooCool.
+* Optional automatic order submission when an order reaches a configured WooCommerce status, including newly created pending orders.
 * Optional pickup plus delivery task support for collection workflows; delivery-only is the safe default.
 * Checkout delivery schedule is leading for delivery task timeWindow; fallback delivery window is only used when an order has no selected daypart.
 * Customer-facing delivery moment selection for the classic WooCommerce checkout with configurable delivery days, fixed dayparts, cut-off times, blocked dates and optional hiding of expired slots. Checkout Blocks are not supported by this release.
@@ -63,14 +63,14 @@ This production package contains the runtime PHP source, readable CSS/JS assets,
 5. Enter the SooCool API key or define `SOOCOOL_API_KEY` in `wp-config.php`.
 6. Leave pickup disabled unless SooCool has confirmed pickup tasks for this account. If pickup is enabled, fill in the pickup address and pickup time window completely.
 7. Save settings and run Test connection.
-8. Create a WooCommerce test order and manually submit it to SooCool.
-9. Confirm the order in the SooCool test portal before enabling automatic submission.
+8. Create a WooCommerce test order and use Synchroniseer nu met SooCool in the SooCool order panel.
+9. Confirm the order in the SooCool test portal, then enable automatic submission and select Betaling in afwachting for immediate submission of newly created orders.
 
 == Frequently Asked Questions ==
 
 = Does the plugin send data automatically? =
 
-Not until the integration is configured and either an authorized shop manager manually submits an order or automatic submission is enabled.
+Not until the integration is configured and either an authorized shop manager manually submits an order or automatic submission is enabled. Select Betaling in afwachting to queue newly created orders immediately; later statuses wait until WooCommerce reaches that status.
 
 = Does the delivery-moment picker work with WooCommerce Checkout Blocks? =
 
@@ -111,6 +111,36 @@ Site owners are responsible for disclosing the use of SooCool as a transport ser
 Removing the plugin deletes the `soocool_settings` and `soocool_logs` options. WooCommerce order meta such as SooCool order IDs, references, sync status and last errors is intentionally retained for historical order and audit continuity.
 
 == Changelog ==
+
+= 0.5.35 =
+
+* Build SooCool goods as weight-based boxes: one box per started 10 kg instead of one box per product unit.
+* Send 10,000 grams for full boxes and the remaining actual weight for the final box.
+* Migrate the former 1,600 gram default to a 10,000 gram box capacity and reject orders with missing product weights.
+
+= 0.5.34 =
+* Fixed synchronized filtering for empty legacy sync-status metadata.
+* Fixed retry and pending guidance for remote SooCool workflow statuses.
+* Limited missing-requirements notices to plugin administrators.
+* Updated Dutch translation catalog metadata to version 0.5.34.
+
+= 0.5.33 =
+* Fixed WooCommerce admin status filters and badge classification for remote SooCool workflow states.
+* Fixed empty legacy status metadata in the “Niet gesynchroniseerd” order filter.
+* Fixed bulk synchronization notices for users without WooCommerce management permission.
+* Fixed the confirmation script on the legacy WooCommerce order list.
+
+= 0.5.32 =
+* Fixed: pending SooCool Action Scheduler and WP-Cron synchronization jobs are removed when the plugin is deactivated or uninstalled.
+
+= 0.5.31 =
+* Webhook-replaybeveiliging markeert een delivery pas als verwerkt nadat de payload succesvol is geaccepteerd, zodat mislukte requests veilig opnieuw kunnen worden aangeboden.
+
+= 0.5.30 =
+* Fixed: automatic submission can queue newly created pending orders from classic checkout and Checkout Blocks when Betaling in afwachting is selected.
+* Added: direct nonce-protected Synchroniseer nu met SooCool button for unsynced WooCommerce orders.
+* Fixed: uninstall cleanup removes the active daypart migration flag and stale SooCool webhook replay transients.
+* Packaging: distributable ZIP uses the canonical soocool-for-woocommerce plugin directory.
 
 = 0.5.29 =
 * Cleanup: removed disabled manual API-test endpoints, dummy-order factory and admin-test bundle from the production package.

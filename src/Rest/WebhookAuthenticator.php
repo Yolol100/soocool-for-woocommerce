@@ -45,6 +45,17 @@ final class WebhookAuthenticator {
 		return true;
 	}
 
+	public function mark_processed( WP_REST_Request $request ): void {
+		if ( ! $this->has_signature_headers( $request ) ) {
+			return;
+		}
+
+		$key = $this->replay_key( $request );
+		if ( '' !== $key ) {
+			set_transient( $key, '1', self::SIGNATURE_TOLERANCE_SECONDS * 2 );
+		}
+	}
+
 	private function verify_signature( WP_REST_Request $request, string $secret ): bool|WP_Error {
 		$timestamp = $this->provided_timestamp( $request );
 		$signature = $this->provided_signature( $request );
@@ -71,19 +82,26 @@ final class WebhookAuthenticator {
 	}
 
 	private function reject_replay( WP_REST_Request $request ): bool|WP_Error {
+		$key = $this->replay_key( $request );
+
+		if ( '' !== $key && false !== get_transient( $key ) ) {
+			return new WP_Error( 'soocool_webhook_replay', __( 'Dubbele SooCool webhook-delivery.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
+		}
+
+		return true;
+	}
+
+	private function replay_key( WP_REST_Request $request ): string {
 		$signature = $this->provided_signature( $request );
 		$event_id  = $this->provided_event_id( $request );
 		$timestamp = $this->provided_timestamp( $request );
 
-		$replay_id = '' !== $event_id ? $event_id : $timestamp . ':' . $signature;
-		$key       = 'soocool_webhook_replay_' . md5( $replay_id );
-
-		if ( false !== get_transient( $key ) ) {
-			return new WP_Error( 'soocool_webhook_replay', __( 'Dubbele SooCool webhook-delivery.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
+		if ( '' === $event_id && ( 0 >= $timestamp || '' === $signature ) ) {
+			return '';
 		}
 
-		set_transient( $key, '1', self::SIGNATURE_TOLERANCE_SECONDS * 2 );
-		return true;
+		$replay_id = '' !== $event_id ? $event_id : $timestamp . ':' . $signature;
+		return 'soocool_webhook_replay_' . md5( $replay_id );
 	}
 
 	private function has_signature_headers( WP_REST_Request $request ): bool {

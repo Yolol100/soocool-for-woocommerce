@@ -46,7 +46,7 @@ final class OptionDefaults {
 			'checkout_delivery_belgium_surcharge_amount' => 2.00,
 			'checkout_delivery_belgium_evening_surcharge_amount' => 1.50,
 			'auto_submit_enabled'        => false,
-			'auto_submit_status'         => 'processing',
+			'auto_submit_status'         => 'pending',
 			'allow_resubmit'             => false,
 			'label_output'               => 'a6',
 			'webhook_url'                => '',
@@ -57,7 +57,7 @@ final class OptionDefaults {
 			'package_width'              => 60,
 			'package_depth'              => 40,
 			'package_height'             => 11,
-			'package_weight'             => 1600,
+			'package_weight'             => 10000,
 			'log_retention'              => 100,
 		);
 	}

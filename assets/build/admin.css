@@ -2189,3 +2189,17 @@
     overflow-wrap: anywhere;
   }
 }
+
+#soocool-order-status .soocool-order-sync-action .soocool-order-button {
+  width: 100%;
+  justify-content: center;
+}
+
+#soocool-order-status .soocool-manual-sync-feedback {
+  margin-top: 10px;
+}
+
+#soocool-order-status .soocool-manual-sync-feedback:not(.is-error) {
+  background: #edfaef;
+  border-left-color: #00a32a;
+}

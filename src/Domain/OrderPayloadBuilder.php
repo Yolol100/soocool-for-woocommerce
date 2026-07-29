@@ -13,8 +13,8 @@ defined( 'ABSPATH' ) || exit;
  * Builds the SooCool create-order payload (SooCool API 1.2.1).
  *
  * The payload uses root-level goods and task-level references to those goods.
- * Dimensions and weight prefer product data when available and safely fall back
- * to the global SooCool package settings, so the admin settings remain active.
+ * WooCommerce product weights are combined into configured transport boxes.
+ * Every started box capacity becomes one root-level good referenced by each task.
  */
 final class OrderPayloadBuilder {
 
@@ -108,96 +108,121 @@ final class OrderPayloadBuilder {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function build_goods( WC_Order $order, array $settings ): array {
-		$fallback_description = (string) $settings['goods_description_fallback'];
+		$fallback_description = sanitize_text_field( (string) $settings['goods_description_fallback'] );
 		$packaging_type       = sanitize_key( (string) ( $settings['packaging_type'] ?? 'box' ) );
 		$packaging_type       = '' !== $packaging_type ? $packaging_type : 'box';
 		$regime               = sanitize_key( (string) ( $settings['temperature_regime'] ?? 'cooled' ) );
 		$regime               = in_array( $regime, array( 'cooled', 'frozen', 'ambient' ), true ) ? $regime : 'cooled';
-		$fallback_dimensions  = $this->dimensions_from_settings( $settings );
-		$fallback_weight      = $this->positive_int_setting( $settings['package_weight'] ?? 1600, 1600 );
+		$dimensions           = $this->dimensions_from_settings( $settings );
+		$box_capacity         = $this->positive_int_setting( $settings['package_weight'] ?? 10000, 10000 );
+		$box_capacity         = $this->positive_int_setting(
+			apply_filters( 'soocool_box_capacity_grams', $box_capacity, $order ),
+			10000
+		);
 
-		$goods        = array();
-		$requested_id = 0; // Decrements to negative requested IDs (-1, -2, ...).
+		$total_weight        = 0;
+		$content_parts       = array();
+		$representative_item = null;
+		$single_unit_item    = null;
+		$total_units         = 0;
 
 		foreach ( $order->get_items() as $item ) {
-			$quantity   = max( 1, (int) $item->get_quantity() );
-			$contents   = sanitize_text_field( wp_strip_all_tags( $item->get_name() ) );
-			$contents   = '' !== $contents ? $contents : sanitize_text_field( $fallback_description );
-			$product    = ( is_object( $item ) && method_exists( $item, 'get_product' ) ) ? $item->get_product() : null;
-			$dimensions = $this->product_dimensions( $product ) ?? $fallback_dimensions;
-			$weight     = $this->product_weight( $product ) ?? $fallback_weight;
+			$quantity = max( 0, (int) $item->get_quantity() );
+			if ( 0 === $quantity ) {
+				continue;
+			}
 
-			for ( $i = 0; $i < $quantity; $i++ ) {
-				--$requested_id;
+			$product = ( is_object( $item ) && method_exists( $item, 'get_product' ) ) ? $item->get_product() : null;
+			if ( is_object( $product ) && method_exists( $product, 'is_virtual' ) && $product->is_virtual() ) {
+				continue;
+			}
 
-				$good = array(
-					'goodId'                => $requested_id,
-					'packagingType'         => $packaging_type,
-					'dimensions'            => $dimensions,
-					'weight'                => $weight,
-					'contents'              => $contents,
-					'transportRequirements' => array( $regime ),
+			$unit_weight = $this->product_weight( $product );
+			if ( null === $unit_weight ) {
+				$product_name = sanitize_text_field( wp_strip_all_tags( (string) $item->get_name() ) );
+				throw new PayloadValidationException(
+					sprintf(
+						/* translators: %s: WooCommerce product name. */
+						esc_html__( 'Product “%s” heeft geen geldig gewicht. Vul het productgewicht in WooCommerce in voordat de order naar SooCool wordt gestuurd.', 'soocool-for-woocommerce' ),
+						esc_html( $product_name )
+					)
 				);
+			}
 
-				$barcode = $this->barcode_for_item( $item );
-				if ( '' !== $barcode ) {
-					$good['barcode'] = $barcode;
-				}
+			$total_weight += $unit_weight * $quantity;
+			$total_units  += $quantity;
+			$representative_item ??= $item;
+			if ( 1 === $quantity && null === $single_unit_item ) {
+				$single_unit_item = $item;
+			} else {
+				$single_unit_item = false;
+			}
 
-				/**
-				 * Allows projects to adjust each SooCool good before it is sent.
-				 *
-				 * Required SooCool fields goodId, packagingType and contents must remain present.
-				 * Dimensions, weight and transportRequirements are provided by default from
-				 * product data or global package settings but can be adjusted per project.
-				 *
-				 * @param array<string, mixed> $good
-				 * @param mixed                $item WooCommerce order item.
-				 * @param WC_Order             $order
-				 */
-				$good = apply_filters( 'soocool_order_good_payload', $good, $item, $order );
-
-				$goods[] = $good;
+			$contents = sanitize_text_field( wp_strip_all_tags( (string) $item->get_name() ) );
+			if ( '' !== $contents ) {
+				$content_parts[] = sprintf( '%d× %s', $quantity, $contents );
 			}
 		}
 
-		if ( $goods ) {
-			return $goods;
+		if ( 0 >= $total_weight || null === $representative_item ) {
+			throw new PayloadValidationException( esc_html__( 'De order bevat geen verzendbare producten met een geldig gewicht voor de SooCool-doosberekening.', 'soocool-for-woocommerce' ) );
 		}
 
-		return array(
-			array(
-				'goodId'                => -1,
+		$box_count        = (int) ceil( $total_weight / $box_capacity );
+		$remaining_weight = $total_weight;
+		$goods           = array();
+		$contents        = $this->box_contents( $content_parts, $fallback_description, $order );
+		$barcode         = 1 === $total_units && is_object( $single_unit_item ) ? $this->barcode_for_item( $single_unit_item ) : '';
+
+		for ( $box_number = 1; $box_number <= $box_count; $box_number++ ) {
+			$box_weight = min( $box_capacity, $remaining_weight );
+			$remaining_weight -= $box_weight;
+
+			$good = array(
+				'goodId'                => -$box_number,
 				'packagingType'         => $packaging_type,
-				'dimensions'            => $fallback_dimensions,
-				'weight'                => $fallback_weight,
-				'contents'              => sanitize_text_field( trim( $fallback_description . ' ' . $order->get_order_number() ) ),
+				'dimensions'            => $dimensions,
+				'weight'                => $box_weight,
+				'contents'              => 1 < $box_count ? sprintf( '%s - doos %d/%d', $contents, $box_number, $box_count ) : $contents,
 				'transportRequirements' => array( $regime ),
-			),
-		);
+			);
+
+			if ( '' !== $barcode ) {
+				$good['barcode'] = $barcode;
+			}
+
+			/**
+			 * Allows projects to adjust each calculated SooCool box before it is sent.
+			 *
+			 * The second argument remains a WooCommerce order item for backward compatibility.
+			 * Box number and total box count are available as the fourth and fifth arguments.
+			 *
+			 * @param array<string, mixed> $good
+			 * @param mixed                $item Representative WooCommerce order item.
+			 * @param WC_Order             $order
+			 * @param int                  $box_number
+			 * @param int                  $box_count
+			 */
+			$good = apply_filters( 'soocool_order_good_payload', $good, $representative_item, $order, $box_number, $box_count );
+
+			$goods[] = $good;
+		}
+
+		return $goods;
 	}
 
-	/**
-	 * @param mixed $product
-	 * @return array{width:int, depth:int, height:int}|null
-	 */
-	private function product_dimensions( mixed $product ): ?array {
-		if ( ! is_object( $product ) || ! method_exists( $product, 'get_width' ) || ! function_exists( 'wc_get_dimension' ) ) {
-			return null;
+	/** @param array<int, string> $content_parts */
+	private function box_contents( array $content_parts, string $fallback_description, WC_Order $order ): string {
+		$contents = sanitize_text_field( implode( ', ', $content_parts ) );
+		if ( '' === $contents ) {
+			$contents = sanitize_text_field( trim( $fallback_description . ' ' . $order->get_order_number() ) );
 		}
 
-		$width  = (float) wc_get_dimension( (float) $product->get_width(), 'cm' );
-		$length = (float) wc_get_dimension( (float) $product->get_length(), 'cm' );
-		$height = (float) wc_get_dimension( (float) $product->get_height(), 'cm' );
-		if ( $width <= 0 || $length <= 0 || $height <= 0 ) {
-			return null;
+		if ( function_exists( 'mb_substr' ) ) {
+			return mb_substr( $contents, 0, 220 );
 		}
 
-		return array(
-			'width'  => max( 1, (int) round( $width ) ),
-			'depth'  => max( 1, (int) round( $length ) ),
-			'height' => max( 1, (int) round( $height ) ),
-		);
+		return substr( $contents, 0, 220 );
 	}
 
 	private function product_weight( mixed $product ): ?int {

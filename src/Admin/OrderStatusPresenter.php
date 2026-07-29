@@ -32,14 +32,20 @@ final class OrderStatusPresenter {
 	public function label( string $status ): string {
 		$status = sanitize_key( $status );
 
+		if ( in_array( $status, $this->pending_statuses(), true ) ) {
+			return __( 'In wachtrij', 'soocool-for-woocommerce' );
+		}
+		if ( in_array( $status, $this->failed_statuses(), true ) ) {
+			return __( 'Mislukt', 'soocool-for-woocommerce' );
+		}
+		if ( in_array( $status, $this->cancelled_statuses(), true ) ) {
+			return __( 'Geannuleerd', 'soocool-for-woocommerce' );
+		}
+
 		return match ( $status ) {
-			'pending'   => __( 'In wachtrij', 'soocool-for-woocommerce' ),
-			'synced'    => __( 'Gesynchroniseerd', 'soocool-for-woocommerce' ),
-			'cancelled',
-			'soocool_cancelled' => __( 'Geannuleerd', 'soocool-for-woocommerce' ),
-			'failed'    => __( 'Mislukt', 'soocool-for-woocommerce' ),
-			''          => __( 'Niet gesynchroniseerd', 'soocool-for-woocommerce' ),
-			default     => preg_replace( '/^soocool_/', '', str_replace( '_', ' ', $status ) ) ?: __( 'Onbekend', 'soocool-for-woocommerce' ),
+			'synced' => __( 'Gesynchroniseerd', 'soocool-for-woocommerce' ),
+			''       => __( 'Niet gesynchroniseerd', 'soocool-for-woocommerce' ),
+			default  => preg_replace( '/^soocool_/', '', str_replace( '_', ' ', $status ) ) ?: __( 'Onbekend', 'soocool-for-woocommerce' ),
 		};
 	}
 
@@ -53,14 +59,34 @@ final class OrderStatusPresenter {
 		if ( in_array( $status, array( 'synced', 'soocool_delivered', 'soocool_completed' ), true ) ) {
 			return 'is-success';
 		}
-		if ( in_array( $status, array( 'failed', 'cancelled', 'soocool_cancelled' ), true ) ) {
+		if ( in_array( $status, array_merge( $this->failed_statuses(), $this->cancelled_statuses() ), true ) ) {
 			return 'is-error';
 		}
-		if ( 'pending' === $status ) {
+		if ( in_array( $status, $this->pending_statuses(), true ) ) {
 			return 'is-warning';
 		}
 
 		return 'is-neutral';
+	}
+
+	/** @return array<int, string> */
+	public function pending_statuses(): array {
+		return array( 'pending', 'soocool_pending' );
+	}
+
+	/** @return array<int, string> */
+	public function failed_statuses(): array {
+		return array( 'failed', 'soocool_failed', 'soocool_rejected' );
+	}
+
+	/** @return array<int, string> */
+	public function cancelled_statuses(): array {
+		return array( 'cancelled', 'soocool_cancelled' );
+	}
+
+	/** @return array<int, string> */
+	public function non_synced_statuses(): array {
+		return array_values( array_unique( array_merge( array( '' ), $this->pending_statuses(), $this->failed_statuses(), $this->cancelled_statuses() ) ) );
 	}
 
 	/**
