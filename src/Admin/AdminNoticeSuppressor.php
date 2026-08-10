@@ -7,7 +7,7 @@ namespace SooCool\WooCommerce\Admin;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Behouden voor oudere koppelingen die deze klasse nog direct aanmaken.
+ * Compatibility shim for integrations that instantiate it directly.
  */
 final class AdminNoticeSuppressor {
 

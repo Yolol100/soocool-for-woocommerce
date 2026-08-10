@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SooCool\WooCommerce\Domain;
 
 use SooCool\WooCommerce\Api\ApiClient;
+use SooCool\WooCommerce\Api\ApiException;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
@@ -13,83 +14,106 @@ defined( 'ABSPATH' ) || exit;
 
 final class ShippingLabelService {
 
-	public function __construct( private readonly ApiClient $client, private readonly OrderMeta $meta, private readonly OptionRepository $options ) {}
+	private readonly RemoteOrderResponseParser $responses;
 
-	public function get_label( WC_Order $order, string $output ): string {
-		$soocool_order_id = $this->resolved_soocool_order_id( $order );
-		if ( '' === $soocool_order_id ) {
-			throw new \RuntimeException( esc_html__( 'Deze order heeft nog geen geldig numeriek SooCool order-ID.', 'soocool-for-woocommerce' ) );
-		}
-
-		$response = $this->client->get_shipping_label( $soocool_order_id, $output );
-		return (string) $response->body();
+	public function __construct( private readonly ApiClient $client, private readonly OrderMeta $meta, private readonly OptionRepository $options, ?RemoteOrderResponseParser $responses = null ) {
+		$this->responses = $responses ?? new RemoteOrderResponseParser( $meta );
 	}
 
+	/** @deprecated Use download_label() to avoid loading PDFs into memory. */
+	public function get_label( WC_Order $order, string $output ): string {
+		return $this->read_and_delete( $this->download_label( $order, $output ) );
+	}
+
+	/** @deprecated Use download_good_label() to avoid loading PDFs into memory. */
 	public function get_good_label( WC_Order $order, int|string $good_id, string $output ): string {
+		return $this->read_and_delete( $this->download_good_label( $order, $good_id, $output ) );
+	}
+
+	/** @param array<int, int|string> $good_ids @deprecated Use download_bulk_good_labels(). */
+	public function get_bulk_good_labels( array $good_ids, string $output ): string {
+		return $this->read_and_delete( $this->download_bulk_good_labels( $good_ids, $output ) );
+	}
+
+	/** @param array<int, WC_Order> $orders @deprecated Use download_bulk_labels(). */
+	public function get_bulk_labels( array $orders, string $output ): string {
+		return $this->read_and_delete( $this->download_bulk_labels( $orders, $output ) );
+	}
+
+	public function download_label( WC_Order $order, string $output ): string {
 		$soocool_order_id = $this->resolved_soocool_order_id( $order );
 		if ( '' === $soocool_order_id ) {
-			throw new \RuntimeException( esc_html__( 'Deze order heeft nog geen geldig numeriek SooCool order-ID.', 'soocool-for-woocommerce' ) );
+			throw new \RuntimeException( __( 'Deze order heeft nog geen geldig numeriek SooCool order-ID.', 'soocool-for-woocommerce' ) );
 		}
+		return $this->client->download_shipping_label( $soocool_order_id, $output );
+	}
 
-		$response = $this->client->get_good_shipping_label( $soocool_order_id, $good_id, $output );
-		return (string) $response->body();
+	public function download_good_label( WC_Order $order, int|string $good_id, string $output ): string {
+		$soocool_order_id = $this->resolved_soocool_order_id( $order );
+		if ( '' === $soocool_order_id ) {
+			throw new \RuntimeException( __( 'Deze order heeft nog geen geldig numeriek SooCool order-ID.', 'soocool-for-woocommerce' ) );
+		}
+		return $this->client->download_good_shipping_label( $soocool_order_id, $good_id, $output );
 	}
 
 	/** @param array<int, int|string> $good_ids */
-	public function get_bulk_good_labels( array $good_ids, string $output ): string {
-		$response = $this->client->get_multiple_good_shipping_labels( $good_ids, $output );
-		return (string) $response->body();
+	public function download_bulk_good_labels( array $good_ids, string $output ): string {
+		return $this->client->download_multiple_good_shipping_labels( $good_ids, $output );
 	}
 
 	/** @param array<int, WC_Order> $orders */
-	public function get_bulk_labels( array $orders, string $output ): string {
+	public function download_bulk_labels( array $orders, string $output ): string {
 		$soocool_order_ids = array();
-		$unresolved       = 0;
+		$unresolved        = 0;
 		foreach ( $orders as $order ) {
 			if ( ! $order instanceof WC_Order ) {
 				++$unresolved;
 				continue;
 			}
-
 			$soocool_order_id = $this->resolved_soocool_order_id( $order );
 			if ( '' !== $soocool_order_id ) {
 				$soocool_order_ids[] = $soocool_order_id;
-				continue;
+			} else {
+				++$unresolved;
 			}
-
-			++$unresolved;
 		}
-
 		$soocool_order_ids = array_values( array_unique( $soocool_order_ids ) );
-		if ( array() === $soocool_order_ids ) {
-			throw new \RuntimeException( esc_html__( 'Geen van de geselecteerde orders is teruggevonden bij SooCool. Synchroniseer de orders opnieuw en probeer daarna opnieuw te downloaden.', 'soocool-for-woocommerce' ) );
+		if ( array() === $soocool_order_ids || 0 < $unresolved ) {
+			throw new \RuntimeException( __( 'Eén of meer geselecteerde orders zijn niet teruggevonden bij SooCool.', 'soocool-for-woocommerce' ) );
 		}
+		return 1 === count( $soocool_order_ids )
+			? $this->client->download_shipping_label( $soocool_order_ids[0], $output )
+			: $this->client->download_multiple_shipping_labels( $soocool_order_ids, $output );
+	}
 
-		if ( $unresolved > 0 ) {
-			throw new \RuntimeException( esc_html__( 'Eén of meer geselecteerde orders zijn niet teruggevonden bij SooCool. Synchroniseer deze orders opnieuw en probeer daarna opnieuw te downloaden.', 'soocool-for-woocommerce' ) );
+	private function read_and_delete( string $filename ): string {
+		try {
+			$size = is_file( $filename ) ? filesize( $filename ) : false;
+			if ( false === $size || $size > 26214400 ) {
+				throw new \RuntimeException( __( 'Het SooCool-label is te groot of ontbreekt.', 'soocool-for-woocommerce' ) );
+			}
+			$pdf = file_get_contents( $filename );
+			if ( false === $pdf ) {
+				throw new \RuntimeException( __( 'Het SooCool-label kon niet worden gelezen.', 'soocool-for-woocommerce' ) );
+			}
+			return $pdf;
+		} finally {
+			wp_delete_file( $filename );
 		}
-
-		$response = 1 === count( $soocool_order_ids )
-			? $this->client->get_shipping_label( $soocool_order_ids[0], $output )
-			: $this->client->get_multiple_shipping_labels( $soocool_order_ids, $output );
-
-		return (string) $response->body();
 	}
 
 	private function resolved_soocool_order_id( WC_Order $order ): string {
+		$stored_order_id = $this->meta->get_soocool_order_id( $order );
+		if ( '' !== $stored_order_id ) {
+			$remote_order = $this->remote_order_by_id( $stored_order_id );
+			if ( array() !== $remote_order ) {
+				return $this->remember_remote_order( $order, $remote_order, $this->responses->reference( $remote_order ) );
+			}
+		}
+
 		$remote_order = $this->remote_order_by_reference( $order );
 		if ( array() !== $remote_order ) {
-			return $this->remember_remote_order( $order, $remote_order, $this->remote_reference( $remote_order ) );
-		}
-
-		$stored_order_id = $this->meta->get_soocool_order_id( $order );
-		if ( '' === $stored_order_id ) {
-			return '';
-		}
-
-		$remote_order = $this->remote_order_by_id( $stored_order_id );
-		if ( array() !== $remote_order ) {
-			return $this->remember_remote_order( $order, $remote_order, $this->remote_reference( $remote_order ) );
+			return $this->remember_remote_order( $order, $remote_order, $this->responses->reference( $remote_order ) );
 		}
 
 		return '';
@@ -100,8 +124,11 @@ final class ShippingLabelService {
 		foreach ( $this->order_reference_candidates( $order ) as $reference ) {
 			try {
 				$response = $this->client->search_order_by_reference( $reference );
-			} catch ( \Throwable ) {
-				continue;
+			} catch ( ApiException $exception ) {
+				if ( 404 === $exception->status_code() ) {
+					continue;
+				}
+				throw $exception;
 			}
 
 			$remote_order = $this->first_order_from_search_response( $response->body(), $reference );
@@ -117,16 +144,35 @@ final class ShippingLabelService {
 	private function remote_order_by_id( string $soocool_order_id ): array {
 		try {
 			$response = $this->client->get_order( $soocool_order_id );
-		} catch ( \Throwable ) {
-			return array();
+		} catch ( ApiException $exception ) {
+			if ( 404 === $exception->status_code() ) {
+				return array();
+			}
+			throw $exception;
 		}
 
 		$body = $response->body();
 		if ( ! is_array( $body ) ) {
-			return array();
+			throw new ApiException( __( 'SooCool gaf een ongeldige orderresponse terug.', 'soocool-for-woocommerce' ), 502 );
 		}
 
-		return '' !== $this->meta->extract_order_id( $body ) ? $body : array();
+		$matches = array();
+		foreach ( $this->responses->candidates( $body ) as $remote_order ) {
+			if ( $this->meta->extract_order_id( $remote_order ) === $soocool_order_id ) {
+				$matches[ $this->responses->fingerprint( $remote_order ) ] = $remote_order;
+			}
+		}
+
+		if ( 1 < count( $matches ) ) {
+			throw new ApiException( __( 'SooCool gaf meerdere orders met hetzelfde order-ID terug.', 'soocool-for-woocommerce' ), 502 );
+		}
+
+		if ( 1 === count( $matches ) ) {
+			$order = reset( $matches );
+			return is_array( $order ) ? $order : array();
+		}
+
+		return array();
 	}
 
 	/** @return array<int, string> */
@@ -161,54 +207,26 @@ final class ShippingLabelService {
 	 */
 	private function first_order_from_search_response( mixed $body, string $reference ): array {
 		if ( ! is_array( $body ) ) {
-			return array();
+			throw new ApiException( __( 'SooCool gaf een ongeldige zoekresponse terug.', 'soocool-for-woocommerce' ), 502 );
 		}
 
-		foreach ( $this->orders_from_search_response( $body ) as $remote_order ) {
-			if ( $this->remote_reference( $remote_order ) === $reference ) {
-				return $remote_order;
+		$matches = array();
+		foreach ( $this->responses->candidates( $body ) as $remote_order ) {
+			if ( $this->responses->reference( $remote_order ) === $reference ) {
+				$matches[ $this->responses->fingerprint( $remote_order ) ] = $remote_order;
 			}
+		}
+
+		if ( 1 < count( $matches ) ) {
+			throw new ApiException( __( 'SooCool gaf meerdere orders met dezelfde orderreferentie terug.', 'soocool-for-woocommerce' ), 502 );
+		}
+
+		if ( 1 === count( $matches ) ) {
+			$order = reset( $matches );
+			return is_array( $order ) ? $order : array();
 		}
 
 		return array();
-	}
-
-	/** @param array<string, mixed> $body @return array<int, array<string, mixed>> */
-	private function orders_from_search_response( array $body ): array {
-		$candidates = array();
-		if ( array_is_list( $body ) ) {
-			$candidates = $body;
-		} else {
-			$candidates[] = $body;
-			foreach ( array( 'order', 'data' ) as $key ) {
-				if ( isset( $body[ $key ] ) && is_array( $body[ $key ] ) ) {
-					$candidates = array_merge( $candidates, array_is_list( $body[ $key ] ) ? $body[ $key ] : array( $body[ $key ] ) );
-				}
-			}
-		}
-
-		$orders = array();
-		foreach ( $candidates as $candidate ) {
-			if ( is_array( $candidate ) && '' !== $this->meta->extract_order_id( $candidate ) ) {
-				$orders[] = $candidate;
-			}
-		}
-
-		return $orders;
-	}
-
-	/** @param array<string, mixed> $remote_order */
-	private function remote_reference( array $remote_order ): string {
-		foreach ( array( 'orderReference', 'ourReference', 'reference' ) as $key ) {
-			if ( isset( $remote_order[ $key ] ) && ! is_array( $remote_order[ $key ] ) && ! is_object( $remote_order[ $key ] ) ) {
-				$reference = trim( sanitize_text_field( (string) $remote_order[ $key ] ) );
-				if ( '' !== $reference ) {
-					return $reference;
-				}
-			}
-		}
-
-		return '';
 	}
 
 	/** @param array<string, mixed> $remote_order */

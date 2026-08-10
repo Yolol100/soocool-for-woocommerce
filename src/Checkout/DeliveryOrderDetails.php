@@ -25,16 +25,16 @@ final class DeliveryOrderDetails {
 			return;
 		}
 
-		$tracking_text = __( 'Je ontvangt Track & Trace zodra je bestelling onderweg is.', 'soocool-for-woocommerce' );
+		$tracking_text = __( 'Volg je bestelling met Track & Trace.', 'soocool-for-woocommerce' );
 
 		if ( $plain_text ) {
-			echo "\n" . esc_html__( 'Bezorging', 'soocool-for-woocommerce' ) . "\n";
-			echo esc_html__( 'Bezorgdatum', 'soocool-for-woocommerce' ) . ': ' . esc_html( $date_label ) . "\n";
+			echo "\n" . $this->plain_text( __( 'Bezorging', 'soocool-for-woocommerce' ) ) . "\n";
+			echo $this->plain_text( __( 'Bezorgdatum', 'soocool-for-woocommerce' ) ) . ': ' . $this->plain_text( $date_label ) . "\n";
 			if ( '' !== $time_label ) {
-				echo esc_html__( 'Tijdvenster', 'soocool-for-woocommerce' ) . ': ' . esc_html( $time_label ) . "\n";
+				echo $this->plain_text( __( 'Tijdvenster', 'soocool-for-woocommerce' ) ) . ': ' . $this->plain_text( $time_label ) . "\n";
 			}
 			if ( ! $sent_to_admin ) {
-				echo esc_html( $tracking_text ) . "\n";
+				echo $this->plain_text( $tracking_text ) . "\n";
 			}
 			return;
 		}
@@ -69,9 +69,13 @@ final class DeliveryOrderDetails {
 		if ( '' !== $time_label ) {
 			echo '<div class="soocool-order-delivery-detail__row"><span>' . esc_html__( 'Tijdvenster', 'soocool-for-woocommerce' ) . '</span><strong>' . esc_html( $time_label ) . '</strong></div>';
 		}
-		echo '<p class="soocool-order-delivery-detail__trace">' . esc_html__( 'Je ontvangt Track & Trace zodra je bestelling onderweg is.', 'soocool-for-woocommerce' ) . '</p>';
+		echo '<p class="soocool-order-delivery-detail__trace">' . esc_html__( 'Volg je bestelling met Track & Trace.', 'soocool-for-woocommerce' ) . '</p>';
 		echo '</div>';
 		echo '</section>';
+	}
+
+	private function plain_text( string $value ): string {
+		return trim( sanitize_text_field( wp_strip_all_tags( $value ) ) );
 	}
 
 	private function order_delivery_label( WC_Order $order ): string {

@@ -34,11 +34,21 @@ final class OrderActionConfirmScript {
 			'window.sooCoolOrderActions=' . wp_json_encode(
 				array(
 					'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+					'dialog'       => array(
+						'title'   => __( 'SooCool', 'soocool-for-woocommerce' ),
+						'cancel'  => __( 'Annuleren', 'soocool-for-woocommerce' ),
+						'confirm' => __( 'Doorgaan', 'soocool-for-woocommerce' ),
+						'close'   => __( 'Sluiten', 'soocool-for-woocommerce' ),
+					),
 					'manualSync'   => array(
 						'loading'   => __( 'Synchroniseren...', 'soocool-for-woocommerce' ),
-						'working'   => __( 'De order wordt met SooCool gesynchroniseerd.', 'soocool-for-woocommerce' ),
+						'working'   => __( 'Order wordt met SooCool gesynchroniseerd…', 'soocool-for-woocommerce' ),
+						'success'   => __( 'SooCool-synchronisatie voltooid.', 'soocool-for-woocommerce' ),
+						'timeout'   => __( 'De synchronisatie duurde te lang. Controleer de orderstatus en probeer opnieuw.', 'soocool-for-woocommerce' ),
 						'failed'    => __( 'SooCool-synchronisatie mislukt. Probeer opnieuw of controleer de SooCool-logs.', 'soocool-for-woocommerce' ),
-						'forbidden' => __( 'Je mag deze order niet synchroniseren.', 'soocool-for-woocommerce' ),
+						'forbidden'       => __( 'Je mag deze order niet synchroniseren.', 'soocool-for-woocommerce' ),
+						'unavailable'     => __( 'SooCool-synchronisatie kon niet worden gestart.', 'soocool-for-woocommerce' ),
+						'invalidResponse' => __( 'SooCool gaf een ongeldige beheerresponse terug. Probeer opnieuw.', 'soocool-for-woocommerce' ),
 					),
 					'messages'     => array(
 						'soocool_send_to_soocool'    => __( 'Dit verstuurt deze WooCommerce-order naar SooCool en kan daar een nieuwe order aanmaken. Doorgaan?', 'soocool-for-woocommerce' ),

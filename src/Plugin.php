@@ -9,11 +9,15 @@ use SooCool\WooCommerce\Admin\Assets;
 use SooCool\WooCommerce\Admin\Notices;
 use SooCool\WooCommerce\Admin\PrivacyPolicy;
 use SooCool\WooCommerce\Checkout\DeliveryOptions;
+use SooCool\WooCommerce\Blocks\DeliveryOptionsIntegration;
+use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use SooCool\WooCommerce\Infrastructure\Requirements;
 use SooCool\WooCommerce\Rest\ConnectionController;
 use SooCool\WooCommerce\Rest\LogsController;
 use SooCool\WooCommerce\Rest\OrderSyncController;
 use SooCool\WooCommerce\Rest\SettingsController;
+use SooCool\WooCommerce\Rest\SystemStatusController;
+use SooCool\WooCommerce\Rest\WebhookAuthenticator;
 use SooCool\WooCommerce\Rest\WebhookController;
 use SooCool\WooCommerce\Rest\WebhookSecretController;
 use SooCool\WooCommerce\Rest\MaintenanceController;
@@ -48,12 +52,15 @@ final class Plugin {
 			return;
 		}
 
+		$provider->get( OptionRepository::class )->migrate_for_current_version();
+
 		$admin_menu = $provider->get( AdminMenu::class );
 		add_action( 'admin_menu', array( $admin_menu, 'register' ) );
 		add_action( 'admin_enqueue_scripts', array( $provider->get( Assets::class ), 'enqueue' ) );
 		add_action( 'admin_init', array( $provider->get( PrivacyPolicy::class ), 'register' ) );
 		add_action( 'admin_notices', array( $provider->get( Notices::class ), 'render_runtime_notices' ) );
 		add_action( 'rest_api_init', array( $provider->get( SettingsController::class ), 'register_routes' ) );
+		add_action( 'rest_api_init', array( $provider->get( SystemStatusController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( ConnectionController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( LogsController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( OrderSyncController::class ), 'register_routes' ) );
@@ -61,11 +68,15 @@ final class Plugin {
 		add_action( 'rest_api_init', array( $provider->get( WebhookSecretController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( MaintenanceController::class ), 'register_routes' ) );
 
+		$provider->get( WebhookAuthenticator::class )->register_cleanup();
 		$provider->get( OrderActions::class )->register();
+		OrderActions::unschedule_legacy_remote_cancel();
+		add_action( 'action_scheduler_init', array( OrderActions::class, 'unschedule_legacy_remote_cancel' ), 20 );
 		$provider->get( OrderStatusHooks::class )->register();
 		$provider->get( ShippingLabelActions::class )->register();
 		$provider->get( OrderEmailLabels::class )->register();
 		$provider->get( DeliveryOptions::class )->register();
+		$provider->get( DeliveryOptionsIntegration::class )->register();
 		$provider->get( OrderListColumn::class )->register();
 		$provider->get( BulkSyncActions::class )->register();
 	}

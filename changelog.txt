@@ -1,0 +1,747 @@
+= 0.7.24 =
+* Maakt de uitleg over bezorg- en avondtoeslagen in checkout weer volledig, eenvoudig en duidelijk geformuleerd.
+
+= 0.7.23 =
+* Maakt de dagdeelkeuze in checkout rustiger en beter scanbaar met een aparte naam- en tijdregel, subtielere selectie en een compacter radiopunt.
+* Behoudt beide dagdeelopties, de bestaande selectie, checkoutwaarden en volledige geselecteerde samenvatting ongewijzigd.
+
+= 0.7.22 =
+* Houdt de beschikbare dagdeelkeuzes zichtbaar nadat een klant een dagdeel heeft gekozen, zodat de selectie direct vergelijkbaar en wijzigbaar blijft.
+* Verkort de checkout-uitleg voor Track & Trace, besteltijd en NL/BE-toeslagen.
+* Trekt de korte Track & Trace-tekst gelijk in checkout, orderdetails en klantmails.
+
+= 0.7.19 =
+* Herstelt een checkout-fatal bij het tonen van bezorgtoeslagen en gebruikt daarbij de reeds genormaliseerde instellingenwaarden zonder een tweede toeslagparser toe te voegen.
+* Rondt de recente beheerinterface op: compactere logdetails, kleinere gecentreerde disclosure-iconen, consistente kaartindeling en een korte uitleg voor zichtbare bezorgdagen.
+* Vermindert onnodige instellingenrequests door reeds geladen instellingen tussen tabs te hergebruiken en gelijktijdige loads te dedupliceren.
+* Verwijdert bevestigde dode code en consolideert dubbele webhook-identifiervalidatie zonder bestaande hooks, routes, option keys of ordercontracten te wijzigen.
+* Trekt plugin-, asset-, readme- en vertaalmetadata gelijk op versie 0.7.19.
+
+= 0.7.18 =
+* Verwijdert de niet-werkende automatische remote-orderannulering uit de instellingen en actieve achtergrondlogica; handmatige annulering blijft beschikbaar.
+* Ruimt eventuele reeds ingeplande legacy-annuleringstaken veilig op zodra Action Scheduler is geïnitialiseerd.
+* Maakt Transportvereiste typografisch gelijk aan de overige veldlabels en lijnt Niveau uit met Zoeken en Order-ID.
+* Laat de logretentie- en resterende automatiseringskaarten de volledige beschikbare breedte gebruiken.
+* Geeft de activiteitenlogwerkbalk consistente binnenmarges en synchroniseert de admin-assetversie voor betrouwbare cacheverversing.
+* Verwijdert achtergebleven automatische-annuleringsvertalingen en synchroniseert vertaalmetadata met 0.7.18.
+
+= 0.7.17 =
+* Rejects malformed boolean values in REST delivery rules and daypart schedules instead of treating them as enabled.
+* Aligns REST delivery-setting validation with the existing fail-closed option normalization introduced in 0.7.9.
+* Preserves valid true/false values, default-enabled behavior for omitted fields, public hooks, REST routes and saved option keys.
+
+= 0.7.16 =
+* Herstelt het lettergewicht en de werkelijke interne labelafstand van Transportvereiste.
+* Maakt alle automatiseringskaarten gelijk breed via één responsief grid.
+* Lijnt Zoeken, Order-ID en Niveau uit op één veldlijn door de geneste WordPress InputControl-gap te normaliseren.
+* Behoudt instellingen, hooks, REST-routes en synchronisatiegedrag ongewijzigd.
+
+= 0.7.15 =
+* Redundante CSS-cascadelagen en dubbele selectors conservatief samengevoegd.
+* Ongebruikte custom properties en één onnodige !important-override verwijderd.
+* Bestaande admin-, order- en checkoutweergave behouden via voor/na-regressiecontrole.
+* Tekst in de verbindingsacties verticaal gecentreerd met vaste knophoogte.
+* Transportvereiste en ophaaltoggle visueel gecorrigeerd op basis van de werkelijke adminweergave.
+* Logretentiekaart begrensd zodat geen onnodig leeg vlak meer ontstaat.
+* Verbindingsactie visueel gelijkgetrokken met de opslagactie zonder de rode statuskleur te verliezen.
+* Automatiseringspaneel vervangen door een los kaartgrid met consistente spacing en rustigere hiërarchie.
+* Togglepositie, labelafstand en logfilteruitlijning gecorrigeerd zonder instellingen of gedrag te wijzigen.
+* Systeemgereedheid uit de admininterface verwijderd zonder de bestaande REST-contracten te wijzigen.
+* Paneelhoeken en bezorgschema-acties gecorrigeerd zodat afgeronde randen en knoplabels niet afbreken.
+* Automatisering en activiteitenlogfilters compacter, gelijkmatiger en moderner opgebouwd.
+
+* Strengthens keyboard focus indicators across settings, order actions and checkout controls with high-contrast fallbacks.
+* Keeps the native WordPress SelectControl indicator and removes the brittle custom arrow, negative offset and unnecessary important overrides.
+* Adds clear horizontal-overflow cues for settings tabs on narrow screens and keeps the delivery-schedule save action reachable while changes are pending.
+* Collapses long order-list error details behind a native accessible disclosure without removing the full diagnostic text.
+* Preserves all existing settings, hooks, REST routes, checkout data, synchronization behavior and public contracts.
+
+= 0.7.10 =
+
+* Redacts plain token and secret assignments from untrusted log and API error text while preserving ordinary diagnostic sentences.
+* Deletes cached e-mail label PDFs and their transients safely during uninstall without touching files outside the system temporary directory or following symlinks.
+* Removes temporary label files when PDF preparation cannot write the complete response and prevents the underlying filesystem warning from reaching output.
+* Preserves all existing settings, hooks, REST routes, checkout behavior, synchronization behavior and user interface.
+
+= 0.7.9 =
+
+* Makes invalid boolean-like settings fail closed instead of enabling resubmission, remote cancellation or delivery rules.
+* Limits the WooCommerce delivery-fee tax-class slug to 200 characters in REST validation and stored settings.
+* Cleans obsolete PHPDoc annotations without changing public hooks, routes, option keys, synchronization behavior or the user interface.
+
+= 0.7.8 =
+
+* Redacts whitespace-delimited API keys, webhook tokens and related credentials from untrusted provider error text before logging or admin display.
+* Preserves all existing settings, hooks, REST routes, synchronization behavior and user interface.
+
+= 0.7.7 =
+
+* Fixes automatic remote-order cancellation retry handling when another SooCool action temporarily holds the order lock.
+* Preserves all existing settings, hooks, REST routes, user interface and synchronization behavior.
+
+= 0.7.6 =
+
+* Splits the WooCommerce settings and order-screen admin CSS into dedicated, conditionally loaded bundles.
+* Preserves the existing selectors, declarations, responsive behavior and dialogs without adding settings or changing public functionality.
+* Keeps Checkout Blocks compatibility fail-closed and prevents the opt-in conditional field adapter from running below WooCommerce 9.9.
+
+= 0.7.5 =
+
+* Refactors settings normalization and API credential resolution into focused internal services while preserving all existing settings and option keys.
+* Separates webhook order resolution, checkout rendering, API transport/PDF handling and delivery-setting validation behind the existing public classes.
+* Preserves existing hooks, REST routes, synchronization behavior, order metadata and user-facing functionality; no new settings or features are introduced.
+
+= 0.7.4 =
+
+* Prioritizes initial and delayed SooCool synchronization jobs in Action Scheduler so eligible orders are claimed before ordinary default-priority jobs.
+* Preserves the existing asynchronous checkout behavior, unique actions, idempotency, bounded retries, watchdog recovery, WP-Cron fallback and direct manual synchronization path.
+
+= 0.7.3 =
+
+* Replaces native browser confirmations with consistent, keyboard-safe SooCool dialogs in settings and WooCommerce order actions.
+* Fixes portal modal token inheritance and aligns the WordPress Modal accessibility property.
+* Consolidates duplicate admin and checkout selectors and clarifies connection-screen action hierarchy.
+
+= 0.7.2 =
+
+* Rejects conflicting webhook order identifiers during remote fallback resolution.
+* Uses request-object identity for webhook reservations to prevent object-ID reuse collisions.
+* Applies configured log retention, retains retry-delay diagnostics and redacts structured personal API errors.
+* Clears webhook cleanup jobs on uninstall and removes stalled WP-Cron tasks before watchdog recovery.
+* Deletes prefetched label PDFs immediately when transient cache persistence fails.
+
+= 0.7.1 =
+
+* Clears stale Checkout Blocks delivery-session values when a previously selected daypart becomes unavailable or delivery selection is disabled.
+* Adds deterministic runtime packaging and a machine-readable product-readiness validator.
+* Expands QIT coverage definitions and premium release documentation without changing public runtime contracts.
+
+= 0.7.0 =
+
+* Adds environment-bound connection health persistence and an administrator readiness/diagnostics panel.
+* Persists native Checkout Blocks delivery selections during fresh Store API draft updates while retaining the staging-only compatibility declaration.
+* Adds QIT activation, security, PHPStan and E2E profiles plus a standard Playwright test package.
+* Adds support, operations, compatibility, acceptance and release policies for managed premium delivery.
+* Adds dependency auditing, dependency update automation and expanded release verification.
+
+= 0.6.3 =
+
+* Describes configurable evening delivery slots without incorrectly hardcoding 17:00-22:00 in customer surcharge copy.
+* Adds a controlled regression for combined, evening-only and zero-surcharge customer messages.
+
+= 0.6.2 =
+
+* Keeps admin and server validation aligned when checkout delivery selection is disabled.
+* Enforces the twelve-daypart limit in the admin before a schedule can be saved.
+* Rejects invalid pickup and fallback-delivery offset combinations instead of silently changing them.
+* Adds comprehensive settings-interaction and dependency-free admin-contract regressions.
+* Removes confirmed unused admin CSS selectors without changing active markup or public contracts.
+
+= 0.6.1 =
+
+* Cancels every pending SooCool Action Scheduler task by its dedicated group, including tasks with order arguments.
+* Loads the email-label hook owner during isolated uninstall cleanup to prevent a fatal error.
+* Adds regressions for group-scoped queue cleanup and standalone uninstall execution.
+
+= 0.6.0 =
+
+* Makes system health fail closed when Checkout Blocks are active or the checkout mode cannot be determined.
+* Adds bounded daily cleanup and continuation batches for expired durable webhook replay records.
+* Extends CI across the declared minimum and current WordPress/WooCommerce stacks with both HPOS and legacy order storage.
+* Adds regression coverage for checkout-mode reporting, webhook cleanup, Blocks field sanitization and separate Classic/Blocks browser contracts.
+* Keeps Checkout Blocks compatibility explicitly disabled until complete staging parity is proven.
+
+= 0.5.99 =
+
+* Added stable delivery-slot identity, configurable fee taxability and request-local delivery-schedule memoization.
+* Added opt-in, deduplicated remote cancellation for cancelled and fully refunded WooCommerce orders.
+* Added renewable owner-bound leases around long-running synchronization and webhook operations.
+* Switched label downloads to validated temporary files, corrected exact response-size boundaries and added bounded Retry-After-aware GET back-off.
+* Moved admin-email labels to asynchronous prefetch and migrated primary logs to the WooCommerce logger.
+* Added durable webhook idempotency, bounded event history and a custom order-reference resolver filter.
+* Added an opt-in staging-first Checkout Blocks additional-field adapter while retaining the explicit incompatibility declaration.
+* Added reproducible PHP, JavaScript, wp-env, CI and translation tooling.
+* Expanded uninstall cleanup and keyboard focus behavior.
+* Scopes Action Scheduler cleanup to the SooCool action group during deactivation.
+* Runs dependency-free controlled and source-contract regressions before dependency installation in CI.
+* Removes the unused `@wordpress/scripts` development dependency and documents the remaining lockfile requirement.
+
+= 0.5.97 =
+* Redacts compact credential field names such as `apikey`, `clientsecret`, `consumerkey` and `sessiontoken` before log storage.
+* Synchronizes overlapping release notes between `readme.txt` and `changelog.txt`.
+* Adds a validated 17,024-scenario source and controlled-runtime audit manifest with two complete green rounds.
+
+= 0.5.96 =
+* Harden HTTPS URL validation by rejecting embedded whitespace and control characters before WordPress URL normalization.
+* Added 14,856-scenario controlled-runtime regression coverage.
+
+= 0.5.95 =
+
+* Prevents fully refunded physical order lines from triggering background SooCool delivery synchronization.
+* Rejects malformed non-scalar REST settings, date filters and synchronization parameters without PHP warnings or unsafe coercion.
+* Aligns plugin, asset, readme and historical changelog release metadata.
+
+= 0.5.94 =
+
+* Preserves the canonical checkout delivery schedule, including custom rule and daypart sort order, when unrelated settings are updated.
+* Separates WooCommerce order references from independent shipment, tracking, package and label references in incoming webhook payloads.
+* Retains explicit legacy schedule updates and rejects genuine conflicting order references.
+
+SooCool for WooCommerce - Historical Changelog
+================================================
+
+Current release notes are kept in readme.txt. Earlier releases follow below.
+
+= 0.5.79 =
+
+* Serializes webhook updates per WooCommerce order with an atomic option-backed mutex.
+* Rejects stale and regressive webhook transitions and stores provider event sequence, timestamp and event ID metadata.
+* Keeps cancelled, rejected, failed and completed order states from being overwritten by older events.
+* Returns a retryable 503 response without consuming replay state when a WooCommerce order is not available yet.
+* Requires token plus HMAC for every environment, removes secrets from compatibility URL methods and permanently disables query-token webhook URLs.
+* Returns retryable HTTP 503 responses when a per-order webhook lock is busy and prevents ignored stale events from changing order identifiers.
+
+= 0.5.78 =
+
+* Uses WordPress safe remote requests for SooCool API calls.
+* Enforces webhook HMAC and disables query-token fallback whenever the production environment is active.
+* Replaces webhook-secret GET disclosure with explicit POST reveal and rotate actions while keeping the previous POST rotate route as a compatibility alias.
+* Updates the admin client for the new secret endpoints and marks WooCommerce compatibility through 10.9 for staging validation.
+
+= 0.5.77 =
+
+* Removes duplicate repository documentation and moves historical release notes to `changelog.txt`, keeping `readme.txt` concise.
+* Centralizes bounded SooCool order-response parsing used by synchronization and label recovery.
+* Centralizes positive integral-value normalization used by payload building and validation.
+* Removes an unused import and preserves existing public hooks, routes, option keys and order metadata.
+
+= 0.5.76 =
+* Rejects malformed or non-positive `good_id` values before any label is resolved.
+* Prevents invalid goods-label requests from falling back to a general order label.
+* Preserves the existing authorization, nonce and order/goods ownership checks.
+
+= 0.5.75 =
+
+* Rebuilds the admin runtime stylesheet as genuinely minified, source-equivalent CSS.
+* Corrects the 0.5.74 readme release notes and restores the 0.5.70 notes under their own version.
+* Aligns plugin, asset, readme and Dutch translation-catalog metadata on version 0.5.75.
+* Does not change SooCool API, order-sync, webhook, checkout or label behavior.
+
+= 0.5.74 =
+
+* Removes the separate overview screen and its unused admin JavaScript.
+* Makes the API connection screen the first/default tab and labels it Overzicht.
+* Keeps legacy `#overview` links compatible by routing them to the connection screen.
+* Shortens the explanation for hiding expired delivery slots.
+* Updates the Dutch translation catalog metadata and copy.
+
+= 0.5.70 =
+
+* Corrects the global admin-toggle optical alignment so switches move one pixel upward rather than downward.
+* Presents the four general checkout-delivery settings as a responsive 2×2 card grid with a one-column fallback on narrow screens.
+* Refreshes overview status cards and WooCommerce label/sync buttons so they match the restrained SooCool interface style.
+* Removes confirmed dead admin CSS, empty rules and exact duplicate JavaScript `.min.js` mirrors.
+* Replaces the duplicate admin CSS mirror with a genuinely compressed, source-equivalent runtime file.
+
+= 0.5.68 =
+* Updates confirmation dialogs with a warning layout, responsive actions and disabled closing while a request is running.
+* Moves all plugin toggles one pixel upward for consistent optical alignment, including rate and option switches.
+* Reorganizes package defaults into a clear responsive 2×2 grid and keeps the fallback product weight as a separate full-width field.
+* Presents pickup contact details as the sender section with an explicit responsive two-column field grid.
+
+= 0.5.67 =
+* Constrains the admin workspace on very wide screens while retaining responsive behavior.
+* Keeps all settings tabs in one scrollable row and reveals the active tab on compact screens.
+* Moves status refresh into the overview header and shows only the current label format in the overview.
+* Groups API actions by purpose and gives destructive key removal a clear secondary treatment.
+* Improves semantic headings, responsive action layouts and mobile reflow.
+* Corrects the 0.5.66 release notes below to match the shipped interface changes.
+
+= 0.5.66 =
+* Removes excess empty space from the overview quick-actions card.
+* Collapses technical pickup, packaging and webhook sections by default while reopening sections that contain validation errors.
+* Presents activity logs as compact scan-friendly rows and moves export/destructive controls under an Onderhoud disclosure.
+* Uses neutral disabled-button styling so inactive actions no longer look available.
+
+= 0.5.65 =
+* Combines the plugin release version with asset modification time so browsers do not retain stale CSS or JavaScript after an update.
+* Corrects the quick-actions footer spacing before the broader 0.5.66 overview redesign.
+
+= 0.5.64 =
+* Removes the decorative euro prefix from delivery-surcharge inputs.
+* Aligns toggles more consistently and places delivery-setting toggles closer to their labels.
+* Keeps the shipping-label settings and preview cards equal in height on desktop.
+* Reworks quick actions into a balanced grid with a compact status refresh action.
+* Simplifies activity-log filters and reduces visual clutter in log entries.
+
+= 0.5.63 =
+* Keeps webhook-secret GET requests and signed webhook URL reads free of hidden database writes.
+* Requires explicit secret regeneration when the stored webhook secret is missing.
+* Rejects anonymous or malformed bulk-label tokens and prevents another administrator from exhausting a valid one-time token.
+* Includes local failures, remote SooCool failures and remote rejections in dashboard counts and failed-order resynchronization batches.
+* Centralizes the known failure-status set and removes duplicate settings-sanitization work.
+
+= 0.5.62 =
+* Enforces at most one SooCool pickup task and one delivery task per outbound payload.
+* Reports legacy API-key fallback separately from environment-specific stored-key presence while preserving runtime fallback behavior.
+* Rejects impossible requested delivery dates in the TaskFactory fallback path.
+* Warns when a locally saved delivery moment could not be updated at SooCool instead of showing an unconditional success notice.
+* Avoids unnecessary WooCommerce order writes for unchanged non-marking webhook merges.
+* Keeps the dynamic resynchronization confirmation message translatable by formatting its order ID outside the translation lookup.
+
+= 0.5.61 =
+* Adds an explicit, capability-protected action to remove the stored API key for the active environment while preserving the other environment.
+* Keeps domain and API exception text context-neutral until final output, preventing double HTML encoding in REST, logs and admin notices.
+* Renders WooCommerce plain-text delivery email details without HTML entities such as `&amp;`.
+* Recovers stalled resynchronization watchdogs for orders that already have a SooCool remote ID without weakening initial-sync deduplication.
+
+= 0.5.60 =
+* Rejects noisy remote statuses instead of silently converting punctuation into valid-looking workflow identifiers.
+* Validates stored and submitted delivery dates as real calendar dates.
+* Keeps the not-synchronized order label consistent across backend status presentations.
+* Restores manual-sync controls after timeouts even without browser `AbortController` support.
+* Respects reduced-motion preferences in the classic checkout delivery selector.
+* Updates the Dutch translation catalog for current frontend and backend strings.
+
+= 0.5.59 =
+* Rejects malformed phone numbers with duplicate or misplaced international prefixes while preserving common separators and valid Dutch or `00` formats.
+* Uses the active WordPress locale for checkout dates and default daypart labels without translating storage defaults before `init` or during activation.
+* Passes the current admin locale to JavaScript date formatting and localizes canonical stored daypart labels in the settings interface.
+* Removes hardcoded Dutch JavaScript fallbacks, rejects malformed manual-sync responses safely and allow-lists redirect notice values.
+
+= 0.5.58 =
+* Requires canonical ISO-8601 pickup and delivery time windows with an explicit timezone and rejects impossible dates or offsets beyond `±14:00`.
+* Preserves negative temporary goods IDs for create-order payloads while accepting only positive remote goods IDs for saved metadata and label requests.
+* Rejects malformed successful JSON responses instead of treating undecodable content as an empty success response.
+* Restricts trace identifiers and redacts secrets, credentials and personal-data patterns from diagnostic fields.
+* Expands controlled tests for authentication, replay protection, retries, settings, scheduling, calendar boundaries, shipping modes, bulk downloads, malformed responses and fuzzed input.
+
+= 0.5.57 =
+* Caches sanitized settings in the shared service container and skips completed migrations only after their normalized persistence has been verified.
+* Canonicalizes delivery time-slot ordering so settings remain identical after saving and re-reading.
+* Avoids loading settings and JavaScript asset metadata on WooCommerce order screens that only need plugin styling.
+* Keeps the delivery-month radiogroup label localized after JavaScript month navigation.
+* Loads the plugin text domain on `init` for WordPress 6.7+ just-in-time translation compatibility.
+* Discloses the site URL included in the existing API User-Agent and removes the new migration marker during uninstall.
+
+= 0.5.56 =
+* Fixes second-pass numeric ID extraction so malformed wrapper IDs cannot hide valid nested SooCool or WooCommerce IDs in trusted API responses.
+* Keeps incoming webhook identifier validation fail-closed when malformed or conflicting IDs are supplied.
+* Rebuilds the distributable patch with relative paths and an applicable binary translation-catalog delta.
+
+= 0.5.55 =
+
+* Preserves valid nested SooCool statuses when an outer response contains an unrelated or unknown status.
+* Preserves valid nested order IDs, references and tracking values when wrapper fields are empty or invalid.
+* Rejects conflicting route and query identifiers and uses the actual REST route ID without query shadowing.
+* Clears stale synchronization errors after authoritative successful repeated webhook or status updates.
+* Consolidates bounded nested-value extraction.
+
+= 0.5.54 =
+
+* Rejects refund objects cleanly in the order-sync REST endpoint instead of passing an incompatible object into the sync coordinator.
+* Prevents automatic status hooks from resubmitting orders that are already synchronized; manual resubmission remains controlled by its dedicated setting.
+* Loads classic-checkout delivery assets whenever the feature is enabled so switching from local pickup to delivery works without a page reload.
+
+= 0.5.53 =
+
+* Removes duplicate heading markers and forced vertical gaps from the admin settings interface.
+* Makes label, maintenance and WooCommerce actions consistently recognizable as buttons.
+* Moves the delivery-schedule save action outside the dashboard card and widens toggle click areas.
+* Aligns currency controls and rebuilds the activity-filter grid for desktop and responsive widths.
+
+= 0.5.52 =
+
+* Rebuilds the admin layout with balanced cards, consistent spacing, aligned currency fields, clearer daypart controls and real action buttons.
+* Replaces the narrow order-sync notice with accessible working, success and error feedback plus a bounded browser timeout.
+* Keeps consecutive checkout orders independent, waits for Action Scheduler initialization and recovers stalled order-specific actions through a watchdog and WP-Cron fallback.
+* Treats temporary per-order lock contention as queue-retryable while keeping already-synced orders protected from duplicate submission.
+
+= 0.5.51 =
+
+* Verifies settings persistence and returns a server error instead of reporting a successful save when WordPress rejects the write.
+* Never reveals or signs with a newly generated webhook secret unless that secret was persisted successfully.
+* Repairs corrupted scalar settings safely, preserves idempotent migrations and avoids repeated writes after recovery.
+* Clears stale local sync errors after an authoritative successful SooCool webhook update.
+* Keeps webhook replay reservations fail-closed when the transient replay marker cannot be stored.
+
+= 0.5.50 =
+
+* Adds bounded automatic background retries for temporary SooCool network, rate-limit and server failures, with one-, five- and fifteen-minute backoff plus small jitter.
+* Keeps mutating API requests out of inline replay; each retry uses the existing order-reference duplicate check, lock and canonical synchronization service.
+* Prevents missing orders from creating orphan queue actions and keeps all automatic scheduling routes visibly in the queued state.
+* Preserves authoritative remote fulfilment statuses, retains safe retry diagnostics and treats malformed successful order responses as retryable upstream failures.
+* Makes legacy settings migration idempotent and stores migration markers only after the normalized settings were persisted successfully.
+* Refreshes the Dutch translation catalog and release metadata.
+
+= 0.5.49 =
+
+* Rejects explicitly empty or invalid weekday lists during legacy delivery-slot normalization instead of broadening an enabled slot to every weekday.
+* Preserves authoritative SooCool workflow and cancelled statuses when a local sync, update or refresh starts, succeeds or fails, while retaining diagnostic errors.
+
+= 0.5.48 =
+
+* Skips the classic delivery picker, forced phone requirement and delivery surcharges for carts that do not need shipping or use WooCommerce local pickup.
+* Prevents automatic SooCool submission for virtual-only and local-pickup orders while preserving manual delivery-order workflows.
+* Applies evening surcharges only to a currently valid selected delivery date and evening slot.
+* Rejects enabled legacy delivery slots without at least one weekday instead of silently broadening them to every weekday.
+
+= 0.5.47 =
+
+* Fixed pickup/delivery offset boundaries and UTF-8-aware field-length validation.
+* Treats webhook setup as optional in configuration health without weakening HMAC validation when webhooks are used.
+* Hardened bulk-label and outgoing payload boundaries and added targeted webhook, token, payload, status and asset-parity regressions.
+
+= 0.5.46 =
+
+* Reworked all settings screens with explicit loading/error states, inline validation and blocked saves for invalid API URLs, pickup data, delivery schedules, surcharges and log retention.
+* Improved mobile tab navigation, keyboard relationships, reduced-motion behavior, forced-colors support and accessible error announcements.
+* Simplified activity-log details, localized timestamps and messages, distinguished WooCommerce IDs from SooCool IDs, and made destructive confirmations visually distinct from safe retry actions.
+* Auto-hides revealed webhook tokens and makes the optional test-portal link filterable instead of hardcoding an unverified URL.
+
+= 0.5.45 =
+
+* Protected unsaved settings during internal tab navigation and improved action-specific loading and error feedback.
+* Warns when `/ping` is reachable but the response differs from the expected SooCool API contract.
+* Exports all filtered activity logs, validates date ranges and fixes timezone-aware recent-error health reporting.
+* Treats checkout delivery selection as optional in setup health, while validating an active delivery day and daypart when enabled.
+* Accepts common remote status formats before strict allow-list validation and hardens missing-asset version fallback.
+
+= 0.5.44 =
+
+* Added a central operational dashboard with local configuration health, failed-order counts, latest activity and shortcuts.
+* Reorganized dense settings behind progressive disclosure and only shows pickup fields when pickup is enabled.
+* Added explicit Checkout Blocks warnings, safer modal confirmations and unsaved-change protection.
+* Replaced raw log rows with searchable, filterable operational cards, JSON export, collapsible details and safe per-order retry.
+* Expanded the shipping-label screen with format guidance, a visual preview and direct order access.
+
+= 0.5.43 =
+
+* Fixed API-key editing so the masked keep-current placeholder clears before input and constant-managed keys are visibly read-only.
+* Prevented simultaneous submit, update, refresh and cancel actions from racing on the same WooCommerce order.
+* Preserved useful response-limit and content-type details in activity logs, logged unexpected order/connection failures, and serialized concurrent log writes.
+* Regenerated production CSS from the readable sources so debug and production rendering use the same selectors and declarations.
+* Aligns the admin asset cache version with the plugin release.
+
+= 0.5.42 =
+
+* Prefer a variation's own WooCommerce weight, then its selected weight attribute, before using a weight inherited from the parent variable product.
+* Prevent taxonomy slugs such as `0-5kg` and `1-5kg` from being misread as `5kg`; only taxonomy weight attributes are normalized, while ambiguous displayed ranges are rejected.
+* Reject malformed concatenated values such as `1kg2` and `1kg20g` instead of accepting a partial weight.
+
+= 0.5.41 =
+
+* Read selected variation attributes and order-item metadata as product weights when the WooCommerce weight field is empty.
+* Added coverage for all configured gram and kilogram variation values and conflicting-candidate fallback behavior.
+
+= 0.5.40 =
+
+* Allow products without a configured weight by using a configurable 1,000 gram per-unit fallback after checking product data and an explicit weight in the product name.
+* Open the delivery calendar on the first month that actually has an available delivery date.
+* Fixed the empty green sync-feedback bar and matched the order-list sync button to the outlined label-button style.
+
+= 0.5.39 =
+
+* Fixed remote SooCool workflow labels in WooCommerce admin so the internal `soocool_` prefix is no longer displayed.
+
+= 0.5.38 =
+* Added direct sync/retry buttons to HPOS and legacy WooCommerce order-list rows.
+* Show queued and queue-failure states immediately after automatic scheduling.
+* Handle newly created orders that skip the configured earliest status.
+* Infer one explicit product-name weight such as `1kg` only when the WooCommerce product weight is missing and unambiguous.
+* Fixed narrow order-metabox button, field and error-message overflow.
+
+= 0.5.37 =
+* Fixed low-privilege legacy-plugin deactivation and malformed optional-signature downgrade handling.
+* Rejected conflicting or malformed webhook identifiers across payload, route and query inputs.
+* Tightened payload validation and remote-order ambiguity handling.
+* Declared Checkout Blocks incompatibility until the delivery-date interface has a native block integration.
+
+= 0.5.36 =
+* Added ownership-safe atomic locks with stale-lock recovery for order sync, signed webhooks and one-time bulk-label downloads.
+* Fixed simultaneous duplicate webhook processing while preserving retries after failed processing.
+* Fixed Action Scheduler cleanup for all per-order argument variants of both SooCool hooks.
+* Hardened numeric IDs, country codes, settings, API responses, webhook payloads, label responses and ambiguous order searches.
+* Raised the declared WooCommerce minimum to 8.2 to match the HPOS order-query API used by the plugin.
+
+= 0.5.35 =
+
+* Build SooCool goods as weight-based boxes: one box per started 10 kg instead of one box per product unit.
+* Send 10,000 grams for full boxes and the remaining actual weight for the final box.
+* Migrate the former 1,600 gram default to a 10,000 gram box capacity and reject orders with missing product weights.
+
+= 0.5.34 =
+* Fixed synchronized filtering for empty legacy sync-status metadata.
+* Fixed retry and pending guidance for remote SooCool workflow statuses.
+* Limited missing-requirements notices to plugin administrators.
+* Updated Dutch translation catalog metadata to version 0.5.34.
+
+= 0.5.33 =
+* Fixed WooCommerce admin status filters and badge classification for remote SooCool workflow states.
+* Fixed empty legacy status metadata in the “Niet gesynchroniseerd” order filter.
+* Fixed bulk synchronization notices for users without WooCommerce management permission.
+* Fixed the confirmation script on the legacy WooCommerce order list.
+
+= 0.5.32 =
+* Fixed: pending SooCool Action Scheduler and WP-Cron synchronization jobs are removed when the plugin is deactivated or uninstalled.
+
+= 0.5.31 =
+* Webhook-replaybeveiliging markeert een delivery pas als verwerkt nadat de payload succesvol is geaccepteerd, zodat mislukte requests veilig opnieuw kunnen worden aangeboden.
+
+= 0.5.30 =
+* Fixed: automatic submission can queue newly created pending orders from classic checkout and Checkout Blocks when Betaling in afwachting is selected.
+* Added: direct nonce-protected Synchroniseer nu met SooCool button for unsynced WooCommerce orders.
+* Fixed: uninstall cleanup removes the active daypart migration flag and stale SooCool webhook replay transients.
+* Uses the canonical `soocool-for-woocommerce` directory in the distributable ZIP.
+
+= 0.5.29 =
+* Removes disabled manual API-test endpoints, the dummy-order factory and the admin-test bundle from the production package.
+* Adds `Update URI: false` to prevent accidental WordPress.org update collisions for this private WooCommerce integration.
+* Fixed: aligned admin asset metadata with the plugin version.
+
+= 0.5.28 =
+* Fixed: checkout-toeslagen lezen de WooCommerce `update_order_review` formulierdata nu correct uit `post_data`, zodat landtoeslagen en avondtoeslagen direct in de klassieke checkout-totalen worden meegerekend.
+* Fixed: adminbedragen voor toeslagen accepteren nu ook decimale komma-invoer zoals `1,5` zonder dat de waarde als ongeldig of leeg wordt opgeslagen.
+* Keeps future delivery dates limited to 92 days and normalizes blocked dates as valid `YYYY-MM-DD` values.
+
+= 0.5.26 =
+* Security: webhook-HMAC is now required by default and generated webhook URLs no longer include the token query parameter unless legacy fallback is explicitly enabled.
+* Security: handmatige API-testverzoeken worden geblokkeerd op de productieomgeving, tenzij productietests expliciet in code zijn toegestaan.
+* Compatibility: het SooCool-adminscherm onderdrukt geen niet-SooCool WordPress admin notices meer.
+* Localization: Nederlandse `nl_NL` taalbestanden toegevoegd en bundled language loading expliciet gemaakt.
+* Release: metadata afgestemd op WordPress.org-repositorydistributie; er staat geen private updatebron in de pluginheader.
+* Hardening: REST-beheer, webhook-secret en handmatige API-test capabilities zijn filterbaar zonder de standaard shopmanager-flow te wijzigen.
+* Compatibility: activation/runtime requirements now enforce WooCommerce 8.0 or higher, matching the plugin header.
+* Fixed: the checkout phone field is only forced required while the SooCool delivery checkout is enabled.
+* Added: de klassieke checkout toont nu in het Nederlands wanneer de België-toeslag en avondtoeslag voor 17:00-22:00 gelden.
+* Added: het adminscherm toont nu ook een Nederlandse checkouttekst-samenvatting bij de toeslagvelden.
+* Added: Nederland-toeslag en Avondtoeslag Nederland zijn instelbaar boven de België-toeslagvelden en worden toegepast bij afleverland NL.
+
+= 0.5.25 =
+* Added: België-toeslag en avondtoeslag België zijn nu instelbaar in de backend onder Bezorgschema.
+* Changed: de klassieke checkout gebruikt de opgeslagen toeslaginstellingen in plaats van vaste codewaarden.
+
+= 0.5.24 =
+* Added: België krijgt in de klassieke checkout een bezorgtoeslag van €2,00 bij afleverland BE.
+* Added: België krijgt bij het vaste avonddagdeel 17:00-22:00 aanvullend een avondtoeslag van €1,50.
+* Changed: wijziging van bezorgdag of dagdeel triggert WooCommerce checkout-herberekening, zodat de toeslag direct zichtbaar wordt.
+
+= 0.5.23 =
+* Fixed: handmatige SooCool API-test UI en REST-endpoint zijn standaard uitgeschakeld tenzij `SOOCOOL_ENABLE_MANUAL_API_TESTS` expliciet op `true` staat.
+* Fixed: productie-adminstylesheet behoudt de juiste `.soocool-shell :where(...)` descendant selectors in de minified CSS.
+* Uses the canonical `soocool-for-woocommerce/` directory in the distributable ZIP.
+
+= 0.5.21 =
+* Verbeterd: SooCool-webhook-URL bevat nu WooCommerce order-ID en orderreferentie, zodat callbacks de juiste WooCommerce-order betrouwbaarder kunnen koppelen.
+* Verbeterd: webhook-verwerking kan orderreferentie uit de webhook-URL gebruiken en koppelt een bekende WooCommerce-order veilig aan de ontvangen SooCool order-ID.
+* Verbeterd: adresopbouw gebruikt Postcode Checker split-meta als fallback wanneer WooCommerce address_1 geen huisnummer kan leveren.
+
+= 0.5.20 =
+* Release: versies gelijkgetrokken naar 0.5.20 in plugin header, constante, readme Stable tag, asset metadata en vertaaltemplate.
+
+= 0.5.19 =
+* Admin: bezorgmoment-editor opnieuw zichtbaar gemaakt in de WooCommerce order-metabox, zodat het gekozen bezorgmoment vanuit de order kan worden opgeslagen en naar SooCool kan worden gepusht.
+
+= 0.5.18 =
+* Orders: wanneer het bezorgmoment in de WooCommerce-order wordt bijgewerkt, wordt de bestaande SooCool-order direct mee bijgewerkt.
+
+= 0.5.17 =
+* Compatibiliteit: de oude dubbele pluginmap soocool-for-woocommerce-main wordt automatisch gedeactiveerd wanneer de canonieke pluginmap actief is. Dit voorkomt dubbele SooCool-menus, dubbele hooks en oude timezone-payloads.
+
+= 0.5.16 =
+* SooCool-tijdvensters worden nu met de Nederlandse SooCool-tijdzone verstuurd, zodat het gekozen bezorgmoment uit WooCommerce niet verschuift in het SooCool-dashboard.
+
+= 0.5.15 =
+* E-mail/UI: Track & Trace-label weggehaald, tekst behouden en e-mailtitel gecentreerd.
+
+= 0.5.14 =
+* Frontend: extra marge boven de titel Bezorging op de orderdetailweergave toegevoegd.
+* Admin: labeltitel boven de downloadknoppen verwijderd en downloadlinks in de orderlijst netter gestyled.
+
+= 0.5.12 =
+* Restored single order and good label downloads to the documented per-order SooCool endpoints.
+* Preserved signed SooCool good IDs for label downloads.
+* Replaced the WooCommerce order metabox delivery editor/track-and-trace button with stacked label download buttons.
+* Changed unmatched webhooks to a non-retrying 202 response and removed dummy-test webhook registration.
+
+= 0.5.10 =
+* Removed the label download button group from the WooCommerce order metabox. Order-list label links and bulk actions remain available.
+* Routed single order-label downloads through the SooCool `orderIds` label query endpoint.
+* Routed single good-label downloads through the SooCool `goodIds` label query endpoint.
+* Removed the order lookup preflight from bulk label downloads.
+
+= 0.5.8 =
+* Made the checkout delivery schedule leading for the SooCool delivery timeWindow.
+* Clarified fallback-only delivery fields under Planning & goederen.
+* Increased the checkout planning range to 92 days and made billing phone required in classic checkout.
+
+= 0.5.5 =
+* Split the manual API-test UI into an opt-in admin-test asset so the default production admin bundle stays clean.
+* Added screen-reader-only unavailable status text and aria labels for disabled checkout delivery dates.
+* Standardized direct-access protection style across PHP files.
+* Removed an unreachable duplicate return in API-key resolution.
+
+= 0.5.4 =
+* Updated the translation template metadata.
+
+= 0.5.3 =
+* Removed the select-control container margin override and added an 8px top margin.
+* Documented why the scoped select-field and label `!important` overrides are required.
+* Kept CSS maintenance notes concise and technical.
+
+= 0.5.2 =
+* Aligned admin dropdown field styling with the existing text/search input styling using scoped `!important` CSS overrides.
+* Aligned dropdown labels with the same typography as the other settings labels.
+
+= 0.5.1 =
+* Fixed Plugin Check/WPCS translator comments and direct file access detection.
+
+= 0.5.0 =
+* Refactored order sync, checkout delivery helpers, shipping label helpers and task factories.
+
+= 0.4.95 =
+* Updates checkout delivery copy and unavailable-date styling.
+
+= 0.4.92 =
+* Added SooCool order-label and good-label PDF attachments to the WooCommerce admin new-order email when labels already exist at send time.
+* Kept customer emails limited to delivery date, daypart and a generic Track & Trace availability notice.
+
+= 0.4.89 =
+* Made the Bezorgschema admin accordion single-open by default: only the first delivery day opens on initial load, and opening another day closes the previous one.
+* Retains the existing admin styling and reduces the initial schedule overview density.
+* Backend data, checkout behavior, order meta, validation and the SooCool API timeWindow are unchanged.
+
+= 0.4.88 =
+* Opens only the first Bezorgschema delivery-day card by default.
+* Changed the time-slot show-all control into a quieter secondary outline action.
+* Kept backend data, checkout behavior, order meta, validation and the SooCool API window unchanged.
+
+= 0.4.78 =
+* Added configurable delivery fixed dayparts to the classic WooCommerce checkout.
+* Customers now choose a delivery date and then an available daypart.
+* Added backend settings for daypart start/end time, per-slot cut-off time, weekdays and hiding expired/unavailable slots.
+* Saved the selected delivery daypart to WooCommerce order meta and displayed the full delivery moment in the order admin and customer order details, and sent the delivery date and dagdeel in order emails.
+* Updated the SooCool API delivery task timeWindow so it follows the selected checkout daypart when present.
+
+= 0.4.76 =
+* Updated WooCommerce compatibility metadata for WooCommerce 10.8.
+* Reused the central sanitizer for public SooCool API error messages before saving order notes.
+* Clarified that the delivery-day picker supports the classic WooCommerce checkout only, not Checkout Blocks.
+
+= 0.4.75 =
+* Added a WooCommerce order admin delivery-date editor in the SooCool metabox.
+* Delivery-date changes are validated against the existing checkout schedule and saved through WooCommerce order CRUD.
+* Added an order note when the requested delivery date is changed by an admin.
+
+= 0.4.74 =
+* Added a central AssetResolver for admin, checkout and order-action assets.
+* Removed duplicated asset path resolution while preserving the latest admin and checkout UI.
+
+= 0.4.72 =
+* Added compact checkout delivery guidance before date selection.
+* Kept selected delivery notice hidden until a customer chooses a date.
+
+= 0.4.70 =
+* Checkout delivery notice now stays hidden until a customer selects a delivery date.
+* Retains the 0.4.69 admin CSS regression fix and the active checkout/admin styles.
+
+= 0.4.69 =
+* Removes obsolete admin and checkout UI rules without changing the active interface.
+* Removes obsolete CSS presentation rules, adds actual minified assets and reduces unnecessary asset loading.
+* Replaced direct inline admin-footer JavaScript and inline order-list styles with scoped assets/classes.
+
+= 0.4.67 =
+* Increased checkout delivery picker title size for stronger visual hierarchy.
+
+= 0.4.65 =
+* Checkout bezorgdag-picker verfijnd: statische infoblokken verwijderd, compacte premium datumtegels en rustigere geselecteerde/disabled states.
+
+= 0.4.64 =
+* Changes the add-rule action to a secondary button, reduces save-footer spacing and moves general controls closer to their labels.
+
+= 0.4.62 =
+* Removes the delivery-window badge and duplicate footer note, flattens the general settings panel and retains the add-rule secondary action.
+
+= 0.4.59 =
+* Reworked the checkout delivery selector into a compact date grid with disabled unavailable dates.
+* Added dynamic admin delivery rules with add and remove controls.
+* Removed the stored delivery-rule cap so additional rules persist and are read by the schedule.
+* Kept HPOS ordermeta storage unchanged and made the selected checkout daypart leading for the SooCool delivery timeWindow.
+
+= 0.4.57 =
+* Moved the checkout delivery settings into a dedicated, customer-friendly "Bezorgdagen" admin tab next to "Pickup & delivery".
+* Redesigned the Bezorgdagen screen with a wide, sectioned layout (general settings plus delivery rule cards) that stays readable and responsive.
+* Corrected the checkout dispatch message from 13:30 to 13:00 to match the delivery cut-off logic.
+* Added a developer-only `soocool_delivery_schedule_now` filter for deterministic staging validation of cut-off scenarios.
+
+= 0.4.56 =
+* Added the client-facing checkout information box with delivery days, cooled delivery copy and 13:00 dispatch message.
+* Added a dynamic “Let op” checkout notice that follows the currently selected valid delivery day.
+* Tightened delivery cut-off validation so a delivery day expires at the configured cut-off time, including exactly 13:00.
+
+= 0.4.55 =
+* Added customer delivery-day selection to the classic WooCommerce checkout.
+* Added configurable delivery weekdays, cut-off times, days-ahead display and blocked dates to the SooCool settings.
+* Store the selected delivery day on WooCommerce orders and use it for the SooCool delivery task date with the existing delivery-offset fallback.
+* Added checkout styling, order admin display and order/email delivery-day display.
+
+= 0.4.54 =
+* Fixed release metadata consistency for the patched package.
+* Repacked the release ZIP with the canonical `soocool-for-woocommerce` plugin folder.
+* Removed an unused webhook dependency and obsolete bulk-label helper.
+
+= 0.4.53 =
+* Fixes WooCommerce bulk label download redirects by returning a raw admin URL instead of an HTML-escaped nonce URL.
+
+= 0.4.52 =
+
+* Fixed WooCommerce bulk downloads for both SooCool order labels and SooCool good labels by using signed order-id download URLs instead of the short-lived token redirect that could arrive without a token.
+
+= 0.4.51 =
+
+* Reworked WooCommerce bulk label downloads to use a short-lived, single-use admin-post download token instead of streaming the PDF directly from the bulk action filter.
+* Bulk label downloads remain scoped to the current user, nonce-protected, limited to 50 selected orders and available on HPOS and legacy order list screens.
+* Require HMAC webhook signatures by default, with timestamp-window and duplicate-delivery checks.
+* Added explicit release-package notes for runtime packages versus WordPress.org/source-review packages.
+
+= 0.4.49 =
+
+* Refreshed the admin CSS with scoped `.soocool-*` classes and shared CSS custom properties.
+* Fixed stale README webhook and delivery-window documentation to match current plugin behavior.
+* Kept the plugin version at 0.4.49 and aligned release metadata for the same-version release package.
+
+= 0.4.30 =
+* Fixed release packaging so the zip extracts to the canonical `soocool-for-woocommerce/` plugin folder instead of an internal working folder name.
+* Corrected README delivery-window wording to match the fixed 08:00-18:00 delivery behavior.
+* Aligned release metadata for 0.4.30.
+
+= 0.4.29 =
+* Fixed the WooCommerce bulk "Send to SooCool" action so selections above 50 orders fail with a clear admin notice instead of silently processing only the first 50 orders.
+
+= 0.4.28 =
+* Harden label download limits so bulk order-label downloads no longer silently truncate selections above 50 orders.
+* Harden good-label downloads so requested `good_ids` are validated before any 50-item limit is applied.
+* Bulk good-label downloads now fail clearly when selected orders contain more than 50 SooCool good IDs.
+
+= 0.4.27 =
+* Added an early runtime PHP-version guard before booting the service container, preventing fatal errors if the plugin remains active after a server is downgraded below PHP 8.1.
+
+= 0.4.26 =
+* Disabled unused unbound admin-post bulk label download requests; label downloads now use order-specific links or verified WooCommerce bulk actions.
+* Removed unused notice-suppression bookkeeping.
+* Release metadata and translation template coverage aligned for 0.4.26.
+
+= 0.4.25 =
+* Harden direct good-label downloads so requested good IDs must belong to the current WooCommerce order.
+* Hide metabox label buttons for users without `manage_woocommerce`.
+
+= 0.4.24 =
+* Harden direct good-label links so requested good IDs are verified against the selected WooCommerce order.
+* Add explicit label-download handler returns and sanitize REST validation messages consistently.
+
+= 0.4.23 =
+* Load SooCool admin CSS on WooCommerce HPOS and legacy order screens so order metabox buttons and order-list label links render with the intended compact styling.
+* Keep the React/settings JavaScript limited to the SooCool settings page while allowing CSS on the SooCool settings and order screens.
+
+= 0.4.22 =
+* Improved the SooCool order meta box label controls and added direct order-label and good-label links to the ord

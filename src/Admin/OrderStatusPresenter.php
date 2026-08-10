@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Admin;
 
+use SooCool\WooCommerce\WooCommerce\OrderMeta;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Single source of truth for how a SooCool sync status is presented in the
- * admin: its human label, its CSS badge class (used where admin.css is loaded)
- * and a self-contained hex colour pair (used in the orders list where the
- * plugin stylesheet is not enqueued).
+ * Maps SooCool sync states to admin labels, badge classes and fallback colors.
  */
 final class OrderStatusPresenter {
 
@@ -43,9 +42,21 @@ final class OrderStatusPresenter {
 		}
 
 		return match ( $status ) {
-			'synced' => __( 'Gesynchroniseerd', 'soocool-for-woocommerce' ),
-			''       => __( 'Niet gesynchroniseerd', 'soocool-for-woocommerce' ),
-			default  => preg_replace( '/^soocool_/', '', str_replace( '_', ' ', $status ) ) ?: __( 'Onbekend', 'soocool-for-woocommerce' ),
+			'synced'              => __( 'Gesynchroniseerd', 'soocool-for-woocommerce' ),
+			'soocool_accepted'    => __( 'Geaccepteerd', 'soocool-for-woocommerce' ),
+			'soocool_active'      => __( 'Actief', 'soocool-for-woocommerce' ),
+			'soocool_completed'   => __( 'Afgerond', 'soocool-for-woocommerce' ),
+			'soocool_created'     => __( 'Aangemaakt', 'soocool-for-woocommerce' ),
+			'soocool_delivered'   => __( 'Bezorgd', 'soocool-for-woocommerce' ),
+			'soocool_in_progress' => __( 'In uitvoering', 'soocool-for-woocommerce' ),
+			'soocool_in_transit'  => __( 'Onderweg', 'soocool-for-woocommerce' ),
+			'soocool_planned'     => __( 'Ingepland', 'soocool-for-woocommerce' ),
+			'soocool_processing'  => __( 'In verwerking', 'soocool-for-woocommerce' ),
+			'soocool_ready'       => __( 'Gereed', 'soocool-for-woocommerce' ),
+			'soocool_shipped'     => __( 'Verzonden', 'soocool-for-woocommerce' ),
+			'not_synced',
+			''                    => __( 'Niet gesynchroniseerd', 'soocool-for-woocommerce' ),
+			default               => __( 'Onbekende SooCool-status', 'soocool-for-woocommerce' ),
 		};
 	}
 
@@ -62,7 +73,7 @@ final class OrderStatusPresenter {
 		if ( in_array( $status, array_merge( $this->failed_statuses(), $this->cancelled_statuses() ), true ) ) {
 			return 'is-error';
 		}
-		if ( in_array( $status, $this->pending_statuses(), true ) ) {
+		if ( in_array( $status, array_merge( $this->pending_statuses(), $this->in_progress_statuses() ), true ) ) {
 			return 'is-warning';
 		}
 
@@ -76,7 +87,7 @@ final class OrderStatusPresenter {
 
 	/** @return array<int, string> */
 	public function failed_statuses(): array {
-		return array( 'failed', 'soocool_failed', 'soocool_rejected' );
+		return OrderMeta::failure_statuses();
 	}
 
 	/** @return array<int, string> */
@@ -85,13 +96,27 @@ final class OrderStatusPresenter {
 	}
 
 	/** @return array<int, string> */
+	private function in_progress_statuses(): array {
+		return array(
+			'soocool_accepted',
+			'soocool_active',
+			'soocool_created',
+			'soocool_in_progress',
+			'soocool_in_transit',
+			'soocool_planned',
+			'soocool_processing',
+			'soocool_ready',
+			'soocool_shipped',
+		);
+	}
+
+	/** @return array<int, string> */
 	public function non_synced_statuses(): array {
 		return array_values( array_unique( array_merge( array( '' ), $this->pending_statuses(), $this->failed_statuses(), $this->cancelled_statuses() ) ) );
 	}
 
 	/**
-	 * Self-contained colours for badges rendered outside the settings screen,
-	 * where assets/build/admin.css is not loaded.
+	 * Self-contained colours for badges rendered in compact admin contexts.
 	 *
 	 * @return array{bg:string, fg:string}
 	 */

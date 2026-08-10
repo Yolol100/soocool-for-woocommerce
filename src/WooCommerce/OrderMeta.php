@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\WooCommerce;
 
+use SooCool\WooCommerce\Domain\RemoteStatusPolicy;
+use SooCool\WooCommerce\Infrastructure\HttpsUrl;
+use SooCool\WooCommerce\Infrastructure\NumericIdentifier;
 use WC_Order;
 
 defined( 'ABSPATH' ) || exit;
@@ -17,6 +20,10 @@ final class OrderMeta {
 	public const LAST_ERROR     = '_soocool_last_error';
 	public const LAST_SYNCED_AT  = '_soocool_last_synced_at';
 	public const LAST_WEBHOOK_AT = '_soocool_last_webhook_at';
+	public const LAST_WEBHOOK_EVENT_AT = '_soocool_last_webhook_event_at';
+	public const LAST_WEBHOOK_EVENT_ID = '_soocool_last_webhook_event_id';
+	public const LAST_WEBHOOK_SEQUENCE = '_soocool_last_webhook_sequence';
+	public const WEBHOOK_EVENT_IDS = '_soocool_webhook_event_ids';
 	public const TRACKING_CODE   = '_soocool_tracking_code';
 	public const TRACKING_URL    = '_soocool_tracking_url';
 	public const GOOD_IDS        = '_soocool_good_ids';
@@ -26,6 +33,35 @@ final class OrderMeta {
 	public const REQUESTED_DELIVERY_TIME_TO    = '_soocool_requested_delivery_time_to';
 	public const REQUESTED_DELIVERY_TIME_LABEL = '_soocool_requested_delivery_time_label';
 
+	private const FAILURE_STATUSES = array( 'failed', 'soocool_failed', 'soocool_rejected' );
+	private const MAX_WEBHOOK_EVENT_IDS = 50;
+
+	private readonly RemoteStatusPolicy $statuses;
+
+	public function __construct( ?RemoteStatusPolicy $statuses = null ) {
+		$this->statuses = $statuses ?? new RemoteStatusPolicy();
+	}
+
+	/** @return array<int, string> */
+	public static function failure_statuses(): array {
+		return self::FAILURE_STATUSES;
+	}
+
+	public function get_sync_status( WC_Order $order ): string {
+		return sanitize_key( $this->scalar_string( $order->get_meta( self::SYNC_STATUS, true ) ) );
+	}
+
+	public function get_last_error( WC_Order $order ): string {
+		return trim( sanitize_text_field( $this->scalar_string( $order->get_meta( self::LAST_ERROR, true ) ) ) );
+	}
+
+	public function get_tracking_code( WC_Order $order ): string {
+		return trim( sanitize_text_field( $this->scalar_string( $order->get_meta( self::TRACKING_CODE, true ) ) ) );
+	}
+
+	public function get_tracking_url( WC_Order $order ): string {
+		return HttpsUrl::sanitize( $order->get_meta( self::TRACKING_URL, true ) );
+	}
 
 	public function get_requested_delivery_date( WC_Order $order ): string {
 		$value = $order->get_meta( self::REQUESTED_DELIVERY_DATE, true );
@@ -34,7 +70,12 @@ final class OrderMeta {
 		}
 
 		$date = sanitize_text_field( (string) $value );
-		return 1 === preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ? $date : '';
+		if ( 1 !== preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+			return '';
+		}
+
+		$parts = array_map( 'intval', explode( '-', $date ) );
+		return checkdate( $parts[1], $parts[2], $parts[0] ) ? $date : '';
 	}
 
 	public function get_requested_delivery_label( WC_Order $order ): string {
@@ -60,13 +101,17 @@ final class OrderMeta {
 			return '';
 		}
 
+		$from = $this->get_requested_delivery_time_from( $order );
+		$to   = $this->get_requested_delivery_time_to( $order );
+		if ( '' !== $from && '' !== $to && $to <= $from ) {
+			return '';
+		}
+
 		$label = trim( sanitize_text_field( (string) $value ) );
 		if ( '' !== $label ) {
 			return $label;
 		}
 
-		$from = $this->get_requested_delivery_time_from( $order );
-		$to   = $this->get_requested_delivery_time_to( $order );
 		return '' !== $from && '' !== $to ? $from . '-' . $to : '';
 	}
 
@@ -82,7 +127,8 @@ final class OrderMeta {
 
 	/** @param array<string, mixed> $body */
 	public function save_success( WC_Order $order, array $body, string $order_reference = '' ): void {
-		$soocool_order_id = $this->extract_order_id( $body );
+		$preserve_workflow_status = $this->has_nonfailure_authoritative_workflow_status( $order, true );
+		$soocool_order_id         = $this->extract_order_id( $body );
 		if ( '' === $soocool_order_id ) {
 			throw new \InvalidArgumentException( 'Missing valid SooCool order ID.' );
 		}
@@ -110,19 +156,34 @@ final class OrderMeta {
 			$order->update_meta_data( self::OUR_REFERENCE, $our_reference );
 		}
 
-		$order->update_meta_data( self::SYNC_STATUS, 'synced' );
+		if ( ! $preserve_workflow_status ) {
+			$order->update_meta_data( self::SYNC_STATUS, 'synced' );
+		}
 		$order->update_meta_data( self::LAST_SYNCED_AT, current_time( 'mysql' ) );
 		$order->delete_meta_data( self::LAST_ERROR );
 		$order->save();
+		do_action( 'soocool_order_synced', $order );
 	}
 
 	public function save_pending( WC_Order $order ): void {
-		$order->update_meta_data( self::SYNC_STATUS, 'pending' );
+		if ( ! $this->has_nonfailure_authoritative_workflow_status( $order, true ) ) {
+			$order->update_meta_data( self::SYNC_STATUS, 'pending' );
+		}
+		$order->save();
+	}
+
+	public function save_retry_pending( WC_Order $order, string $message ): void {
+		if ( ! $this->has_nonfailure_authoritative_workflow_status( $order, true ) ) {
+			$order->update_meta_data( self::SYNC_STATUS, 'pending' );
+		}
+		$order->update_meta_data( self::LAST_ERROR, sanitize_text_field( $message ) );
 		$order->save();
 	}
 
 	public function save_updated( WC_Order $order ): void {
-		$order->update_meta_data( self::SYNC_STATUS, 'synced' );
+		if ( ! $this->has_nonfailure_authoritative_workflow_status( $order, true ) ) {
+			$order->update_meta_data( self::SYNC_STATUS, 'synced' );
+		}
 		$order->update_meta_data( self::LAST_SYNCED_AT, current_time( 'mysql' ) );
 		$order->delete_meta_data( self::LAST_ERROR );
 		$order->save();
@@ -134,50 +195,120 @@ final class OrderMeta {
 		$order->save();
 	}
 
-	/** @param array<string, string> $data */
-	public function save_webhook_update( WC_Order $order, array $data, bool $mark_webhook = true ): bool {
-		$changed = false;
+	/** @param array<string, string> $data @param array<string, mixed> $event */
+	public function save_webhook_update( WC_Order $order, array $data, bool $mark_webhook = true, array $event = array() ): bool {
+		$result = $this->apply_webhook_update( $order, $data, $mark_webhook, $event );
 
-		$status = $this->normalize_sync_status( (string) ( $data['status'] ?? '' ) );
-		if ( '' !== $status && (string) $order->get_meta( self::SYNC_STATUS, true ) !== $status ) {
+		return $result['changed'];
+	}
+
+	/**
+	 * @param array<string, string> $data
+	 * @param array<string, mixed>  $event
+	 * @return array{accepted: bool, changed: bool, reason: string}
+	 */
+	public function apply_webhook_update( WC_Order $order, array $data, bool $mark_webhook = true, array $event = array() ): array {
+		if ( method_exists( $order, 'read_meta_data' ) ) {
+			$order->read_meta_data( true );
+		}
+
+		$status                = $this->normalize_sync_status( $this->scalar_string( $data['status'] ?? '' ) );
+		$tracking_code         = sanitize_text_field( $this->scalar_string( $data['tracking_code'] ?? '' ) );
+		$tracking_url          = HttpsUrl::sanitize( $data['tracking_url'] ?? '' );
+		$tracking_url_is_valid = '' !== $tracking_url;
+		$current_status        = $this->get_sync_status( $order );
+		$position              = $this->event_position( $order, $event );
+
+		if ( '' !== $position['event_id'] && in_array( $position['event_id'], $this->webhook_event_ids( $order ), true ) ) {
+			$this->save_webhook_receipt( $order, $mark_webhook );
+			return array( 'accepted' => false, 'changed' => false, 'reason' => 'duplicate_event' );
+		}
+
+		if ( 0 > $position['comparison'] ) {
+			$this->save_ignored_webhook_event( $order, $mark_webhook, $position['event_id'] );
+			return array( 'accepted' => false, 'changed' => false, 'reason' => 'stale_event' );
+		}
+		if ( '' === $status && '' === $tracking_code && ! $tracking_url_is_valid ) {
+			$this->save_ignored_webhook_event( $order, $mark_webhook, $position['event_id'] );
+			return array( 'accepted' => false, 'changed' => false, 'reason' => 'no_actionable_data' );
+		}
+		if ( '' !== $status && ! $this->statuses->allows_transition( $current_status, $status ) ) {
+			$this->save_ignored_webhook_event( $order, $mark_webhook, $position['event_id'] );
+			return array( 'accepted' => false, 'changed' => false, 'reason' => 'regressive_status' );
+		}
+
+		$changed         = false;
+		$metadata_changed = false;
+		$status_advanced = '' !== $status && $status !== $current_status;
+		$can_replace_tracking = 0 < $position['comparison'] || $status_advanced;
+
+		if ( $status_advanced ) {
 			$order->update_meta_data( self::SYNC_STATUS, $status );
 			$changed = true;
 		}
-		if ( '' !== ( $data['tracking_code'] ?? '' ) && (string) $order->get_meta( self::TRACKING_CODE, true ) !== $data['tracking_code'] ) {
-			$order->update_meta_data( self::TRACKING_CODE, sanitize_text_field( $data['tracking_code'] ) );
-			$changed = true;
-		}
-		if ( '' !== ( $data['tracking_url'] ?? '' ) && (string) $order->get_meta( self::TRACKING_URL, true ) !== $data['tracking_url'] ) {
-			$order->update_meta_data( self::TRACKING_URL, esc_url_raw( $data['tracking_url'] ) );
+
+		$current_tracking_code = $this->get_tracking_code( $order );
+		if ( '' !== $tracking_code && $current_tracking_code !== $tracking_code && ( '' === $current_tracking_code || $can_replace_tracking ) ) {
+			$order->update_meta_data( self::TRACKING_CODE, $tracking_code );
 			$changed = true;
 		}
 
+		$current_tracking_url = $this->get_tracking_url( $order );
+		if ( $tracking_url_is_valid && $current_tracking_url !== $tracking_url && ( '' === $current_tracking_url || $can_replace_tracking ) ) {
+			$order->update_meta_data( self::TRACKING_URL, $tracking_url );
+			$changed = true;
+		}
+
+		$failure_status    = in_array( $status, self::failure_statuses(), true );
+		$successful_update = $changed && ! $failure_status;
+		if ( $successful_update && '' !== $this->get_last_error( $order ) ) {
+			$order->delete_meta_data( self::LAST_ERROR );
+			$changed = true;
+		}
+
+		if ( $position['incoming_has_position'] ) {
+			$metadata_changed = $this->save_event_position( $order, $position ) || $metadata_changed;
+		}
+		$metadata_changed = $this->remember_webhook_event_id( $order, $position['event_id'] ) || $metadata_changed;
 		if ( $mark_webhook ) {
 			$order->update_meta_data( self::LAST_WEBHOOK_AT, current_time( 'mysql' ) );
+			$metadata_changed = true;
 		}
-		$order->save();
+		if ( $changed || $metadata_changed ) {
+			$order->save();
+		}
 
-		return $changed;
+		return array( 'accepted' => true, 'changed' => $changed, 'reason' => $changed ? 'applied' : 'no_change' );
 	}
 
 	public function save_error( WC_Order $order, string $message ): void {
-		$order->update_meta_data( self::SYNC_STATUS, 'failed' );
+		if ( ! $this->has_authoritative_workflow_status( $order, true ) ) {
+			$order->update_meta_data( self::SYNC_STATUS, 'failed' );
+		}
 		$order->update_meta_data( self::LAST_ERROR, sanitize_text_field( $message ) );
 		$order->save();
 	}
 
 	/** @param array<string, mixed> $body */
 	public function extract_order_id( array $body ): string {
-		foreach ( $this->response_containers( $body ) as $container ) {
-			foreach ( array( 'orderId', 'soocoolOrderId', 'id' ) as $key ) {
-				if ( ! isset( $container[ $key ] ) || is_array( $container[ $key ] ) || is_object( $container[ $key ] ) ) {
-					continue;
-				}
+		$containers = $this->response_containers( $body );
+		foreach ( array( array( 'orderId', 'soocoolOrderId' ), array( 'id' ) ) as $keys ) {
+			$order_ids = array();
+			foreach ( $containers as $container ) {
+				foreach ( $keys as $key ) {
+					if ( ! isset( $container[ $key ] ) || is_array( $container[ $key ] ) || is_object( $container[ $key ] ) ) {
+						continue;
+					}
 
-				$order_id = trim( sanitize_text_field( (string) $container[ $key ] ) );
-				if ( ctype_digit( $order_id ) && 0 < (int) $order_id ) {
-					return (string) (int) $order_id;
+					$order_id = $this->normalize_positive_id( $container[ $key ] );
+					if ( null !== $order_id ) {
+						$order_ids[ (string) $order_id ] = true;
+					}
 				}
+			}
+
+			if ( array() !== $order_ids ) {
+				return 1 === count( $order_ids ) ? (string) array_key_first( $order_ids ) : '';
 			}
 		}
 
@@ -211,7 +342,7 @@ final class OrderMeta {
 
 		$ids = array();
 		foreach ( explode( ',', sanitize_text_field( (string) $value ) ) as $good_id ) {
-			$id = $this->normalize_good_id( $good_id );
+			$id = $this->normalize_positive_id( $good_id );
 			if ( null !== $id ) {
 				$ids[] = $id;
 			}
@@ -222,8 +353,9 @@ final class OrderMeta {
 
 	/** @param array<string, mixed> $body */
 	private function extract_order_reference( array $body, string $fallback ): string {
-		foreach ( $this->response_containers( $body ) as $container ) {
-			foreach ( array( 'orderReference', 'ourReference', 'reference' ) as $key ) {
+		$containers = $this->response_containers( $body );
+		foreach ( array( 'orderReference', 'ourReference', 'reference' ) as $key ) {
+			foreach ( $containers as $container ) {
 				if ( isset( $container[ $key ] ) && ! is_array( $container[ $key ] ) && ! is_object( $container[ $key ] ) ) {
 					$reference = trim( sanitize_text_field( (string) $container[ $key ] ) );
 					if ( '' !== $reference ) {
@@ -250,11 +382,14 @@ final class OrderMeta {
 				}
 
 				foreach ( array( 'goodId', 'id' ) as $key ) {
-					if ( isset( $good[ $key ] ) && ! is_array( $good[ $key ] ) && ! is_object( $good[ $key ] ) ) {
-						$id = $this->normalize_good_id( $good[ $key ] );
-						if ( null !== $id ) {
-							$ids[] = $id;
-						}
+					if ( ! isset( $good[ $key ] ) || is_array( $good[ $key ] ) || is_object( $good[ $key ] ) ) {
+						continue;
+					}
+
+					$id = $this->normalize_positive_id( $good[ $key ] );
+					if ( null !== $id ) {
+						$ids[] = $id;
+						break;
 					}
 				}
 			}
@@ -284,17 +419,8 @@ final class OrderMeta {
 		return $containers;
 	}
 
-	private function normalize_good_id( mixed $value ): ?int {
-		if ( is_array( $value ) || is_object( $value ) ) {
-			return null;
-		}
-
-		$normalized = trim( sanitize_text_field( (string) $value ) );
-		if ( 1 !== preg_match( '/^-?\d+$/', $normalized ) || 0 === (int) $normalized ) {
-			return null;
-		}
-
-		return (int) $normalized;
+	private function normalize_positive_id( mixed $value ): ?int {
+		return NumericIdentifier::positive( $value );
 	}
 
 	public function get_soocool_order_id( WC_Order $order ): string {
@@ -303,20 +429,175 @@ final class OrderMeta {
 			return '';
 		}
 
-		$order_id = trim( sanitize_text_field( (string) $value ) );
-		if ( ! ctype_digit( $order_id ) || 0 >= (int) $order_id ) {
-			return '';
-		}
-
-		return (string) (int) $order_id;
+		$order_id = $this->normalize_positive_id( $value );
+		return null !== $order_id ? (string) $order_id : '';
 	}
 
 	public function is_synced( WC_Order $order ): bool {
 		return '' !== $this->get_soocool_order_id( $order );
 	}
 
+	/**
+	 * @param array<string, mixed> $event
+	 * @return array{comparison: int, current_has_position: bool, incoming_has_position: bool, sequence: int, timestamp: int, event_id: string}
+	 */
+	private function event_position( WC_Order $order, array $event ): array {
+		$current_sequence  = NumericIdentifier::positive( $order->get_meta( self::LAST_WEBHOOK_SEQUENCE, true ) ) ?? 0;
+		$current_timestamp = NumericIdentifier::positive( $order->get_meta( self::LAST_WEBHOOK_EVENT_AT, true ) ) ?? 0;
+		$current_event_id  = $this->sanitize_event_id( $order->get_meta( self::LAST_WEBHOOK_EVENT_ID, true ) );
+		$sequence          = NumericIdentifier::positive( $event['sequence'] ?? null ) ?? 0;
+		$timestamp         = NumericIdentifier::positive( $event['timestamp'] ?? null ) ?? 0;
+		$event_id          = $this->sanitize_event_id( $event['event_id'] ?? null );
+		$comparison        = 0;
+
+		if ( 0 < $current_sequence || 0 < $sequence ) {
+			if ( 0 < $current_sequence && 0 >= $sequence ) {
+				$comparison = -1;
+			} elseif ( 0 < $sequence && 0 >= $current_sequence ) {
+				$comparison = 1;
+			} else {
+				$comparison = $sequence <=> $current_sequence;
+				if ( 0 === $comparison && '' !== $current_event_id && '' !== $event_id && ! hash_equals( $current_event_id, $event_id ) ) {
+					$comparison = -1;
+				}
+			}
+		} elseif ( 0 < $current_timestamp || 0 < $timestamp ) {
+			if ( 0 < $current_timestamp && 0 >= $timestamp ) {
+				$comparison = -1;
+			} elseif ( 0 < $timestamp && 0 >= $current_timestamp ) {
+				$comparison = 1;
+			} else {
+				$comparison = $timestamp <=> $current_timestamp;
+			}
+		}
+
+		return array(
+			'comparison'             => $comparison,
+			'current_has_position'   => 0 < $current_sequence || 0 < $current_timestamp,
+			'incoming_has_position'  => 0 < $sequence || 0 < $timestamp,
+			'sequence'               => $sequence,
+			'timestamp'              => $timestamp,
+			'event_id'               => $event_id,
+		);
+	}
+
+	/** @param array{comparison: int, current_has_position: bool, incoming_has_position: bool, sequence: int, timestamp: int, event_id: string} $position */
+	private function save_event_position( WC_Order $order, array $position ): bool {
+		$changed = false;
+		$current_sequence = NumericIdentifier::positive( $order->get_meta( self::LAST_WEBHOOK_SEQUENCE, true ) ) ?? 0;
+		if ( $position['sequence'] > $current_sequence ) {
+			$order->update_meta_data( self::LAST_WEBHOOK_SEQUENCE, $position['sequence'] );
+			$changed = true;
+		}
+		$current_timestamp = NumericIdentifier::positive( $order->get_meta( self::LAST_WEBHOOK_EVENT_AT, true ) ) ?? 0;
+		if ( $position['timestamp'] > $current_timestamp ) {
+			$order->update_meta_data( self::LAST_WEBHOOK_EVENT_AT, $position['timestamp'] );
+			$changed = true;
+		}
+		$current_event_id = $this->sanitize_event_id( $order->get_meta( self::LAST_WEBHOOK_EVENT_ID, true ) );
+		$position_advanced = $position['sequence'] > $current_sequence || $position['timestamp'] > $current_timestamp;
+		if ( '' !== $position['event_id'] && $position['event_id'] !== $current_event_id ) {
+			$order->update_meta_data( self::LAST_WEBHOOK_EVENT_ID, $position['event_id'] );
+			$changed = true;
+		} elseif ( $position_advanced && '' === $position['event_id'] && '' !== $current_event_id ) {
+			$order->delete_meta_data( self::LAST_WEBHOOK_EVENT_ID );
+			$changed = true;
+		}
+
+		return $changed;
+	}
+
+	/** @return array<int, string> */
+	private function webhook_event_ids( WC_Order $order ): array {
+		$value = $order->get_meta( self::WEBHOOK_EVENT_IDS, true );
+		if ( is_string( $value ) && '' !== $value ) {
+			$decoded = json_decode( $value, true );
+			$value   = is_array( $decoded ) ? $decoded : array();
+		}
+		if ( ! is_array( $value ) ) {
+			return array();
+		}
+
+		$ids = array();
+		foreach ( $value as $event_id ) {
+			$event_id = $this->sanitize_event_id( $event_id );
+			if ( '' !== $event_id ) {
+				$ids[ $event_id ] = $event_id;
+			}
+		}
+
+		return array_slice( array_values( $ids ), -self::MAX_WEBHOOK_EVENT_IDS );
+	}
+
+	private function remember_webhook_event_id( WC_Order $order, string $event_id ): bool {
+		$event_id = $this->sanitize_event_id( $event_id );
+		if ( '' === $event_id ) {
+			return false;
+		}
+
+		$ids = $this->webhook_event_ids( $order );
+		if ( in_array( $event_id, $ids, true ) ) {
+			return false;
+		}
+
+		$ids[] = $event_id;
+		$order->update_meta_data( self::WEBHOOK_EVENT_IDS, array_slice( $ids, -self::MAX_WEBHOOK_EVENT_IDS ) );
+		return true;
+	}
+
+	private function save_ignored_webhook_event( WC_Order $order, bool $mark_webhook, string $event_id ): void {
+		$changed = $this->remember_webhook_event_id( $order, $event_id );
+		if ( $mark_webhook ) {
+			$order->update_meta_data( self::LAST_WEBHOOK_AT, current_time( 'mysql' ) );
+			$changed = true;
+		}
+		if ( $changed ) {
+			$order->save();
+		}
+	}
+
+	private function save_webhook_receipt( WC_Order $order, bool $mark_webhook ): void {
+		if ( ! $mark_webhook ) {
+			return;
+		}
+
+		$order->update_meta_data( self::LAST_WEBHOOK_AT, current_time( 'mysql' ) );
+		$order->save();
+	}
+
+	private function sanitize_event_id( mixed $value ): string {
+		if ( ! is_scalar( $value ) ) {
+			return '';
+		}
+
+		$value = trim( sanitize_text_field( (string) $value ) );
+		return 1 === preg_match( '/^[A-Za-z0-9_.:-]{1,128}$/', $value ) ? $value : '';
+	}
+
+	private function has_authoritative_workflow_status( WC_Order $order, bool $refresh = false ): bool {
+		if ( $refresh && method_exists( $order, 'read_meta_data' ) ) {
+			$order->read_meta_data( true );
+		}
+
+		$status = $this->get_sync_status( $order );
+		return 'cancelled' === $status || str_starts_with( $status, 'soocool_' );
+	}
+
+	private function has_nonfailure_authoritative_workflow_status( WC_Order $order, bool $refresh = false ): bool {
+		if ( $refresh && method_exists( $order, 'read_meta_data' ) ) {
+			$order->read_meta_data( true );
+		}
+
+		$status = $this->get_sync_status( $order );
+		return ! in_array( $status, self::failure_statuses(), true ) && ( 'cancelled' === $status || str_starts_with( $status, 'soocool_' ) );
+	}
+
+	private function scalar_string( mixed $value, string $fallback = '' ): string {
+		return is_scalar( $value ) ? (string) $value : $fallback;
+	}
+
 	private function normalize_sync_status( string $status ): string {
-		$status = sanitize_key( $status );
+		$status = $this->statuses->normalize( $status );
 
 		// Local terminal state follows manual cancel actions and filters.
 		return 'soocool_cancelled' === $status ? 'cancelled' : $status;

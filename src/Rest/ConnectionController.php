@@ -6,6 +6,9 @@ namespace SooCool\WooCommerce\Rest;
 
 use SooCool\WooCommerce\Api\ApiClient;
 use SooCool\WooCommerce\Api\ApiException;
+use SooCool\WooCommerce\Infrastructure\ConnectionStateRepository;
+use SooCool\WooCommerce\Infrastructure\Logger;
+use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use WP_REST_Response;
 use WP_REST_Server;
 
@@ -13,7 +16,12 @@ defined( 'ABSPATH' ) || exit;
 
 final class ConnectionController extends AbstractRestController {
 
-	public function __construct( private readonly ApiClient $client ) {}
+	public function __construct(
+		private readonly ApiClient $client,
+		private readonly Logger $logger,
+		private readonly OptionRepository $options,
+		private readonly ConnectionStateRepository $connection_state
+	) {}
 
 	public function register_routes(): void {
 		register_rest_route(
@@ -28,23 +36,27 @@ final class ConnectionController extends AbstractRestController {
 	}
 
 	public function test(): WP_REST_Response {
+		$environment = $this->environment();
+
 		try {
 			$response         = $this->client->ping();
 			$body             = $response->body();
 			$matches_contract = $this->body_matches_ping_contract( $body );
 
 			if ( ! $matches_contract ) {
+				$this->connection_state->record( $environment, 'warning', $response->status_code() );
 				return new WP_REST_Response(
 					array(
 						'success'          => true,
 						'status'           => $response->status_code(),
-						'message'          => __( 'Verbinding gelukt.', 'soocool-for-woocommerce' ),
+						'message'          => __( 'De API is bereikbaar, maar de ping-respons wijkt af van het verwachte SooCool-contract.', 'soocool-for-woocommerce' ),
 						'contract_warning' => true,
 					),
 					200
 				);
 			}
 
+			$this->connection_state->record( $environment, 'success', $response->status_code() );
 			return new WP_REST_Response(
 				array(
 					'success'          => true,
@@ -58,6 +70,7 @@ final class ConnectionController extends AbstractRestController {
 			if ( $status < 400 || $status > 599 ) {
 				$status = 400;
 			}
+			$this->connection_state->record( $environment, 'failure', $exception->status_code() );
 
 			return new WP_REST_Response(
 				array(
@@ -68,6 +81,14 @@ final class ConnectionController extends AbstractRestController {
 				$status
 			);
 		} catch ( \Throwable $exception ) {
+			$this->connection_state->record( $environment, 'failure', 500 );
+			$this->logger->error(
+				'Unexpected SooCool connection test error.',
+				array(
+					'action' => 'connection_test',
+					'error'  => $exception->getMessage(),
+				)
+			);
 			return new WP_REST_Response(
 				array(
 					'success' => false,
@@ -77,6 +98,11 @@ final class ConnectionController extends AbstractRestController {
 				500
 			);
 		}
+	}
+
+	private function environment(): string {
+		$settings = $this->options->all();
+		return 'production' === (string) ( $settings['environment'] ?? 'test' ) ? 'production' : 'test';
 	}
 
 	private function body_matches_ping_contract( mixed $body ): bool {

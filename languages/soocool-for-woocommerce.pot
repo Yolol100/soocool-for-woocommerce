@@ -1,0 +1,2859 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: SooCool for WooCommerce 0.7.24\n"
+"Report-Msgid-Bugs-To: security@webactueel.nl\n"
+"POT-Creation-Date: 2026-08-04 10:15+0000\n"
+"PO-Revision-Date: 2026-08-04 10:15+0000\n"
+"Last-Translator: Webactueel\n"
+"Language-Team: Dutch\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: tools/build-translations.py\n"
+"X-Domain: soocool-for-woocommerce\n"
+
+#: src/Rest/MaintenanceController.php:81
+msgid "%1$d mislukte orders ingepland voor hersynchronisatie op de achtergrond. %2$d orders stonden al ingepland, %3$d orders konden niet worden ingepland. Nog resterend na deze batch: %4$d."
+msgstr ""
+
+#: src/Admin/BulkSyncActions.php:135
+msgid "%1$d nieuwe SooCool-synchronisaties ingepland. %2$d stonden al ingepland. %3$d konden niet worden ingepland."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:621
+msgid "%s - niet beschikbaar"
+msgstr ""
+
+#: assets/build/admin.js:1147
+msgid "A4 — meerdere labels gebundeld"
+msgstr ""
+
+#: assets/build/admin.js:1147
+msgid "A6 — één label per PDF"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:49
+msgid "Aangemaakt"
+msgstr ""
+
+#: assets/build/admin.js:334
+msgid "Aangepaste callback-URL"
+msgstr ""
+
+#: assets/build/admin.js:976 assets/build/admin.js:977
+msgid "Aantal dagen vooruit tonen"
+msgstr ""
+
+#: assets/build/admin.js:1117
+msgid "Aantal logregels bewaren"
+msgstr ""
+
+#: assets/build/admin.js:1226
+msgid "Aanvraagpad"
+msgstr ""
+
+#: assets/build/admin.js:1207
+msgid "Actie"
+msgstr ""
+
+#: assets/build/admin.js:1030 assets/build/admin.js:1062 assets/build/admin.js:1070 src/Admin/OrderStatusPresenter.php:47
+msgid "Actief"
+msgstr ""
+
+#: assets/build/admin.js:604
+msgid "Actief: deze key wordt gebruikt voor productieaanvragen."
+msgstr ""
+
+#: assets/build/admin.js:603
+msgid "Actief: deze key wordt gebruikt voor testaanvragen."
+msgstr ""
+
+#: assets/build/admin.js:1024
+msgid "actieve dagdelen"
+msgstr ""
+
+#: assets/build/admin.js:335
+msgid "Actieve webhook-URL"
+msgstr ""
+
+#: assets/build/admin.js:1116
+msgid "Activeer automatisch versturen om deze instelling te gebruiken."
+msgstr ""
+
+#: assets/build/admin.js:968 assets/build/admin.js:969
+msgid "Activeer bezorgkeuze in de checkout"
+msgstr ""
+
+#: assets/build/admin.js:913
+msgid "Activeer minimaal één bezorgdag."
+msgstr ""
+
+#: assets/build/admin.js:932
+msgid "activeer minimaal één dagdeel."
+msgstr ""
+
+#: assets/build/admin.js:1427 assets/build/admin.js:1483
+msgid "Activiteitenlogs"
+msgstr ""
+
+#: assets/build/admin.js:1467
+msgid "Activiteitenlogs laden…"
+msgstr ""
+
+#: assets/build/admin.js:682
+msgid "Adres, datums en tijdvensters voor de ophaaltaak."
+msgstr ""
+
+#: assets/build/admin.js:1116 src/Admin/OrderStatusPresenter.php:48
+msgid "Afgerond"
+msgstr ""
+
+#: src/Admin/PrivacyPolicy.php:25
+msgid "Afhankelijk van de instellingen en orderinhoud kan dit bestaan uit naam van de ontvanger, verzend- of factuuradres, postcode, plaats, e-mailadres, telefoonnummer, orderreferentie, pakketgegevens, bezorginstructies, trackinggegevens en verzendlabelreferenties."
+msgstr ""
+
+#: assets/build/admin.js:686
+msgid "Afzender"
+msgstr ""
+
+#: assets/build/admin.js:682
+msgid "Afzender en planning"
+msgstr ""
+
+#: assets/build/admin.js:965
+msgid "Algemene instellingen"
+msgstr ""
+
+#: assets/build/admin.js:1473
+msgid "Alle activiteitenlogs wissen"
+msgstr ""
+
+#: assets/build/admin.js:1080
+msgid "Alle dagdelen tonen"
+msgstr ""
+
+#: assets/build/admin.js:1462
+msgid "Alle logs wissen"
+msgstr ""
+
+#: assets/build/admin.js:1009
+msgid "Alle weekdagen toegevoegd"
+msgstr ""
+
+#: assets/build/admin.js:825
+msgid "Alle weekdagen zijn al toegevoegd."
+msgstr ""
+
+#: assets/build/admin.js:1439
+msgid "Alleen fouten"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:305
+msgid "Alleen geldige bezorgmomenten met een actief dagdeel kunnen worden opgeslagen. Opnieuw verzonden WooCommerce e-mails gebruiken het bijgewerkte moment."
+msgstr ""
+
+#: assets/build/admin.js:1439
+msgid "Alleen info"
+msgstr ""
+
+#: assets/build/admin.js:679
+msgid "Alleen inschakelen wanneer ophaaltaken met SooCool zijn afgesproken."
+msgstr ""
+
+#: assets/build/admin.js:705
+msgid "Alleen voor orders zonder gekozen bezorgdatum."
+msgstr ""
+
+#: assets/build/admin.js:1439
+msgid "Alles"
+msgstr ""
+
+#: assets/build/admin.js:261
+msgid "Annuleren"
+msgstr ""
+
+#: assets/build/admin.js:1225
+msgid "API-host"
+msgstr ""
+
+#: assets/build/admin.js:614
+msgid "API-instellingen opgeslagen."
+msgstr ""
+
+#: assets/build/admin.js:1220
+msgid "API-key aanwezig"
+msgstr ""
+
+#: src/Rest/SystemStatusController.php:56
+msgid "API-key geconfigureerd"
+msgstr ""
+
+#: assets/build/admin.js:1221
+msgid "API-keybron"
+msgstr ""
+
+#: assets/build/admin.js:1223
+msgid "API-keylengte"
+msgstr ""
+
+#: assets/build/admin.js:1222
+msgid "API-keystatus"
+msgstr ""
+
+#: assets/build/admin.js:516 assets/build/admin.js:592
+msgid "API-koppeling"
+msgstr ""
+
+#: assets/build/admin.js:1209
+msgid "API-route"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:180
+msgid "Automatische SooCool-herpoging %1$d van %2$d is ingepland over ongeveer %3$d seconden. Laatste fout: %4$s"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:168
+msgid "Automatische SooCool-herpoging %1$d van %2$d stond al ingepland. Laatste fout: %3$s"
+msgstr ""
+
+#: assets/build/admin.js:1104 assets/build/admin.js:1108 assets/build/admin.js:1481
+msgid "Automatisering"
+msgstr ""
+
+#: assets/build/admin.js:1129
+msgid "Automatisering opslaan"
+msgstr ""
+
+#: assets/build/admin.js:1129
+msgid "Automatiseringsinstellingen opgeslagen."
+msgstr ""
+
+#: assets/build/admin.js:1072 assets/build/admin.js:223 assets/build/admin.js:228 src/Checkout/DeliverySchedule.php:255
+msgid "Avond"
+msgstr ""
+
+#: assets/build/admin.js:997 src/Checkout/DeliveryOptions.php:132
+msgid "Avondtoeslag België"
+msgstr ""
+
+#: assets/build/admin.js:991 src/Checkout/DeliveryOptions.php:115
+msgid "Avondtoeslag Nederland"
+msgstr ""
+
+#: assets/build/admin.js:688
+msgid "Bedrijfsnaam"
+msgstr ""
+
+#: assets/build/admin.js:631 assets/build/admin.js:672
+msgid "Beheer de dagelijkse ordergegevens. Technische en zelden gewijzigde opties staan ingeklapt."
+msgstr ""
+
+#: assets/build/admin.js:761
+msgid "Beheer per bezorgdag de cut-off en dagdelen voor classic checkout en de Blocks-adapter."
+msgstr ""
+
+#: assets/build/admin.js:1002
+msgid "Belastingklasse voor bezorgtoeslagen"
+msgstr ""
+
+#: assets/build/admin.js:994 src/Checkout/DeliveryOptions.php:428
+msgid "België"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:122
+msgid "België-toeslag bezorging"
+msgstr ""
+
+#: assets/build/admin.js:1104 assets/build/admin.js:1108
+msgid "Bepaal wanneer geschikte orders automatisch worden verstuurd en beheer het logonderhoud."
+msgstr ""
+
+#: assets/build/admin.js:976
+msgid "7–92 dagen zichtbaar in checkout."
+msgstr ""
+
+#: src/Checkout/DeliverySchedule.php:154
+msgid "Beschikbaar"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:600
+msgid "Beschikbare bezorgdagen voor %s"
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:126
+msgid "Bestaande SooCool-order bijgewerkt."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:165
+msgid "Bestaande SooCool-order gevonden en aan deze WooCommerce-order gekoppeld."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:59
+msgid "Bestaande SooCool-order gevonden op orderreferentie. Er is geen dubbele SooCool-order aangemaakt."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:420
+msgid "Bestaande SooCool-order gevonden op orderreferentie. WooCommerce-order gekoppeld zonder dubbele SooCool-order aan te maken."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:404
+msgid "Bestel vóór %s voor de eerstvolgende bezorgdag."
+msgstr ""
+
+#: assets/build/admin.js:1023
+msgid "Bestelbaar t/m"
+msgstr ""
+
+#: assets/build/admin.js:1116
+msgid "Betaling in afwachting"
+msgstr ""
+
+#: assets/build/admin.js:722
+msgid "Bevroren"
+msgstr ""
+
+#: assets/build/admin.js:1065
+msgid "Bewerk dagdeel"
+msgstr ""
+
+#: assets/build/admin.js:1026 assets/build/admin.js:1065
+msgid "Bewerken"
+msgstr ""
+
+#: src/Domain/TaskAddressFactory.php:88
+msgid "Bezorgadres is onvolledig. Ontbrekende WooCommerce-velden: %s. Vul het verzend- of factuuradres aan voordat deze order naar SooCool wordt gestuurd."
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:50
+msgid "Bezorgd"
+msgstr ""
+
+#: assets/build/admin.js:1036
+msgid "Bezorgdag"
+msgstr ""
+
+#: assets/build/admin.js:1009
+msgid "Bezorgdag toevoegen"
+msgstr ""
+
+#: assets/build/admin.js:1480
+msgid "Bezorgdagen"
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:113 src/Rest/SettingsValidator.php:84
+msgid "Bezorgdagen-offset moet minimaal 1 zijn wanneer ophaaltaken zijn ingeschakeld."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:586 src/Checkout/DeliveryOrderDetails.php:32 src/Checkout/DeliveryOrderDetails.php:68
+msgid "Bezorgdatum"
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:116 src/Rest/SettingsValidator.php:87
+msgid "Bezorgdatum-offset moet later zijn dan de ophaaldatum-offset wanneer ophaaltaken zijn ingeschakeld."
+msgstr ""
+
+#: src/Checkout/DeliveryOrderDetails.php:47
+msgid "Bezorgdatum:"
+msgstr ""
+
+#: src/Checkout/DeliveryOrderDetails.php:31 src/Checkout/DeliveryOrderDetails.php:46 src/Checkout/DeliveryOrderDetails.php:66
+msgid "Bezorging"
+msgstr ""
+
+#: src/Rest/SystemStatusController.php:156
+msgid "Bezorgkeuze in klassieke checkout actief"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:593
+msgid "Bezorgmaand kiezen"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:258 src/Admin/OrderMetaBox.php:265 src/Blocks/DeliveryOptionsIntegration.php:64 src/Blocks/DeliveryOptionsIntegration.php:65
+msgid "Bezorgmoment"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:304
+msgid "Bezorgmoment bijwerken"
+msgstr ""
+
+#: assets/build/admin.js:1008 assets/build/admin.js:761 assets/build/admin.js:951
+msgid "Bezorgschema"
+msgstr ""
+
+#: assets/build/admin.js:1092
+msgid "Bezorgschema opgeslagen."
+msgstr ""
+
+#: assets/build/admin.js:1092
+msgid "Bezorgschema opslaan"
+msgstr ""
+
+#: assets/build/admin.js:985
+msgid "Bezorgtoeslagen"
+msgstr ""
+
+#: assets/build/admin.js:1001
+msgid "Bezorgtoeslagen zijn belastbaar"
+msgstr ""
+
+#: src/Admin/PrivacyPolicy.php:27
+msgid "Bij API-verzoeken bevat de technische HTTP User-Agent de pluginversie en de publieke site-URL, zodat de SooCool-integratie aan de ontvangende zijde herkenbaar is."
+msgstr ""
+
+#: assets/build/admin.js:680
+msgid "Bijvoorbeeld TEST-. Laat leeg voor het normale ordernummer."
+msgstr ""
+
+#: assets/build/admin.js:727
+msgid "Breedte (cm)"
+msgstr ""
+
+#: assets/build/admin.js:761 assets/build/admin.js:951
+msgid "Checkout"
+msgstr ""
+
+#: assets/build/admin.js:960
+msgid "Checkout bezorgmoment"
+msgstr ""
+
+#: src/Rest/SystemStatusController.php:162
+msgid "Checkout Blocks actief; bezorgkeuze is nog niet volledig ondersteund"
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:408
+msgid "Checkout-bezorgdagdelen moeten minimaal één ingeschakeld geldig dagdeel bevatten."
+msgstr ""
+
+#: src/Rest/SystemStatusController.php:85
+msgid "Checkout-bezorgkeuze is uitgeschakeld (optioneel)"
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:449
+msgid "Checkout-bezorgregels moeten minimaal één ingeschakelde regel met geldige weekdagen en cut-offtijd bevatten."
+msgstr ""
+
+#: src/Rest/SystemStatusController.php:168
+msgid "Checkoutpagina of checkoutmodus kon niet worden vastgesteld"
+msgstr ""
+
+#: assets/build/admin.js:575
+msgid "Configuratie is compleet, maar operationele fouten vragen aandacht."
+msgstr ""
+
+#: assets/build/admin.js:581
+msgid "Configuratievoortgang"
+msgstr ""
+
+#: assets/build/admin.js:689
+msgid "Contactpersoon"
+msgstr ""
+
+#: assets/build/admin.js:1218
+msgid "Content-Type"
+msgstr ""
+
+#: assets/build/admin.js:595
+msgid "Controleer de API-URL’s:"
+msgstr ""
+
+#: assets/build/admin.js:921
+msgid "Controleer de bezorgtoeslagen: gebruik een bedrag tussen € 0 en € 999 met maximaal twee decimalen."
+msgstr ""
+
+#: assets/build/admin.js:675
+msgid "Controleer de instellingen:"
+msgstr ""
+
+#: assets/build/admin.js:954
+msgid "Controleer het bezorgschema:"
+msgstr ""
+
+#: assets/build/admin.js:368
+msgid "Controleer na afloop de activiteitenlogs en ordernotities. Bestaande geplande taken worden niet dubbel toegevoegd."
+msgstr ""
+
+#: assets/build/admin.js:576
+msgid "Controleert configuratie, verbinding, checkoutmodus en recente operationele signalen zonder secrets te tonen."
+msgstr ""
+
+#: assets/build/admin.js:576
+msgid "Controleren"
+msgstr ""
+
+#: assets/build/admin.js:1063 assets/build/admin.js:1075
+msgid "Cut-off"
+msgstr ""
+
+#: assets/build/admin.js:1037
+msgid "Cut-off dag"
+msgstr ""
+
+#: assets/build/admin.js:1038
+msgid "Cut-off tijd"
+msgstr ""
+
+#: assets/build/admin.js:938 assets/build/admin.js:944 src/Checkout/DeliveryOptions.php:660
+msgid "Dagdeel"
+msgstr ""
+
+#: assets/build/admin.js:1045
+msgid "Dagdeel toevoegen"
+msgstr ""
+
+#: assets/build/admin.js:1043
+msgid "Dagdelen"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:685
+msgid "Dagdelen voor %s"
+msgstr ""
+
+#: assets/build/admin.js:670
+msgid "De aangepaste webhook-URL moet leeg zijn of een geldige HTTPS-URL zonder gebruikersnaam of wachtwoord."
+msgstr ""
+
+#: assets/build/admin.js:601
+msgid "De actieve omgeving bepaalt automatisch welke API-key en basis-URL gebruikt worden."
+msgstr ""
+
+#: src/Rest/ConnectionController.php:52
+msgid "De API is bereikbaar, maar de ping-respons wijkt af van het verwachte SooCool-contract."
+msgstr ""
+
+#: assets/build/admin.js:556
+msgid "De API is bereikbaar, maar de ping-respons wijkt af van het verwachte SooCool-contract. Controleer dit vóór productiegebruik."
+msgstr ""
+
+#: assets/build/admin.js:534
+msgid "De API-keyconstante in wp-config.php blijft actief."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:191
+msgid "De automatische SooCool-herpoging kon niet worden ingepland."
+msgstr ""
+
+#: src/Rest/LogsController.php:93
+msgid "De begindatum van het logfilter mag niet na de einddatum liggen."
+msgstr ""
+
+#: assets/build/admin.js:1004
+msgid "De checkout toont automatisch een Nederlandse toelichting wanneer voor het gekozen land of dagdeel een toeslag geldt."
+msgstr ""
+
+#: assets/build/admin.js:938
+msgid "de eindtijd moet na de starttijd liggen."
+msgstr ""
+
+#: assets/build/admin.js:657
+msgid "De eindtijd van het ophaalvenster moet na de starttijd liggen."
+msgstr ""
+
+#: assets/build/admin.js:661
+msgid "De fallback-bezorgdatum moet later zijn dan de ophaaldatum."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:203
+msgid "De geselecteerde orders bevatten meer dan 50 SooCool-goederen-ID’s. Selecteer minder orders en probeer opnieuw."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:233
+msgid "De gevraagde SooCool-goederen-ID hoort niet bij deze order."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:28
+msgid "De gevraagde SooCool-resource is niet gevonden."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:236
+msgid "De huidige SooCool-status staat annulering via de plugin niet toe. Controleer de order handmatig in SooCool."
+msgstr ""
+
+#: assets/build/admin.js:355
+msgid "De huidige token werkt daarna direct niet meer."
+msgstr ""
+
+#: assets/build/admin.js:1409
+msgid "De logexport stopte omdat de server geen volgende resultaten teruggaf."
+msgstr ""
+
+#: assets/build/admin.js:1267
+msgid "De normale dubbele-ordercontrole blijft actief. Geforceerd opnieuw versturen wordt niet gebruikt."
+msgstr ""
+
+#: assets/build/admin.js:492
+msgid "De opgeslagen API-key is ongeldig of bevat nog een gemaskeerde waarde. Plak de echte SooCool API-key en sla opnieuw op."
+msgstr ""
+
+#: assets/build/admin.js:532
+msgid "De opgeslagen API-key is verwijderd."
+msgstr ""
+
+#: src/Domain/OrderPayloadBuilder.php:175
+msgid "De order bevat geen verzendbare fysieke producten voor de SooCool-doosberekening."
+msgstr ""
+
+#: assets/build/admin.js:1116
+msgid "De order wordt gesynchroniseerd zodra deze status wordt bereikt."
+msgstr ""
+
+#: src/Domain/OrderPayloadBuilder.php:193
+msgid "De order zou %1$d SooCool-dozen aanmaken; de veiligheidslimiet is %2$d. Controleer productgewichten en het maximale gewicht per doos."
+msgstr ""
+
+#: src/Rest/WebhookController.php:363
+msgid "De orderreferentieresolver gaf een ongeldig resultaat terug."
+msgstr ""
+
+#: src/Rest/WebhookController.php:141
+msgid "De orderverwerkingslease is verlopen. Probeer opnieuw."
+msgstr ""
+
+#: src/Admin/PrivacyPolicy.php:26
+msgid "De plugin bewaart API-koppelingsinstellingen en een webhookgeheim in WordPress-opties. API-keys en webhookgeheimen worden in de beheeromgeving gemaskeerd en mogen niet worden gedeeld in logs, screenshots of supportexports."
+msgstr ""
+
+#: assets/build/admin.js:698
+msgid "De plugin maakt alleen een bezorgtaak en goederen aan. Hierdoor blijven ophaalvelden uit beeld."
+msgstr ""
+
+#: assets/build/admin.js:368
+msgid "De plugin plant maximaal 200 mislukte orders in voor verwerking op de achtergrond."
+msgstr ""
+
+#: assets/build/admin.js:520
+msgid "De productie-API-URL moet een veilige HTTPS-basis-URL zonder pad, query of afwijkende poort zijn."
+msgstr ""
+
+#: src/Admin/PrivacyPolicy.php:28
+msgid "De site-eigenaar blijft verantwoordelijk voor het beschrijven van de SooCool transportdienst, de juridische grondslag voor verzendverwerking en eventuele bewaartermijnen in het privacybeleid van de site."
+msgstr ""
+
+#: assets/build/admin.js:1184
+msgid "De SooCool API gaf een fout terug."
+msgstr ""
+
+#: assets/build/admin.js:1182
+msgid "De SooCool API-aanvraag is mislukt."
+msgstr ""
+
+#: assets/build/admin.js:1181
+msgid "De SooCool API-key ontbreekt of is ongeldig."
+msgstr ""
+
+#: assets/build/admin.js:1183
+msgid "De SooCool API-respons overschreed de ingestelde limiet."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:91
+msgid "De SooCool bezorgdatum moet later zijn dan de ophaaldatum wanneer een ophaaltaak wordt gebruikt."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:270
+msgid "De SooCool-orderlock kon niet veilig worden vernieuwd. De actie is gestopt om parallelle verwerking te voorkomen."
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:41
+msgid "De synchronisatie duurde te lang. Controleer de orderstatus en probeer opnieuw."
+msgstr ""
+
+#: assets/build/admin.js:519
+msgid "De test-API-URL moet een veilige HTTPS-basis-URL zonder pad, query of afwijkende poort zijn."
+msgstr ""
+
+#: assets/build/admin.js:353
+msgid "De token wordt na 60 seconden automatisch verborgen."
+msgstr ""
+
+#: src/Rest/WebhookController.php:105 src/Rest/WebhookController.php:161 src/Rest/WebhookController.php:98
+msgid "De webhookverwerkingslease is verlopen. Probeer opnieuw."
+msgstr ""
+
+#: src/Rest/WebhookController.php:145
+msgid "De WooCommerce-order is niet meer beschikbaar. Probeer de webhook later opnieuw."
+msgstr ""
+
+#: src/Rest/WebhookController.php:122
+msgid "De WooCommerce-order is nog niet beschikbaar. Probeer de webhook later opnieuw."
+msgstr ""
+
+#: assets/build/admin.js:1304
+msgid "Details kopiëren"
+msgstr ""
+
+#: assets/build/admin.js:488
+msgid "Deze API-key wordt beheerd via SOOCOOL_API_KEY in wp-config.php."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:185
+msgid "Deze bezorgdag is niet meer beschikbaar. Kies een nieuwe bezorgdag."
+msgstr ""
+
+#: assets/build/admin.js:925
+msgid "deze bezorgdag komt meer dan één keer voor."
+msgstr ""
+
+#: src/Domain/ShippingLabelService.php:46 src/Domain/ShippingLabelService.php:54
+msgid "Deze order heeft nog geen geldig numeriek SooCool order-ID."
+msgstr ""
+
+#: src/Admin/OrderListColumn.php:115 src/Admin/OrderMetaBox.php:111
+msgid "Deze order nu naar SooCool synchroniseren?"
+msgstr ""
+
+#: src/Rest/WebhookAuthenticator.php:184
+msgid "Deze SooCool webhook-delivery wordt al verwerkt."
+msgstr ""
+
+#: assets/build/admin.js:728
+msgid "Diepte (cm)"
+msgstr ""
+
+#: assets/build/admin.js:197
+msgid "Dinsdag"
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:51
+msgid "Dit annuleert de gekoppelde order bij SooCool. Ga alleen door als de fulfilment moet worden gestopt."
+msgstr ""
+
+#: src/Blocks/DeliveryOptionsIntegration.php:90
+msgid "Dit bezorgmoment is niet meer beschikbaar. Kies een ander bezorgmoment."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:196
+msgid "Dit dagdeel is niet meer beschikbaar. Kies een ander dagdeel."
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:56
+msgid "Dit downloadt SooCool goederenlabels voor alle geselecteerde orders. Doorgaan?"
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:55
+msgid "Dit downloadt SooCool orderlabels voor alle geselecteerde orders. Doorgaan?"
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:50
+msgid "Dit haalt de status opnieuw op bij SooCool en kan lokale status- of trackinggegevens bijwerken. Doorgaan?"
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:54
+msgid "Dit verstuurt alle geselecteerde orders naar SooCool. Controleer de selectie voordat je doorgaat."
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:48
+msgid "Dit verstuurt deze WooCommerce-order naar SooCool en kan daar een nieuwe order aanmaken. Doorgaan?"
+msgstr ""
+
+#: assets/build/admin.js:1473
+msgid "Dit verwijdert alle lokaal opgeslagen SooCool-logregels permanent."
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:49
+msgid "Dit werkt de bestaande SooCool-order bij met de huidige WooCommerce-ordergegevens. Ga alleen door als de fulfilmentgegevens moeten wijzigen."
+msgstr ""
+
+#: assets/build/admin.js:199
+msgid "Donderdag"
+msgstr ""
+
+#: assets/build/admin.js:262
+msgid "Doorgaan"
+msgstr ""
+
+#: src/Admin/OrderListColumn.php:146 src/Admin/OrderMetaBox.php:142
+msgid "Download goederenlabel"
+msgstr ""
+
+#: src/Admin/OrderListColumn.php:138 src/Admin/OrderMetaBox.php:135
+msgid "Download orderlabel"
+msgstr ""
+
+#: src/Rest/WebhookAuthenticator.php:229
+msgid "Dubbele SooCool webhook-delivery."
+msgstr ""
+
+#: assets/build/admin.js:1215
+msgid "Duur (ms)"
+msgstr ""
+
+#: assets/build/admin.js:690
+msgid "E-mailadres"
+msgstr ""
+
+#: src/Rest/WebhookController.php:134
+msgid "Een andere SooCool webhook voor deze order wordt nog verwerkt. Probeer het opnieuw."
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:135 src/Rest/SettingsValidator.php:93
+msgid "Eindtijd van het bezorgvenster moet later zijn dan de starttijd van het bezorgvenster."
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:129 src/Rest/SettingsValidator.php:90
+msgid "Eindtijd van het ophaalvenster moet later zijn dan de starttijd van het ophaalvenster."
+msgstr ""
+
+#: assets/build/admin.js:1008
+msgid "Elke bezorgdag beheert een eigen cut-off en één of meer aanpasbare dagdelen."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:248
+msgid "Elke SooCool-good moet een object zijn."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:58
+msgid "Elke SooCool-taak moet een object zijn."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:213
+msgid "Elke SooCool-taak moet minimaal één good refereren."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:117 src/Domain/OrderSyncCoordinator.php:156 src/Domain/OrderSyncCoordinator.php:210
+msgid "Er draait al een SooCool-actie voor deze order. Probeer het zo opnieuw."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:106
+msgid "Er staat mogelijk al een achtergrondsynchronisatie open. Gebruik deze knop wanneer de automatische taak niet wordt uitgevoerd."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:160
+msgid "Er zijn momenteel geen bezorgmomenten beschikbaar. Neem contact met ons op voordat je bestelt."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:259
+msgid "Er zijn momenteel geen geldige bezorgmomenten beschikbaar in het checkoutschema."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:158
+msgid "Eén of meer aangevraagde SooCool-goederen-ID’s horen niet bij deze order."
+msgstr ""
+
+#: src/Domain/ShippingLabelService.php:82
+msgid "Eén of meer geselecteerde orders zijn niet teruggevonden bij SooCool."
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:483
+msgid "Eén of meer SooCool-instellingen bevatten te veel tekens."
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:28
+msgid "Eén of meer SooCool-instellingen hebben een ongeldig gegevenstype."
+msgstr ""
+
+#: assets/build/admin.js:705
+msgid "Fallback bezorgdatum-offset in dagen"
+msgstr ""
+
+#: assets/build/admin.js:709
+msgid "Fallback bezorgvenster"
+msgstr ""
+
+#: assets/build/admin.js:720
+msgid "Fallback goederenomschrijving"
+msgstr ""
+
+#: assets/build/admin.js:733
+msgid "Fallbackgewicht bij ontbrekend productgewicht (gram)"
+msgstr ""
+
+#: assets/build/admin.js:718
+msgid "Fallbacks en pakketwaarden die meestal eenmalig worden ingesteld."
+msgstr ""
+
+#: assets/build/admin.js:1456
+msgid "Filters wissen"
+msgstr ""
+
+#: assets/build/admin.js:1281
+msgid "Fout"
+msgstr ""
+
+#: assets/build/admin.js:1214
+msgid "Foutdetail"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:46
+msgid "Geaccepteerd"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:26 src/Admin/OrderStatusPresenter.php:41
+msgid "Geannuleerd"
+msgstr ""
+
+#: assets/build/admin.js:980 assets/build/admin.js:981
+msgid "Geblokkeerde datums / feestdagen"
+msgstr ""
+
+#: assets/build/admin.js:721
+msgid "Gebruik alleen de door SooCool afgesproken technische sleutel. Standaard: box."
+msgstr ""
+
+#: assets/build/admin.js:696
+msgid "Gebruik de ISO-landcode met twee letters, bijvoorbeeld NL of BE."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:131
+msgid "Gebruik de WooCommerce bulkactie of een order-specifieke SooCool labellink voor labeldownloads."
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:42
+msgid "Gebruik voor feestdagen geldige datums in het formaat JJJJ-MM-DD, gescheiden door komma’s."
+msgstr ""
+
+#: assets/build/admin.js:911
+msgid "Gebruik voor geblokkeerde datums geldige datums in het formaat JJJJ-MM-DD."
+msgstr ""
+
+#: assets/build/admin.js:653
+msgid "Gebruik voor het ophaalland een ISO-landcode van twee letters."
+msgstr ""
+
+#: assets/build/admin.js:937
+msgid "geef ieder dagdeel een label van maximaal 80 tekens."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:221
+msgid "geen"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:678
+msgid "Geen dagdelen beschikbaar voor deze datum."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:181
+msgid "Geen geldige orders geselecteerd voor SooCool labeldownload."
+msgstr ""
+
+#: assets/build/admin.js:1271
+msgid "Geen logs gevonden voor deze filters."
+msgstr ""
+
+#: src/Rest/MaintenanceController.php:53
+msgid "Geen mislukte SooCool-orders om opnieuw te synchroniseren."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:199
+msgid "Geen SooCool-goederen-ID’s gevonden voor de geselecteerde orders."
+msgstr ""
+
+#: assets/build/admin.js:1417
+msgid "gefilterde logregels geëxporteerd."
+msgstr ""
+
+#: assets/build/admin.js:1461
+msgid "Gefilterde logs exporteren"
+msgstr ""
+
+#: assets/build/admin.js:1429
+msgid "Geheime waarden en volledige aanvragen worden niet gelogd. Controleer definitieve details in ordernotities en het SooCool-portaal."
+msgstr ""
+
+#: assets/build/admin.js:722
+msgid "Gekoeld"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:61
+msgid "Gekozen bezorgmoment"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:513
+msgid "Gekozen bezorgmoment:"
+msgstr ""
+
+#: src/Domain/TaskAddressFactory.php:76
+msgid "geldig e-mailadres of telefoonnummer"
+msgstr ""
+
+#: src/Domain/TaskAddressFactory.php:73
+msgid "geldig land"
+msgstr ""
+
+#: src/Api/ApiClient.php:147
+msgid "Geldig numeriek SooCool-goederen-ID ontbreekt."
+msgstr ""
+
+#: src/Api/ApiClient.php:138
+msgid "Geldige numerieke SooCool order-ID ontbreekt."
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:55
+msgid "Gereed"
+msgstr ""
+
+#: assets/build/admin.js:1148
+msgid "Geschikt voor gewone A4-printers en gebundelde labeldownloads."
+msgstr ""
+
+#: assets/build/admin.js:1148
+msgid "Geschikt voor thermische A6-labelprinters en één label per download."
+msgstr ""
+
+#: assets/build/admin.js:1113
+msgid "Geschikte orders automatisch naar SooCool versturen"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:23 src/Admin/OrderStatusPresenter.php:45
+msgid "Gesynchroniseerd"
+msgstr ""
+
+#: assets/build/admin.js:718
+msgid "Goederen en verpakking"
+msgstr ""
+
+#: assets/build/admin.js:1189
+msgid "Goederenlabel kon niet aan de beheerderse-mail worden toegevoegd."
+msgstr ""
+
+#: src/Rest/OrderSyncController.php:62
+msgid "Handmatig opnieuw versturen is uitgeschakeld in de SooCool-instellingen."
+msgstr ""
+
+#: assets/build/admin.js:1114
+msgid "Handmatig opnieuw versturen van gesynchroniseerde orders toestaan"
+msgstr ""
+
+#: assets/build/admin.js:1128
+msgid "Handmatig versturen blijft beschikbaar vanuit het WooCommerce orderscherm."
+msgstr ""
+
+#: assets/build/admin.js:365
+msgid "Hersynchronisatie gestart."
+msgstr ""
+
+#: assets/build/admin.js:368
+msgid "Hersynchronisatie starten"
+msgstr ""
+
+#: assets/build/admin.js:910
+msgid "Het aantal dagen vooruit moet een heel getal tussen 7 en 92 zijn."
+msgstr ""
+
+#: assets/build/admin.js:1107
+msgid "Het aantal te bewaren logregels moet een heel getal tussen 20 en 500 zijn."
+msgstr ""
+
+#: src/Domain/OrderPayloadBuilder.php:156 src/Domain/OrderPayloadBuilder.php:180
+msgid "Het berekende SooCool-ordergewicht is te groot om veilig te verwerken."
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:395
+msgid "Het checkout-bezorgschema moet minimaal één ingeschakelde bezorgdag met een geldig ingeschakeld dagdeel bevatten."
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:166
+msgid "Het fallback-bezorgvenster blijft 08:00-18:00. Het gekozen dagdeel uit Bezorgschema is leidend voor nieuwe checkout-orders."
+msgstr ""
+
+#: src/Domain/ShippingLabelService.php:93
+msgid "Het SooCool-label is te groot of ontbreekt."
+msgstr ""
+
+#: src/Api/ApiClient.php:117
+msgid "Het SooCool-label is te groot, onvolledig of ontbreekt."
+msgstr ""
+
+#: src/Api/ApiClient.php:122
+msgid "Het SooCool-label kon niet volledig worden gelezen."
+msgstr ""
+
+#: src/Domain/ShippingLabelService.php:97
+msgid "Het SooCool-label kon niet worden gelezen."
+msgstr ""
+
+#: src/Api/ApiClient.php:465
+msgid "Het tijdelijke SooCool-label kon niet worden geopend."
+msgstr ""
+
+#: assets/build/admin.js:1072
+msgid "Het type bepaalt of de avondtoeslag geldt, onafhankelijk van gewijzigde tijden."
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:46
+msgid "Het verpakkingstype mag alleen kleine letters, cijfers, streepjes en underscores bevatten en maximaal 32 tekens lang zijn."
+msgstr ""
+
+#: assets/build/admin.js:341
+msgid "HMAC-SHA256 gebruikt: timestamp + \".\" + raw body met de webhook-token als sleutel."
+msgstr ""
+
+#: assets/build/admin.js:729
+msgid "Hoogte (cm)"
+msgstr ""
+
+#: assets/build/admin.js:1208
+msgid "HTTP-methode"
+msgstr ""
+
+#: assets/build/admin.js:1210
+msgid "HTTP-status"
+msgstr ""
+
+#: assets/build/admin.js:693
+msgid "Huisnummer"
+msgstr ""
+
+#: src/Domain/TaskAddressFactory.php:63
+msgid "huisnummer"
+msgstr ""
+
+#: assets/build/admin.js:941
+msgid "ieder dagdeel moet een unieke start- en eindtijd hebben."
+msgstr ""
+
+#: assets/build/admin.js:1116
+msgid "In behandeling"
+msgstr ""
+
+#: assets/build/admin.js:1116
+msgid "In de wacht"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:51
+msgid "In uitvoering"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:54
+msgid "In verwerking"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:24 src/Admin/OrderStatusPresenter.php:35
+msgid "In wachtrij"
+msgstr ""
+
+#: assets/build/admin.js:1281
+msgid "Info"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:53
+msgid "Ingepland"
+msgstr ""
+
+#: soocool-for-woocommerce.php:90
+msgid "Instellingen"
+msgstr ""
+
+#: src/Rest/SettingsController.php:70
+msgid "Instellingen konden niet worden opgeslagen."
+msgstr ""
+
+#: assets/build/admin.js:246 assets/build/admin.js:300
+msgid "Instellingen laden..."
+msgstr ""
+
+#: assets/build/admin.js:465
+msgid "Instellingen opgeslagen."
+msgstr ""
+
+#: assets/build/admin.js:292
+msgid "Instellingen opslaan"
+msgstr ""
+
+#: assets/build/admin.js:546
+msgid "Instellingen opslaan vóór het testen…"
+msgstr ""
+
+#: assets/build/admin.js:1550
+msgid "Je hebt wijzigingen die nog niet zijn opgeslagen."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:82
+msgid "Je mag deze labels niet downloaden."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:179
+msgid "Je mag deze order niet bijwerken."
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:43 src/WooCommerce/OrderActions.php:350
+msgid "Je mag deze order niet synchroniseren."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:121
+msgid "Je mag dit label niet downloaden."
+msgstr ""
+
+#: src/Checkout/DeliveryOrderDetails.php:28 src/Checkout/DeliveryOrderDetails.php:72 src/Checkout/DeliveryOptionsRenderer.php
+msgid "Volg je bestelling met Track & Trace."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:269
+msgid "Kies bezorgmoment"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:661
+msgid "Kies een beschikbaar dagdeel."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:180
+msgid "Kies een bezorgdag voordat je de bestelling plaatst."
+msgstr ""
+
+#: src/Blocks/DeliveryOptionsIntegration.php:70
+msgid "Kies een bezorgmoment"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:191
+msgid "Kies een dagdeel voordat je de bestelling plaatst."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:161
+msgid "Kies een geldig beschikbaar SooCool bezorgmoment."
+msgstr ""
+
+#: assets/build/admin.js:1140 assets/build/admin.js:1142
+msgid "Kies het standaardformaat voor individuele en gebundelde labeldownloads."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:408
+msgid "Kies je bezorgdag."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:156
+msgid "Kies je bezorgmoment"
+msgstr ""
+
+#: assets/build/admin.js:961
+msgid "Klanten kiezen een bezorgdag en daarna een dagdeel. De keuze wordt bij de order opgeslagen en in WooCommerce-e-mails getoond."
+msgstr ""
+
+#: assets/build/admin.js:980
+msgid "Komma-gescheiden datums in JJJJ-MM-DD, bijvoorbeeld 2026-12-25, 2026-12-26."
+msgstr ""
+
+#: assets/build/admin.js:1099
+msgid "Kon de automatiseringsinstellingen niet laden."
+msgstr ""
+
+#: assets/build/admin.js:1129
+msgid "Kon de automatiseringsinstellingen niet opslaan."
+msgstr ""
+
+#: assets/build/admin.js:747
+msgid "Kon de bezorgdagen-instellingen niet laden."
+msgstr ""
+
+#: assets/build/admin.js:1417
+msgid "Kon de gefilterde logs niet exporteren."
+msgstr ""
+
+#: assets/build/admin.js:365
+msgid "Kon de hersynchronisatie niet starten."
+msgstr ""
+
+#: assets/build/admin.js:614
+msgid "Kon de instellingen niet opslaan. Controleer de ingevulde waarden."
+msgstr ""
+
+#: assets/build/admin.js:626
+msgid "Kon de koppeling-instellingen niet laden."
+msgstr ""
+
+#: assets/build/admin.js:740
+msgid "Kon de koppeling-instellingen niet opslaan. Controleer de ingevulde waarden."
+msgstr ""
+
+#: assets/build/admin.js:1134
+msgid "Kon de labelinstellingen niet laden."
+msgstr ""
+
+#: assets/build/admin.js:1161
+msgid "Kon de labelinstellingen niet opslaan."
+msgstr ""
+
+#: assets/build/admin.js:1376
+msgid "Kon de logs niet laden."
+msgstr ""
+
+#: assets/build/admin.js:1419
+msgid "Kon de logs niet wissen."
+msgstr ""
+
+#: assets/build/admin.js:539
+msgid "Kon de opgeslagen API-key niet verwijderen."
+msgstr ""
+
+#: assets/build/admin.js:1263
+msgid "Kon de order niet opnieuw synchroniseren."
+msgstr ""
+
+#: src/Api/ApiClient.php:188
+msgid "Kon de SooCool payload niet coderen."
+msgstr ""
+
+#: assets/build/admin.js:471
+msgid "Kon de SooCool-instellingen niet laden."
+msgstr ""
+
+#: assets/build/admin.js:498
+msgid "Kon de systeemstatus niet laden."
+msgstr ""
+
+#: assets/build/admin.js:330
+msgid "Kon de webhook-token niet laden."
+msgstr ""
+
+#: assets/build/admin.js:331
+msgid "Kon de webhook-token niet opnieuw genereren."
+msgstr ""
+
+#: src/Api/ApiClient.php:414
+msgid "Kon geen veilig tijdelijk bestand voor het SooCool-label maken."
+msgstr ""
+
+#: src/Api/ApiClient.php:444
+msgid "Kon geen verbinding maken met de SooCool API."
+msgstr ""
+
+#: src/Api/ApiClient.php:204
+msgid "Kon geen verbinding maken met de SooCool API. Probeer opnieuw of controleer de SooCool logs."
+msgstr ""
+
+#: assets/build/admin.js:1092
+msgid "Kon het bezorgschema niet opslaan. Controleer de ingevulde dagen en tijden."
+msgstr ""
+
+#: assets/build/admin.js:1393
+msgid "Kon meer logs niet laden."
+msgstr ""
+
+#: assets/build/admin.js:1304
+msgid "Kopiëren is niet gelukt. Open de technische details en kopieer ze handmatig."
+msgstr ""
+
+#: assets/build/admin.js:329
+msgid "Kopiëren mislukt; selecteer en kopieer handmatig."
+msgstr ""
+
+#: assets/build/admin.js:516 assets/build/admin.js:592
+msgid "Koppel WooCommerce aan de juiste SooCool API-omgeving voordat orders worden verstuurd."
+msgstr ""
+
+#: assets/build/admin.js:1114
+msgid "Laat dit uitgeschakeld, tenzij SooCool om een vervangende order of staging-hertest vraagt."
+msgstr ""
+
+#: assets/build/admin.js:334
+msgid "Laat leeg om de veilige plugin-webhook hieronder te gebruiken."
+msgstr ""
+
+#: assets/build/admin.js:1002
+msgid "Laat leeg voor de standaardklasse; gebruik anders de WooCommerce-slug van de belastingklasse."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:84
+msgid "Laatste fout"
+msgstr ""
+
+#: assets/build/admin.js:583
+msgid "Laatste verbindingstest: %s (%s)."
+msgstr ""
+
+#: assets/build/admin.js:1071
+msgid "Label"
+msgstr ""
+
+#: assets/build/admin.js:1155
+msgid "Labels zijn beschikbaar vanuit de orderacties en via bulkacties in het WooCommerce-orderscherm."
+msgstr ""
+
+#: assets/build/admin.js:696
+msgid "Landcode"
+msgstr ""
+
+#: assets/build/admin.js:1304
+msgid "Logdetails gekopieerd."
+msgstr ""
+
+#: assets/build/admin.js:1473
+msgid "Logs definitief wissen"
+msgstr ""
+
+#: assets/build/admin.js:1419
+msgid "Logs gewist."
+msgstr ""
+
+#: assets/build/admin.js:1373
+msgid "Logs vernieuwd."
+msgstr ""
+
+#: assets/build/admin.js:1129
+msgid "Los eerst de fout op"
+msgstr ""
+
+#: assets/build/admin.js:1092
+msgid "Los eerst de fouten in het schema op"
+msgstr ""
+
+#: assets/build/admin.js:740
+msgid "Los eerst de fouten op"
+msgstr ""
+
+#: assets/build/admin.js:196
+msgid "Maandag"
+msgstr ""
+
+#: assets/build/admin.js:931
+msgid "maximaal 12 dagdelen zijn toegestaan."
+msgstr ""
+
+#: assets/build/admin.js:730
+msgid "Maximaal gewicht per doos (gram)"
+msgstr ""
+
+#: assets/build/admin.js:1045
+msgid "Maximum bereikt"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:723
+msgid "Meer dagdelen tonen"
+msgstr ""
+
+#: assets/build/admin.js:1471
+msgid "Meer laden"
+msgstr ""
+
+#: src/Rest/WebhookController.php:415
+msgid "Meerdere WooCommerce-orders hebben dezelfde SooCool-identificatie."
+msgstr ""
+
+#: src/Rest/WebhookController.php:387
+msgid "Meerdere WooCommerce-orders passen bij dezelfde SooCool-orderreferentie."
+msgstr ""
+
+#: assets/build/admin.js:1433
+msgid "Melding, route of referentie"
+msgstr ""
+
+#: assets/build/admin.js:1080
+msgid "Minder dagdelen tonen"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:723
+msgid "Minder tonen"
+msgstr ""
+
+#: src/Rest/SystemStatusController.php:78
+msgid "Minimaal één bezorgdag en dagdeel actief"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:25 src/Admin/OrderStatusPresenter.php:38
+msgid "Mislukt"
+msgstr ""
+
+#: assets/build/admin.js:367 assets/build/admin.js:368
+msgid "Mislukte orders opnieuw synchroniseren"
+msgstr ""
+
+#: src/Domain/TaskAddressFactory.php:57
+msgid "naam ontvanger"
+msgstr ""
+
+#: src/Admin/BulkSyncActions.php:42
+msgid "Naar SooCool versturen"
+msgstr ""
+
+#: assets/build/admin.js:988 src/Checkout/DeliveryOptions.php:427
+msgid "Nederland"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:105
+msgid "Nederland-toeslag bezorging"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:645
+msgid "Niet beschikbaar"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:27 src/Admin/OrderStatusPresenter.php:58
+msgid "Niet gesynchroniseerd"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:300
+msgid "niet meer beschikbaar"
+msgstr ""
+
+#: src/Checkout/DeliverySchedule.php:154
+msgid "Niet meer beschikbaar"
+msgstr ""
+
+#: assets/build/admin.js:1091 assets/build/admin.js:1129 assets/build/admin.js:1160 assets/build/admin.js:1550 assets/build/admin.js:612 assets/build/admin.js:739
+msgid "Niet-opgeslagen wijzigingen"
+msgstr ""
+
+#: assets/build/admin.js:818
+msgid "Nieuw dagdeel"
+msgstr ""
+
+#: assets/build/admin.js:331
+msgid "Nieuwe webhook-token gegenereerd. Werk deze nu bij in SooCool."
+msgstr ""
+
+#: assets/build/admin.js:1439
+msgid "Niveau"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:55
+msgid "Nog niet gekoppeld"
+msgstr ""
+
+#: src/Admin/OrderListColumn.php:112
+msgid "Nu synchroniseren"
+msgstr ""
+
+#: assets/build/admin.js:222 assets/build/admin.js:227 assets/build/admin.js:789 src/Checkout/DeliverySchedule.php:254
+msgid "Ochtend - Middag"
+msgstr ""
+
+#: assets/build/admin.js:722
+msgid "Omgevingstemperatuur"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:59
+msgid "Onbekende SooCool-status"
+msgstr ""
+
+#: assets/build/admin.js:1121 assets/build/admin.js:1459
+msgid "Onderhoud"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:52
+msgid "Onderweg"
+msgstr ""
+
+#: src/Rest/SettingsController.php:54
+msgid "Ongeldige instellingen-payload."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:173 src/Admin/OrderMetaBox.php:184 src/WooCommerce/OrderActions.php:344
+msgid "Ongeldige order."
+msgstr ""
+
+#: src/Rest/WebhookController.php:70
+msgid "Ongeldige SooCool webhook-payload."
+msgstr ""
+
+#: src/Rest/WebhookAuthenticator.php:213
+msgid "Ongeldige SooCool webhook-signature."
+msgstr ""
+
+#: src/Rest/WebhookAuthenticator.php:104
+msgid "Ongeldige SooCool webhook-token."
+msgstr ""
+
+#: assets/build/admin.js:1190
+msgid "Onverwachte fout bij een SooCool-orderactie."
+msgstr ""
+
+#: assets/build/admin.js:1180
+msgid "Onverwachte fout tijdens de SooCool-verbindingstest."
+msgstr ""
+
+#: assets/build/admin.js:618
+msgid "Opgeslagen API-key verwijderen"
+msgstr ""
+
+#: assets/build/admin.js:740
+msgid "Ophaal- en bezorginstellingen opgeslagen."
+msgstr ""
+
+#: src/Domain/TaskFactory.php:108
+msgid "Ophaalcontact is onvolledig. Voeg in de SooCool-instellingen een geldig e-mailadres of telefoonnummer toe."
+msgstr ""
+
+#: assets/build/admin.js:704
+msgid "Ophaaldatum-offset in dagen"
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:110 src/Rest/SettingsValidator.php:81
+msgid "Ophaaldatum-offset mag maximaal 29 dagen zijn, zodat de bezorgdatum altijd later kan vallen."
+msgstr ""
+
+#: src/Domain/TaskFactory.php:93
+msgid "Ophaalinstellingen zijn onvolledig. Vul het ophaaladres aan voordat orders naar SooCool worden gestuurd."
+msgstr ""
+
+#: src/Domain/TaskFactory.php:99
+msgid "Ophaalland moet een geldige ISO-landcode van twee letters zijn."
+msgstr ""
+
+#: assets/build/admin.js:679
+msgid "Ophaaltaak aanmaken vóór bezorging"
+msgstr ""
+
+#: assets/build/admin.js:707
+msgid "Ophaalvenster einde"
+msgstr ""
+
+#: assets/build/admin.js:706
+msgid "Ophaalvenster start"
+msgstr ""
+
+#: assets/build/admin.js:1479 assets/build/admin.js:631 assets/build/admin.js:672
+msgid "Ophalen & bezorgen"
+msgstr ""
+
+#: assets/build/admin.js:740
+msgid "Ophalen & bezorgen opslaan"
+msgstr ""
+
+#: assets/build/admin.js:737
+msgid "Ophalen is optioneel. Laat dit uitgeschakeld tenzij SooCool heeft bevestigd dat het account ophaaltaken mag versturen."
+msgstr ""
+
+#: assets/build/admin.js:698
+msgid "Ophalen staat uit"
+msgstr ""
+
+#: assets/build/admin.js:299
+msgid "Opnieuw laden"
+msgstr ""
+
+#: assets/build/admin.js:1266 assets/build/admin.js:1267
+msgid "Opnieuw proberen"
+msgstr ""
+
+#: src/Admin/OrderListColumn.php:111
+msgid "Opnieuw synchroniseren"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:103
+msgid "Opnieuw synchroniseren met SooCool"
+msgstr ""
+
+#: assets/build/admin.js:615
+msgid "Opslaan en verbinding testen"
+msgstr ""
+
+#: assets/build/admin.js:292
+msgid "Opslaan..."
+msgstr ""
+
+#: assets/build/admin.js:582
+msgid "optioneel"
+msgstr ""
+
+#: assets/build/admin.js:1071 assets/build/admin.js:1104 assets/build/admin.js:1108
+msgid "Optioneel"
+msgstr ""
+
+#: assets/build/admin.js:339
+msgid "Optionele event-ID-header"
+msgstr ""
+
+#: assets/build/admin.js:985
+msgid "Optionele toeslagen per afleverland en voor avondbezorging."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:36
+msgid "Order is al met SooCool gesynchroniseerd."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:80
+msgid "Order naar SooCool verstuurd."
+msgstr ""
+
+#: src/Rest/OrderSyncController.php:50 src/WooCommerce/OrderActions.php:355 src/WooCommerce/ShippingLabelActions.php:152 src/WooCommerce/ShippingLabelActions.php:223
+msgid "Order niet gevonden."
+msgstr ""
+
+#: assets/build/admin.js:1296
+msgid "Order openen"
+msgstr ""
+
+#: assets/build/admin.js:1263
+msgid "Order opnieuw gesynchroniseerd."
+msgstr ""
+
+#: assets/build/admin.js:1267
+msgid "Order opnieuw synchroniseren"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:163
+msgid "Order succesvol met SooCool gesynchroniseerd."
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:39
+msgid "Order wordt met SooCool gesynchroniseerd…"
+msgstr ""
+
+#: assets/build/admin.js:1212 assets/build/admin.js:1436
+msgid "Order-ID"
+msgstr ""
+
+#: assets/build/admin.js:1188
+msgid "Orderlabel kon niet aan de beheerderse-mail worden toegevoegd."
+msgstr ""
+
+#: assets/build/admin.js:1213
+msgid "Orderreferentie"
+msgstr ""
+
+#: assets/build/admin.js:631 assets/build/admin.js:672
+msgid "Orders"
+msgstr ""
+
+#: assets/build/admin.js:1116
+msgid "Orderstatus voor automatisch verzenden"
+msgstr ""
+
+#: assets/build/admin.js:1117
+msgid "Oudere regels worden automatisch verwijderd. Kies een waarde tussen 20 en 500."
+msgstr ""
+
+#: assets/build/admin.js:1072
+msgid "Overdag"
+msgstr ""
+
+#: assets/build/admin.js:1478
+msgid "Overzicht"
+msgstr ""
+
+#: assets/build/admin.js:666
+msgid "Pakketafmetingen en gewichten moeten groter zijn dan nul."
+msgstr ""
+
+#: assets/build/admin.js:724
+msgid "Pakketstandaarden"
+msgstr ""
+
+#: assets/build/admin.js:1140 assets/build/admin.js:1142
+msgid "PDF"
+msgstr ""
+
+#: assets/build/admin.js:856
+msgid "Per bezorgdag zijn maximaal 12 dagdelen toegestaan."
+msgstr ""
+
+#: assets/build/admin.js:1443
+msgid "Periode"
+msgstr ""
+
+#: assets/build/admin.js:695
+msgid "Plaats"
+msgstr ""
+
+#: src/Domain/TaskAddressFactory.php:69
+msgid "plaats"
+msgstr ""
+
+#: assets/build/admin.js:1122
+msgid "Plan orders met een mislukte SooCool-synchronisatie opnieuw in. Grote batches worden veilig op de achtergrond verwerkt."
+msgstr ""
+
+#: assets/build/admin.js:702
+msgid "Planning"
+msgstr ""
+
+#: assets/build/admin.js:1115
+msgid "Plant een unieke annuleringstaak bij lokale annulering of volledige refund. Standaard uitgeschakeld totdat providerstatussen op staging zijn bevestigd."
+msgstr ""
+
+#: assets/build/admin.js:1216
+msgid "Poging"
+msgstr ""
+
+#: assets/build/admin.js:694
+msgid "Postcode"
+msgstr ""
+
+#: src/Domain/TaskAddressFactory.php:66
+msgid "postcode"
+msgstr ""
+
+#: assets/build/admin.js:680
+msgid "Prefix voor WooCommerce-orderreferentie"
+msgstr ""
+
+#: assets/build/admin.js:526
+msgid "productie"
+msgstr ""
+
+#: assets/build/admin.js:601
+msgid "Productie"
+msgstr ""
+
+#: assets/build/admin.js:604
+msgid "Productie API-key"
+msgstr ""
+
+#: src/Rest/SystemStatusController.php:62
+msgid "Recente geslaagde verbindingstest voor de actieve omgeving"
+msgstr ""
+
+#: assets/build/admin.js:1289
+msgid "Referentie"
+msgstr ""
+
+#: assets/build/admin.js:1219
+msgid "Responslimiet"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:384
+msgid "Resultaat: bestaande SooCool-order bijgewerkt. Volgende stap: vernieuw de status of controleer het SooCool-dashboard als fulfilment al is gestart."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:421
+msgid "Resultaat: order naar SooCool verstuurd. Volgende stap: download het label of wacht op de track & trace-webhook."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:410
+msgid "Resultaat: SooCool-order geannuleerd. Volgende stap: controleer de fulfilmentstatus in SooCool voordat je terugbetaalt of de WooCommerce-orderstatus wijzigt."
+msgstr ""
+
+#: assets/build/admin.js:1470
+msgid "resultaten getoond."
+msgstr ""
+
+#: assets/build/admin.js:575
+msgid "Rond de verplichte controles af voordat je productieorders verstuurt."
+msgstr ""
+
+#: assets/build/admin.js:968
+msgid "Schakel dit uit om terug te vallen op de bestaande delivery offset."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:61
+msgid "Selecteer maximaal 50 orders voor één SooCool labeldownload."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:162
+msgid "Selecteer maximaal 50 SooCool-goederen-ID’s voor één labeldownload."
+msgstr ""
+
+#: src/Api/ApiClient.php:95
+msgid "Selecteer tussen één en 50 geldige SooCool order-ID’s voor één labeldownload."
+msgstr ""
+
+#: src/Api/ApiClient.php:106
+msgid "Selecteer tussen één en 50 geldige SooCool-goederen-ID’s voor één labeldownload."
+msgstr ""
+
+#: assets/build/admin.js:338
+msgid "Signature-header"
+msgstr ""
+
+#: assets/build/admin.js:1550
+msgid "Sla eerst op of kies hieronder om de wijzigingen te verwerpen en door te gaan."
+msgstr ""
+
+#: assets/build/admin.js:1065
+msgid "Sluit dagdeeldetails"
+msgstr ""
+
+#: assets/build/admin.js:1065
+msgid "Sluiten"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:17 src/Admin/OrderListColumn.php:46 src/Admin/OrderListColumn.php:51 src/Admin/OrderMetaBox.php:28
+msgid "SooCool"
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:157 src/Domain/OrderPayloadValidator.php:168
+msgid "SooCool adresveld %s ontbreekt."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:34
+msgid "SooCool API gaf HTTP %d terug. Controleer de SooCool-logs voor details."
+msgstr ""
+
+#: assets/build/admin.js:1186
+msgid "SooCool API-aanvraag voltooid."
+msgstr ""
+
+#: src/Api/ApiClient.php:406
+msgid "SooCool API-key ontbreekt of is ongeldig."
+msgstr ""
+
+#: src/Api/ApiClient.php:162
+msgid "SooCool API-key ontbreekt of is ongeldig. Plak en bewaar de API-key opnieuw."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:157 src/Admin/OrderMetaBox.php:159
+msgid "SooCool bezorgmoment bijgewerkt."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:228
+msgid "SooCool bezorgmoment gewijzigd van %1$s naar %2$s."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:211
+msgid "SooCool bulkdownload van goederenlabels mislukt. Controleer de SooCool-logs voor details."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:187
+msgid "SooCool bulkdownload van orderlabels mislukt. Controleer de SooCool-logs voor details."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:16 src/Admin/PrivacyPolicy.php:17
+msgid "SooCool for WooCommerce"
+msgstr ""
+
+#: assets/build/admin.js:1531
+msgid "SooCool for WooCommerce instellingen"
+msgstr ""
+
+#: src/Admin/PrivacyPolicy.php:24
+msgid "SooCool for WooCommerce kan WooCommerce order-, bezorg-, ophaal-, ontvanger- en labelgegevens naar de ingestelde SooCool transport-API sturen wanneer een order handmatig of automatisch wordt gesynchroniseerd."
+msgstr ""
+
+#: src/Infrastructure/Requirements.php:27
+msgid "SooCool for WooCommerce vereist dat de WordPress REST API-classes beschikbaar zijn."
+msgstr ""
+
+#: src/Infrastructure/Requirements.php:31
+msgid "SooCool for WooCommerce vereist dat WooCommerce actief is."
+msgstr ""
+
+#: soocool-for-woocommerce.php:111 soocool-for-woocommerce.php:147 src/Infrastructure/Requirements.php:19
+msgid "SooCool for WooCommerce vereist PHP 8.1 of hoger."
+msgstr ""
+
+#: src/Infrastructure/Requirements.php:37
+msgid "SooCool for WooCommerce vereist WooCommerce %s of hoger."
+msgstr ""
+
+#: src/Infrastructure/Requirements.php:23
+msgid "SooCool for WooCommerce vereist WordPress 6.5 of hoger."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:172
+msgid "SooCool gaf een andere order-ID terug dan de opgevraagde order."
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:45
+msgid "SooCool gaf een ongeldige beheerresponse terug. Probeer opnieuw."
+msgstr ""
+
+#: src/Api/ApiClient.php:272
+msgid "SooCool gaf een ongeldige JSON-response terug."
+msgstr ""
+
+#: src/Domain/ShippingLabelService.php:156
+msgid "SooCool gaf een ongeldige orderresponse terug."
+msgstr ""
+
+#: src/Rest/WebhookController.php:480
+msgid "SooCool gaf een ongeldige orderresponse terug. Probeer de webhook opnieuw."
+msgstr ""
+
+#: src/Domain/OrderSyncService.php:85 src/Domain/ShippingLabelService.php:210
+msgid "SooCool gaf een ongeldige zoekresponse terug."
+msgstr ""
+
+#: src/Api/ApiClient.php:481
+msgid "SooCool gaf een onvolledig PDF-label terug."
+msgstr ""
+
+#: src/Api/ApiClient.php:472
+msgid "SooCool gaf een te groot of onvolledig PDF-label terug."
+msgstr ""
+
+#: src/Api/ApiClient.php:222
+msgid "SooCool gaf een te grote of afgebroken response terug."
+msgstr ""
+
+#: src/Domain/OrderSyncService.php:109
+msgid "SooCool gaf een zoekresultaat zonder geldige order-ID terug."
+msgstr ""
+
+#: assets/build/admin.js:1185 src/Api/ApiClient.php:285 src/Api/ApiClient.php:476 src/WooCommerce/ShippingLabelPdfResponse.php:22
+msgid "SooCool gaf geen geldig PDF-label terug."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:74
+msgid "SooCool gaf geen geldige order-ID terug."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:165
+msgid "SooCool gaf geen geldige orderresponse terug."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelPdfResponse.php:78
+msgid "SooCool gaf geen volledig geldig PDF-label terug."
+msgstr ""
+
+#: src/Domain/ShippingLabelService.php:221
+msgid "SooCool gaf meerdere orders met dezelfde orderreferentie terug."
+msgstr ""
+
+#: src/Domain/OrderSyncService.php:112
+msgid "SooCool gaf meerdere orders met dezelfde orderreferentie terug. Synchronisatie is gestopt om een verkeerde koppeling te voorkomen."
+msgstr ""
+
+#: src/Domain/ShippingLabelService.php:167
+msgid "SooCool gaf meerdere orders met hetzelfde order-ID terug."
+msgstr ""
+
+#: src/Rest/WebhookController.php:503
+msgid "SooCool gaf meerdere passende orders terug. Probeer de webhook opnieuw nadat de remote data is gecontroleerd."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:170
+msgid "SooCool goederenlabeldownload mislukt. Controleer de SooCool-logs voor details."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:41
+msgid "SooCool goederenlabels downloaden"
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:265
+msgid "SooCool goodId moet een niet-nul geheel getal zijn."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:26
+msgid "SooCool heeft de aanvraag geweigerd. Controleer de ordergegevens en SooCool-logs."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:31
+msgid "SooCool is tijdelijk niet beschikbaar. Probeer het later opnieuw."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:29
+msgid "SooCool kon het label niet genereren omdat niet aan een voorwaarde is voldaan. Controleer de SooCool-logs en ordergegevens."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelPdfResponse.php:14
+msgid "SooCool labeldownload kon niet veilig worden voorbereid."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelPdfResponse.php:28
+msgid "SooCool labeldownload kon niet worden geopend."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:239
+msgid "SooCool labeldownload mislukt. Controleer de SooCool-logs voor details."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:116
+msgid "SooCool labeldownloadactie is ongeldig."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:103 src/WooCommerce/ShippingLabelActions.php:229 src/WooCommerce/ShippingLabelActions.php:87
+msgid "SooCool labeldownloadverzoek is ongeldig."
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:94
+msgid "SooCool labeldownloadverzoek is verlopen."
+msgstr ""
+
+#: src/Admin/Notices.php:48
+msgid "SooCool ondersteunt in deze release alleen de klassieke WooCommerce checkout. De actieve checkoutpagina gebruikt WooCommerce Checkout Blocks; de bezorgmomentkiezer kan daardoor ontbreken."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:55
+msgid "SooCool order-ID"
+msgstr ""
+
+#: src/WooCommerce/ShippingLabelActions.php:40
+msgid "SooCool orderlabels downloaden"
+msgstr ""
+
+#: src/Api/ApiClient.php:36 src/Domain/OrderPayloadValidator.php:21
+msgid "SooCool orderreferentie ontbreekt."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:242
+msgid "SooCool payload bevat meer goederen dan de veiligheidslimiet toestaat."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:45 src/Domain/OrderPayloadValidator.php:68
+msgid "SooCool payload mag maximaal één ophaaltaak en één bezorgtaak bevatten."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:85
+msgid "SooCool payload moet minimaal één bezorgtaak bevatten."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:239
+msgid "SooCool payload moet minimaal één good bevatten."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:42
+msgid "SooCool payload moet minimaal één taak bevatten."
+msgstr ""
+
+#: assets/build/admin.js:606
+msgid "SooCool productie-API-URL"
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:149
+msgid "SooCool taakadres ontbreekt."
+msgstr ""
+
+#: src/Domain/TaskFactory.php:286
+msgid "SooCool taaktijd kon niet worden gegenereerd."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:199 src/Domain/OrderPayloadValidator.php:203
+msgid "SooCool taakveld contactInfo moet minimaal een e-mailadres, telefoonnummer of mobiel nummer bevatten."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:184
+msgid "SooCool taakveld contactInfo moet tekstwaarden bevatten."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:179
+msgid "SooCool taakveld contactInfo ontbreekt."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:227
+msgid "SooCool taakveld goods mag geen dubbele goederen-ID’s bevatten."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:220
+msgid "SooCool taakveld goods moet een lijst met niet-nul goederen-ID’s zijn."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:110
+msgid "SooCool taakveld timeWindow ontbreekt."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:63
+msgid "SooCool taskType moet delivery of pickup zijn."
+msgstr ""
+
+#: assets/build/admin.js:605
+msgid "SooCool test-API-URL"
+msgstr ""
+
+#: assets/build/admin.js:619
+msgid "SooCool testportaal openen"
+msgstr ""
+
+#: assets/build/admin.js:619
+msgid "SooCool testportaal openen in een nieuw tabblad"
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:125
+msgid "SooCool timeWindow endTime moet later zijn dan startTime."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:116
+msgid "SooCool timeWindow moet een startTime en endTime bevatten."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:122
+msgid "SooCool timeWindow moet geldige ISO-8601 startTime- en endTime-waarden met tijdzone bevatten."
+msgstr ""
+
+#: src/Rest/WebhookController.php:76
+msgid "SooCool webhook bevat conflicterende eventvolgorde."
+msgstr ""
+
+#: src/Rest/WebhookController.php:73
+msgid "SooCool webhook bevat conflicterende orderidentificaties."
+msgstr ""
+
+#: src/Rest/WebhookController.php:686
+msgid "SooCool webhook ontvangen."
+msgstr ""
+
+#: src/Rest/WebhookController.php:689
+msgid "SooCool webhook ontvangen: %s."
+msgstr ""
+
+#: src/Rest/WebhookController.php:157
+msgid "SooCool webhook-eventtijd ligt onrealistisch in de toekomst."
+msgstr ""
+
+#: src/Rest/WebhookController.php:346
+msgid "SooCool webhook-orderidentificaties komen niet overeen."
+msgstr ""
+
+#: src/Rest/WebhookAuthenticator.php:208 src/Rest/WebhookController.php:65
+msgid "SooCool webhook-payload is te groot."
+msgstr ""
+
+#: src/Rest/WebhookAuthenticator.php:199
+msgid "SooCool webhook-signature headers ontbreken."
+msgstr ""
+
+#: src/Rest/WebhookAuthenticator.php:203
+msgid "SooCool webhook-timestamp is verlopen."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:36
+msgid "SooCool webhookblok is aanwezig maar ongeldig. Vul een geldige HTTPS webhook.webhookUrl en een lijst met webhook.webhookUpdates in, of verwijder het webhookblok."
+msgstr ""
+
+#: assets/build/admin.js:1202
+msgid "SooCool-actie mislukt."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:442
+msgid "SooCool-actie overgeslagen omdat de huidige gebruiker WooCommerce niet mag beheren."
+msgstr ""
+
+#: assets/build/admin.js:1203
+msgid "SooCool-activiteit voltooid."
+msgstr ""
+
+#: assets/build/admin.js:1272
+msgid "SooCool-activiteitenlogs"
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:251 src/WooCommerce/OrderActions.php:411
+msgid "SooCool-annulering mislukt. Controleer de SooCool-logs voor details."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:250
+msgid "SooCool-annulering mislukt: %s"
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:256
+msgid "SooCool-annulering onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:205
+msgid "SooCool-annulering overgeslagen omdat deze WooCommerce-order niet aan een SooCool order-ID is gekoppeld."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:27
+msgid "SooCool-authenticatie mislukt. Controleer de ingestelde API-key."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:67
+msgid "SooCool-goederen-ID’s"
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:269
+msgid "SooCool-goederen-ID’s moeten uniek zijn."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:313
+msgid "SooCool-good %s moet een positief geheel getal zijn."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:297
+msgid "SooCool-good dimensions.%s moet een positief geheel getal zijn."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:326
+msgid "SooCool-good transportRequirements moet een lijst met tekstwaarden zijn wanneer dit veld is ingevuld."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:334
+msgid "SooCool-good transportRequirements moet minimaal één niet-lege tekstwaarde bevatten."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:289
+msgid "SooCool-good-dimensions moet een object zijn wanneer dit veld is ingevuld."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:256
+msgid "SooCool-good-veld %s ontbreekt."
+msgstr ""
+
+#: assets/build/admin.js:1533
+msgid "SooCool-instellingen"
+msgstr ""
+
+#: assets/build/admin.js:1534
+msgid "SooCool-instellingensecties"
+msgstr ""
+
+#: src/Api/ApiClient.php:458
+msgid "SooCool-labeldownload is mislukt."
+msgstr ""
+
+#: assets/build/admin.js:601
+msgid "SooCool-omgeving"
+msgstr ""
+
+#: assets/build/admin.js:1199
+msgid "SooCool-order"
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:223 src/Domain/OrderSyncCoordinator.php:247
+msgid "SooCool-order bestond niet meer en is lokaal als geannuleerd verwerkt."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:246
+msgid "SooCool-order bijgewerkt met het gekozen bezorgmoment."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:243
+msgid "SooCool-order geannuleerd."
+msgstr ""
+
+#: src/Rest/WebhookController.php:471
+msgid "SooCool-order kon tijdelijk niet worden opgezocht. Probeer de webhook opnieuw."
+msgstr ""
+
+#: src/Rest/WebhookController.php:510
+msgid "SooCool-orderresponse bevat geen geldige orderreferentie. Probeer de webhook opnieuw."
+msgstr ""
+
+#: src/Api/ApiErrorMapper.php:30
+msgid "SooCool-rate limit bereikt. Probeer het later opnieuw."
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:52
+msgid "SooCool-status"
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:181
+msgid "SooCool-status vernieuwd en lokale status-/trackingdata bijgewerkt."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:397
+msgid "SooCool-status vernieuwd."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:181
+msgid "SooCool-status vernieuwd. Er zijn geen status- of trackingwijzigingen teruggegeven."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:188 src/WooCommerce/OrderActions.php:398
+msgid "SooCool-statusupdate mislukt. Controleer de SooCool-logs voor details."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:187
+msgid "SooCool-statusupdate mislukt: %s"
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:193
+msgid "SooCool-statusupdate onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:151
+msgid "SooCool-statusupdate overgeslagen omdat deze WooCommerce-order niet aan een SooCool order-ID is gekoppeld."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:43
+msgid "SooCool-synchronisatie draait al voor deze order. Probeer het zo opnieuw."
+msgstr ""
+
+#: src/WooCommerce/OrderStatusHooks.php:63
+msgid "SooCool-synchronisatie is direct na het aanmaken van de order op de achtergrond ingepland."
+msgstr ""
+
+#: src/WooCommerce/OrderStatusHooks.php:43
+msgid "SooCool-synchronisatie is ingepland op de achtergrond na de orderstatuswijziging."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:100
+msgid "SooCool-synchronisatie is onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details."
+msgstr ""
+
+#: src/WooCommerce/OrderStatusHooks.php:109
+msgid "SooCool-synchronisatie is overgeslagen omdat deze order al op de achtergrond ingepland staat."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:133 src/WooCommerce/OrderStatusHooks.php:114
+msgid "SooCool-synchronisatie kon niet op de achtergrond worden ingepland. Gebruik de knop “Synchroniseer nu met SooCool” of controleer WooCommerce Action Scheduler en WP-Cron."
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:44
+msgid "SooCool-synchronisatie kon niet worden gestart."
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:360
+msgid "SooCool-synchronisatie mislukt."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:95 src/WooCommerce/OrderActions.php:152 src/WooCommerce/OrderActions.php:427
+msgid "SooCool-synchronisatie mislukt. Controleer de SooCool-logs voor details."
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:42
+msgid "SooCool-synchronisatie mislukt. Probeer opnieuw of controleer de SooCool-logs."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:94
+msgid "SooCool-synchronisatie mislukt: %s"
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:40
+msgid "SooCool-synchronisatie voltooid."
+msgstr ""
+
+#: src/Domain/OrderPayloadValidator.php:224
+msgid "SooCool-taak verwijst naar een good dat niet in de goods-lijst staat."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:134 src/WooCommerce/OrderActions.php:385
+msgid "SooCool-update mislukt. Controleer de SooCool-logs voor details."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:133
+msgid "SooCool-update mislukt: %s"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:159 src/Admin/OrderMetaBox.php:250
+msgid "SooCool-update na wijziging van het bezorgmoment is mislukt."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:139
+msgid "SooCool-update onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details."
+msgstr ""
+
+#: src/Domain/OrderSyncCoordinator.php:112
+msgid "SooCool-update overgeslagen omdat deze WooCommerce-order nog niet aan een SooCool order-ID is gekoppeld."
+msgstr ""
+
+#: src/Admin/OrderListColumn.php:167
+msgid "SooCool: alles"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:327
+msgid "SooCool: bestaande order bijwerken"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:325
+msgid "SooCool: order aanmaken/versturen"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:328
+msgid "SooCool: order annuleren"
+msgstr ""
+
+#: src/WooCommerce/OrderActions.php:326
+msgid "SooCool: status vernieuwen"
+msgstr ""
+
+#: assets/build/admin.js:996
+msgid "Standaard bezorgtoeslag België"
+msgstr ""
+
+#: assets/build/admin.js:990
+msgid "Standaard bezorgtoeslag Nederland"
+msgstr ""
+
+#: assets/build/admin.js:725
+msgid "Standaard buitenmaten en het maximale doosgewicht voor orders zonder productspecifieke pakketgegevens."
+msgstr ""
+
+#: assets/build/admin.js:1044
+msgid "Standaard dagdelen: Ochtend - Middag en Avond. Je kunt labels, tijden, cut-offs en volgorde zelf aanpassen."
+msgstr ""
+
+#: assets/build/admin.js:1001
+msgid "Standaard uitgeschakeld om bestaande winkelbedragen niet stil te wijzigen."
+msgstr ""
+
+#: assets/build/admin.js:1146
+msgid "Standaardformaat"
+msgstr ""
+
+#: src/Rest/WebhookController.php:673
+msgid "status %s"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:53
+msgid "Status & koppeling"
+msgstr ""
+
+#: assets/build/admin.js:585
+msgid "Status vernieuwen"
+msgstr ""
+
+#: assets/build/admin.js:951
+msgid "Stel per bezorgdag de uiterste besteltijd en dagdelen in. Checkout Blocks blijft staging-first totdat pariteit is gevalideerd."
+msgstr ""
+
+#: assets/build/admin.js:692
+msgid "Straat"
+msgstr ""
+
+#: src/Domain/TaskAddressFactory.php:60
+msgid "straatnaam"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:110
+msgid "Synchronisatie"
+msgstr ""
+
+#: src/Admin/OrderListColumn.php:112
+msgid "Synchroniseer nu"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:104
+msgid "Synchroniseer nu met SooCool"
+msgstr ""
+
+#: src/Admin/OrderActionConfirmScript.php:38
+msgid "Synchroniseren..."
+msgstr ""
+
+#: assets/build/admin.js:574
+msgid "Systeem gereed voor de geconfigureerde checkoutmodus."
+msgstr ""
+
+#: assets/build/admin.js:576
+msgid "Systeemgereedheid"
+msgstr ""
+
+#: assets/build/admin.js:577
+msgid "Systeemstatus controleren…"
+msgstr ""
+
+#: assets/build/admin.js:1300
+msgid "Technische details"
+msgstr ""
+
+#: assets/build/admin.js:332
+msgid "Technische instellingen voor track & trace-terugkoppelingen."
+msgstr ""
+
+#: assets/build/admin.js:691
+msgid "Telefoonnummer"
+msgstr ""
+
+#: assets/build/admin.js:526
+msgid "test"
+msgstr ""
+
+#: assets/build/admin.js:603
+msgid "Test API-key"
+msgstr ""
+
+#: assets/build/admin.js:1187
+msgid "Tijdelijke SooCool API-fout; nieuwe poging gestart."
+msgstr ""
+
+#: src/Checkout/DeliveryOrderDetails.php:34 src/Checkout/DeliveryOrderDetails.php:70
+msgid "Tijdvenster"
+msgstr ""
+
+#: src/Checkout/DeliveryOrderDetails.php:49
+msgid "Tijdvenster:"
+msgstr ""
+
+#: assets/build/admin.js:337
+msgid "Timestamp-header"
+msgstr ""
+
+#: assets/build/admin.js:350
+msgid "Token kopiëren"
+msgstr ""
+
+#: assets/build/admin.js:345 assets/build/admin.js:355
+msgid "Token roteren"
+msgstr ""
+
+#: assets/build/admin.js:344
+msgid "Token tonen"
+msgstr ""
+
+#: assets/build/admin.js:351
+msgid "Token verbergen"
+msgstr ""
+
+#: assets/build/admin.js:344
+msgid "Token vernieuwen"
+msgstr ""
+
+#: assets/build/admin.js:336
+msgid "Token-header"
+msgstr ""
+
+#: assets/build/admin.js:1074
+msgid "Tot"
+msgstr ""
+
+#: assets/build/admin.js:1449
+msgid "Tot en met"
+msgstr ""
+
+#: assets/build/admin.js:1217
+msgid "Trace-ID"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:64
+msgid "Track & trace-code"
+msgstr ""
+
+#: src/Rest/WebhookController.php:680
+msgid "tracking %s"
+msgstr ""
+
+#: assets/build/admin.js:722
+msgid "Transportvereiste"
+msgstr ""
+
+#: assets/build/admin.js:1072
+msgid "Type dagdeel"
+msgstr ""
+
+#: assets/build/admin.js:1062
+msgid "Uitgeschakeld"
+msgstr ""
+
+#: assets/build/admin.js:343
+msgid "URL kopiëren"
+msgstr ""
+
+#: assets/build/admin.js:1073
+msgid "Van"
+msgstr ""
+
+#: assets/build/admin.js:1446
+msgid "Vanaf"
+msgstr ""
+
+#: assets/build/admin.js:586
+msgid "Veilige diagnose downloaden"
+msgstr ""
+
+#: assets/build/admin.js:972
+msgid "Verbergt verlopen dagdelen voor een rustigere checkout."
+msgstr ""
+
+#: src/Rest/ConnectionController.php:64
+msgid "Verbinding gelukt."
+msgstr ""
+
+#: assets/build/admin.js:564
+msgid "Verbinding mislukt. Controleer de API-key en basis-URL."
+msgstr ""
+
+#: src/Rest/ConnectionController.php:79
+msgid "Verbinding mislukt. Controleer de SooCool API-key en basis-URL."
+msgstr ""
+
+#: assets/build/admin.js:557
+msgid "Verbinding succesvol."
+msgstr ""
+
+#: assets/build/admin.js:615
+msgid "Verbinding testen"
+msgstr ""
+
+#: assets/build/admin.js:550
+msgid "Verbinding testen…"
+msgstr ""
+
+#: src/Rest/ConnectionController.php:96
+msgid "Verbindingstest onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details."
+msgstr ""
+
+#: assets/build/admin.js:972 assets/build/admin.js:973
+msgid "Verlopen dagdelen verbergen"
+msgstr ""
+
+#: assets/build/admin.js:1455
+msgid "Vernieuwen"
+msgstr ""
+
+#: assets/build/admin.js:721
+msgid "Verpakkingstype"
+msgstr ""
+
+#: assets/build/admin.js:516 assets/build/admin.js:592
+msgid "Verplicht"
+msgstr ""
+
+#: assets/build/admin.js:1224
+msgid "Verstuurde header"
+msgstr ""
+
+#: src/Admin/OrderMetaBox.php:107
+msgid "Verstuurt deze order direct en veilig naar SooCool. Een bestaande SooCool-order met dezelfde orderreferentie wordt gekoppeld in plaats van dubbel aangemaakt."
+msgstr ""
+
+#: assets/build/admin.js:1113
+msgid "Verstuurt passende WooCommerce-orders automatisch zodra ze de gekozen status bereiken."
+msgstr ""
+
+#: assets/build/admin.js:1031
+msgid "Verwijder bezorgdag"
+msgstr ""
+
+#: assets/build/admin.js:1066
+msgid "Verwijder dagdeel"
+msgstr ""
+
+#: assets/build/admin.js:1161
+msgid "Verzendlabelinstellingen opgeslagen."
+msgstr ""
+
+#: assets/build/admin.js:1161
+msgid "Verzendlabelinstellingen opslaan"
+msgstr ""
+
+#: assets/build/admin.js:1140 assets/build/admin.js:1142 assets/build/admin.js:1482
+msgid "Verzendlabels"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:56
+msgid "Verzonden"
+msgstr ""
+
+#: assets/build/admin.js:598
+msgid "Voeg voor de actieve omgeving een API-key toe voordat je de verbinding test."
+msgstr ""
+
+#: src/Rest/MaintenanceController.php:89
+msgid "Voer deze actie opnieuw uit om de volgende batch mislukte orders in te plannen."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:596
+msgid "Volgende maand"
+msgstr ""
+
+#: assets/build/admin.js:1039 assets/build/admin.js:1076
+msgid "Volgorde"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:462
+msgid "Voor bezorging in %1$s geldt bij een avonddagdeel een toeslag van %2$s."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:453
+msgid "Voor bezorging in %1$s geldt een bezorgtoeslag van %2$s."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:442
+msgid "Voor bezorging in %1$s geldt een bezorgtoeslag van %2$s. Kies je voor een avonddagdeel, dan komt daar %3$s avondtoeslag bij."
+msgstr ""
+
+#: assets/build/admin.js:1151
+msgid "Voorbeeld"
+msgstr ""
+
+#: assets/build/admin.js:1152
+msgid "Voorbeeld A4-labelvel"
+msgstr ""
+
+#: assets/build/admin.js:1152
+msgid "Voorbeeld A6-label"
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:594
+msgid "Vorige maand"
+msgstr ""
+
+#: assets/build/admin.js:200
+msgid "Vrijdag"
+msgstr ""
+
+#: assets/build/admin.js:305
+msgid "Vul een bedrag tussen € 0 en € 999 in, met maximaal twee decimalen."
+msgstr ""
+
+#: assets/build/admin.js:649
+msgid "Vul een geldig e-mailadres voor de ophaallocatie in."
+msgstr ""
+
+#: src/Rest/SettingsValidator.php:38
+msgid "Vul een geldig ophaal-e-mailadres in of laat het veld leeg."
+msgstr ""
+
+#: assets/build/admin.js:927 assets/build/admin.js:944
+msgid "vul een geldige cut-offtijd in."
+msgstr ""
+
+#: assets/build/admin.js:641
+msgid "Vul het volledige ophaaladres in."
+msgstr ""
+
+#: assets/build/admin.js:645
+msgid "Vul voor de ophaallocatie een e-mailadres of telefoonnummer in."
+msgstr ""
+
+#: assets/build/admin.js:332
+msgid "Webhook en beveiliging"
+msgstr ""
+
+#: src/Rest/SystemStatusController.php:68
+msgid "Webhook voor automatische statusupdates (optioneel)"
+msgstr ""
+
+#: assets/build/admin.js:348
+msgid "Webhook-token"
+msgstr ""
+
+#: assets/build/admin.js:350
+msgid "Webhook-token gekopieerd."
+msgstr ""
+
+#: assets/build/admin.js:355
+msgid "Webhook-token roteren"
+msgstr ""
+
+#: assets/build/admin.js:343
+msgid "Webhook-URL gekopieerd."
+msgstr ""
+
+#: src/Rest/WebhookSecretController.php:56
+msgid "Webhookgeheim kon niet worden opgeslagen."
+msgstr ""
+
+#: src/Rest/WebhookSecretController.php:32
+msgid "Webhookgeheim ontbreekt. Genereer een nieuw geheim."
+msgstr ""
+
+#: assets/build/admin.js:527
+msgid "Weet je zeker dat je de opgeslagen API-key voor de actieve omgeving wilt verwijderen?"
+msgstr ""
+
+#: assets/build/admin.js:355
+msgid "Werk de nieuwe token meteen bij in SooCool om track & trace-webhooks niet te onderbreken."
+msgstr ""
+
+#: src/Checkout/DeliveryOptions.php:515
+msgid "Wijzigen"
+msgstr ""
+
+#: assets/build/admin.js:1550
+msgid "Wijzigingen verwerpen"
+msgstr ""
+
+#: assets/build/admin.js:198
+msgid "Woensdag"
+msgstr ""
+
+#: assets/build/admin.js:1197 assets/build/admin.js:1211
+msgid "WooCommerce-order"
+msgstr ""
+
+#: assets/build/admin.js:1267
+msgid "WooCommerce-order #%s wordt opnieuw naar SooCool gestuurd."
+msgstr ""
+
+#: assets/build/admin.js:1473
+msgid "WooCommerce-ordernotities en ordermetadata blijven behouden."
+msgstr ""
+
+#: assets/build/admin.js:1125 assets/build/admin.js:1156
+msgid "WooCommerce-orders openen"
+msgstr ""
+
+#: assets/build/admin.js:711
+msgid "Wordt alleen gebruikt wanneer geen bezorgmoment is gekozen; het Bezorgschema heeft voorrang."
+msgstr ""
+
+#: assets/build/admin.js:606
+msgid "Wordt gebruikt wanneer de productieomgeving actief is."
+msgstr ""
+
+#: assets/build/admin.js:605
+msgid "Wordt gebruikt wanneer de testomgeving actief is."
+msgstr ""
+
+#: assets/build/admin.js:733
+msgid "Wordt per producteenheid gebruikt wanneer geen eenduidig WooCommerce-gewicht beschikbaar is."
+msgstr ""
+
+#: assets/build/admin.js:201
+msgid "Zaterdag"
+msgstr ""
+
+#: assets/build/admin.js:989 assets/build/admin.js:995
+msgid "Zet een bedrag op 0 om de betreffende toeslag uit te schakelen."
+msgstr ""
+
+#: assets/build/admin.js:1427
+msgid "Zoek op order, melding of fout. Technische details blijven ingeklapt."
+msgstr ""
+
+#: assets/build/admin.js:1433
+msgid "Zoeken"
+msgstr ""
+
+#: assets/build/admin.js:202
+msgid "Zondag"
+msgstr ""

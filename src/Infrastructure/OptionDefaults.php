@@ -45,6 +45,8 @@ final class OptionDefaults {
 			'checkout_delivery_netherlands_evening_surcharge_amount' => 0.00,
 			'checkout_delivery_belgium_surcharge_amount' => 2.00,
 			'checkout_delivery_belgium_evening_surcharge_amount' => 1.50,
+			'checkout_delivery_fee_taxable' => false,
+			'checkout_delivery_fee_tax_class' => '',
 			'auto_submit_enabled'        => false,
 			'auto_submit_status'         => 'pending',
 			'allow_resubmit'             => false,
@@ -58,6 +60,7 @@ final class OptionDefaults {
 			'package_depth'              => 40,
 			'package_height'             => 11,
 			'package_weight'             => 10000,
+			'missing_product_weight'     => 1000,
 			'log_retention'              => 100,
 		);
 	}
@@ -92,6 +95,8 @@ final class OptionDefaults {
 
 		return array(
 			array(
+				'id'          => 'daytime',
+				'type'        => 'daytime',
 				'enabled'     => true,
 				'label'       => 'Ochtend - Middag',
 				'time_from'   => '08:00',
@@ -101,6 +106,8 @@ final class OptionDefaults {
 				'sort_order'  => 10,
 			),
 			array(
+				'id'          => 'evening',
+				'type'        => 'evening',
 				'enabled'     => true,
 				'label'       => 'Avond',
 				'time_from'   => '17:00',

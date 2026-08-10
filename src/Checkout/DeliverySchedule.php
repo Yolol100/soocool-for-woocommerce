@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SooCool\WooCommerce\Checkout;
 
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
+use SooCool\WooCommerce\Infrastructure\StrictLocalDateTime;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -21,32 +22,14 @@ final class DeliverySchedule {
 		'sunday'    => 7,
 	);
 
-	/** @var array<string, string> */
-	private const DUTCH_WEEKDAYS = array(
-		'monday'    => 'Maandag',
-		'tuesday'   => 'Dinsdag',
-		'wednesday' => 'Woensdag',
-		'thursday'  => 'Donderdag',
-		'friday'    => 'Vrijdag',
-		'saturday'  => 'Zaterdag',
-		'sunday'    => 'Zondag',
-	);
+	/** @var array<string, mixed>|null */
+	private ?array $settings_cache = null;
 
-	/** @var array<int, string> */
-	private const DUTCH_MONTHS = array(
-		1  => 'januari',
-		2  => 'februari',
-		3  => 'maart',
-		4  => 'april',
-		5  => 'mei',
-		6  => 'juni',
-		7  => 'juli',
-		8  => 'augustus',
-		9  => 'september',
-		10 => 'oktober',
-		11 => 'november',
-		12 => 'december',
-	);
+	/** @var array<int, array{date:string,label:string,weekday:string,cutoff:string}>|null */
+	private ?array $available_options_cache = null;
+
+	/** @var array<string, array<int, array<string, mixed>>> */
+	private array $time_slots_cache = array();
 
 	public function __construct( private readonly OptionRepository $options ) {}
 
@@ -62,9 +45,14 @@ final class DeliverySchedule {
 
 	/** @return array<int, array{date:string,label:string,weekday:string,cutoff:string}> */
 	public function available_options(): array {
-		$settings = $this->options->all();
+		if ( null !== $this->available_options_cache ) {
+			return $this->available_options_cache;
+		}
+
+		$settings = $this->settings();
 		if ( ! (bool) ( $settings['checkout_delivery_enabled'] ?? true ) ) {
-			return array();
+			$this->available_options_cache = array();
+			return $this->available_options_cache;
 		}
 
 		$now        = $this->now();
@@ -93,12 +81,12 @@ final class DeliverySchedule {
 					continue;
 				}
 
-				if ( ! $this->is_after_pickup_date_if_needed( $date, $settings, $today ) ) {
+				if ( ! $this->is_after_pickup_date_if_needed( $date, $settings, $now ) ) {
 					continue;
 				}
 
 				$cutoff = $this->cutoff_for_delivery( $delivery_date, $cutoff_weekday, $cutoff_time );
-				if ( $now >= $cutoff ) {
+				if ( null === $cutoff || $now >= $cutoff ) {
 					continue;
 				}
 
@@ -117,7 +105,8 @@ final class DeliverySchedule {
 
 		ksort( $options );
 
-		return array_values( $options );
+		$this->available_options_cache = array_values( $options );
+		return $this->available_options_cache;
 	}
 
 	public function is_valid_date( string $date ): bool {
@@ -136,30 +125,22 @@ final class DeliverySchedule {
 	}
 
 	public function is_valid_time_slot( string $date, string $time_from, string $time_to ): bool {
-		$date      = $this->sanitize_date( $date );
-		$time_from = $this->sanitize_time( $time_from );
-		$time_to   = $this->sanitize_time( $time_to );
-		if ( '' === $date || '' === $time_from || '' === $time_to || $time_to <= $time_from ) {
-			return false;
-		}
-
-		foreach ( $this->available_time_slots_for_date( $date, true ) as $slot ) {
-			if ( $time_from === $slot['time_from'] && $time_to === $slot['time_to'] && (bool) $slot['available'] ) {
-				return true;
-			}
-		}
-
-		return false;
+		return '' !== $this->available_time_slot_label( $date, $time_from, $time_to );
 	}
 
 	/** @return array<int, array{enabled:bool,label:string,time_from:string,time_to:string,cutoff_time:string,weekdays:array<int,string>,sort_order:int,available:bool,status_label:string,display_label:string}> */
 	public function available_time_slots_for_date( string $date, bool $include_unavailable = false ): array {
 		$date = $this->sanitize_date( $date );
-		if ( '' === $date ) {
+		if ( '' === $date || ! $this->is_valid_date( $date ) ) {
 			return array();
 		}
 
-		$settings = $this->options->all();
+		$cache_key = $date . '|' . ( $include_unavailable ? '1' : '0' );
+		if ( isset( $this->time_slots_cache[ $cache_key ] ) ) {
+			return $this->time_slots_cache[ $cache_key ];
+		}
+
+		$settings = $this->settings();
 		$slots    = $this->time_slots( $settings['checkout_delivery_time_slots'] ?? $this->default_time_slots() );
 		$visible  = array();
 
@@ -186,14 +167,43 @@ final class DeliverySchedule {
 			}
 		);
 
-		return $visible;
+		$this->time_slots_cache[ $cache_key ] = $visible;
+		return $this->time_slots_cache[ $cache_key ];
+	}
+
+	public function available_time_slot_label( string $date, string $time_from, string $time_to ): string {
+		$date      = $this->sanitize_date( $date );
+		$time_from = $this->sanitize_time( $time_from );
+		$time_to   = $this->sanitize_time( $time_to );
+		if ( '' === $date || '' === $time_from || '' === $time_to || $time_to <= $time_from ) {
+			return '';
+		}
+
+		foreach ( $this->available_time_slots_for_date( $date, true ) as $slot ) {
+			if ( $time_from === $slot['time_from'] && $time_to === $slot['time_to'] && (bool) $slot['available'] ) {
+				return (string) $slot['display_label'];
+			}
+		}
+
+		return '';
+	}
+
+	/** @return array<string, mixed> */
+	public function matching_time_slot( string $date, string $time_from, string $time_to ): array {
+		foreach ( $this->available_time_slots_for_date( $date, true ) as $slot ) {
+			if ( $time_from === (string) $slot['time_from'] && $time_to === (string) $slot['time_to'] ) {
+				return $slot;
+			}
+		}
+
+		return array();
 	}
 
 	public function format_time_slot_label( string $time_from, string $time_to, string $label = '' ): string {
 		$time_from = $this->sanitize_time( $time_from );
 		$time_to   = $this->sanitize_time( $time_to );
-		$label     = sanitize_text_field( $label );
-		if ( '' === $time_from || '' === $time_to ) {
+		$label     = $this->localized_slot_label( sanitize_text_field( $label ) );
+		if ( '' === $time_from || '' === $time_to || $time_to <= $time_from ) {
 			return '';
 		}
 
@@ -232,10 +242,19 @@ final class DeliverySchedule {
 			return '';
 		}
 
-		$weekday = array_search( (int) $date_time->format( 'N' ), self::WEEKDAYS, true );
-		$month   = self::DUTCH_MONTHS[ (int) $date_time->format( 'n' ) ] ?? $date_time->format( 'F' );
+		$label = function_exists( 'wp_date' )
+			? wp_date( 'l j F', $date_time->getTimestamp(), $this->timezone() )
+			: $date_time->format( 'l j F' );
 
-		return trim( ( self::DUTCH_WEEKDAYS[ (string) $weekday ] ?? '' ) . ' ' . $date_time->format( 'j' ) . ' ' . $month );
+		return trim( $label );
+	}
+
+	private function localized_slot_label( string $label ): string {
+		return match ( $label ) {
+			'Ochtend - Middag' => __( 'Ochtend - Middag', 'soocool-for-woocommerce' ),
+			'Avond'            => __( 'Avond', 'soocool-for-woocommerce' ),
+			default            => $label,
+		};
 	}
 
 	private function sanitize_date( string $date ): string {
@@ -295,11 +314,13 @@ final class DeliverySchedule {
 			$time_from = $this->sanitize_time( (string) ( $slot['time_from'] ?? '' ) );
 			$time_to   = $this->sanitize_time( (string) ( $slot['time_to'] ?? '' ) );
 			$cutoff    = $this->sanitize_time( (string) ( $slot['cutoff_time'] ?? $time_from ) );
-			if ( '' === $time_from || '' === $time_to || '' === $cutoff || $time_to <= $time_from ) {
+			if ( '' === $time_from || '' === $time_to || '' === $cutoff || $time_to <= $time_from || $cutoff > $time_to ) {
 				continue;
 			}
 
 			$clean[] = array(
+				'id'          => sanitize_key( (string) ( $slot['id'] ?? '' ) ),
+				'type'        => sanitize_key( (string) ( $slot['type'] ?? $slot['id'] ?? '' ) ),
 				'enabled'     => true,
 				'label'       => sanitize_text_field( (string) ( $slot['label'] ?? '' ) ),
 				'time_from'   => $time_from,
@@ -352,13 +373,8 @@ final class DeliverySchedule {
 			return false;
 		}
 
-		try {
-			$cutoff = new \DateTimeImmutable( $date . ' ' . (string) $slot['cutoff_time'], $this->timezone() );
-		} catch ( \Exception ) {
-			return false;
-		}
-
-		return $this->now() < $cutoff;
+		$cutoff = StrictLocalDateTime::from_date_and_time( $date, (string) $slot['cutoff_time'], $this->timezone() );
+		return null !== $cutoff && $this->now() < $cutoff;
 	}
 
 	private function weekday_key_for_date( string $date ): string {
@@ -392,29 +408,47 @@ final class DeliverySchedule {
 		return $base->modify( '+' . $days . ' days' );
 	}
 
-	private function cutoff_for_delivery( \DateTimeImmutable $delivery_date, string $cutoff_weekday, string $cutoff_time ): \DateTimeImmutable {
+	private function cutoff_for_delivery( \DateTimeImmutable $delivery_date, string $cutoff_weekday, string $cutoff_time ): ?\DateTimeImmutable {
 		$delivery_iso = (int) $delivery_date->format( 'N' );
 		$cutoff_iso   = self::WEEKDAYS[ $cutoff_weekday ] ?? $delivery_iso;
 		$days_before  = ( $delivery_iso - $cutoff_iso + 7 ) % 7;
 		$cutoff_date  = $delivery_date->modify( '-' . $days_before . ' days' );
 
-		try {
-			return new \DateTimeImmutable( $cutoff_date->format( 'Y-m-d' ) . ' ' . $cutoff_time, $this->timezone() );
-		} catch ( \Exception ) {
-			return $delivery_date->setTime( 0, 0, 0 );
-		}
+		return StrictLocalDateTime::from_date_and_time( $cutoff_date->format( 'Y-m-d' ), $cutoff_time, $this->timezone() );
 	}
 
 	/** @param array<string, mixed> $settings */
-	private function is_after_pickup_date_if_needed( string $date, array $settings, \DateTimeImmutable $today ): bool {
+	private function is_after_pickup_date_if_needed( string $date, array $settings, \DateTimeImmutable $now ): bool {
 		if ( ! (bool) ( $settings['enable_pickup'] ?? false ) ) {
 			return true;
 		}
 
 		$pickup_offset = max( 0, absint( $settings['pickup_days_offset'] ?? 0 ) );
-		$pickup_date   = $today->modify( '+' . $pickup_offset . ' days' )->format( 'Y-m-d' );
+		if ( 0 === $pickup_offset ) {
+			$pickup_time_to = $this->sanitize_time( (string) ( $settings['pickup_time_to'] ?? '' ) );
+			if ( '' !== $pickup_time_to ) {
+				$pickup_end = StrictLocalDateTime::from_date_and_time( $now->format( 'Y-m-d' ), $pickup_time_to, $this->timezone() );
+				if ( null === $pickup_end ) {
+					return false;
+				}
+				if ( $now >= $pickup_end ) {
+					$pickup_offset = 1;
+				}
+			}
+		}
+
+		$pickup_date = $now->setTime( 0, 0, 0 )->modify( '+' . $pickup_offset . ' days' )->format( 'Y-m-d' );
 
 		return $date > $pickup_date;
+	}
+
+	/** @return array<string, mixed> */
+	private function settings(): array {
+		if ( null === $this->settings_cache ) {
+			$this->settings_cache = $this->options->all();
+		}
+
+		return $this->settings_cache;
 	}
 
 	private function now(): \DateTimeImmutable {

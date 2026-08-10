@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\WooCommerce;
 
+use SooCool\WooCommerce\Infrastructure\NumericIdentifier;
 use SooCool\WooCommerce\Domain\ShippingLabelService;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use WC_Order;
@@ -51,7 +52,7 @@ final class ShippingLabelActions {
 			return add_query_arg( 'soocool_label_error', 'permission', $redirect_to );
 		}
 
-		$order_ids = array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) );
+		$order_ids = NumericIdentifier::positive_list( $ids );
 		if ( array() === $order_ids ) {
 			return add_query_arg( 'soocool_label_error', 'empty', $redirect_to );
 		}
@@ -88,13 +89,16 @@ final class ShippingLabelActions {
 
 		check_admin_referer( $this->bulk_tokens->nonce_action( $token ) );
 		$payload = $this->bulk_tokens->consume( $token );
-		if ( array() === $payload || (int) ( $payload['user_id'] ?? 0 ) !== get_current_user_id() ) {
+		$payload_user_id = NumericIdentifier::positive( $payload['user_id'] ?? null );
+		if ( array() === $payload || null === $payload_user_id || $payload_user_id !== get_current_user_id() ) {
 			wp_die( esc_html__( 'SooCool labeldownloadverzoek is verlopen.', 'soocool-for-woocommerce' ), '', array( 'response' => 403 ) );
 		}
 
-		$action    = sanitize_key( (string) ( $payload['action'] ?? '' ) );
-		$order_ids = isset( $payload['order_ids'] ) && is_array( $payload['order_ids'] ) ? array_values( array_unique( array_filter( array_map( 'absint', $payload['order_ids'] ) ) ) ) : array();
-		$output    = 'collated_a4' === (string) ( $payload['output'] ?? '' ) ? 'collated_a4' : 'a6';
+		$action_value = $payload['action'] ?? '';
+		$action       = is_scalar( $action_value ) ? sanitize_key( (string) $action_value ) : '';
+		$order_ids = isset( $payload['order_ids'] ) && is_array( $payload['order_ids'] ) ? NumericIdentifier::positive_list( $payload['order_ids'] ) : array();
+		$output_value = $payload['output'] ?? '';
+		$output       = is_scalar( $output_value ) && 'collated_a4' === (string) $output_value ? 'collated_a4' : 'a6';
 		if ( array() === $order_ids || count( $order_ids ) > self::MAX_BULK_LABEL_IDS ) {
 			wp_die( esc_html__( 'SooCool labeldownloadverzoek is ongeldig.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
 		}
@@ -160,14 +164,14 @@ final class ShippingLabelActions {
 
 		try {
 			$pdf = count( $requested_good_ids ) > 1
-				? $this->labels->get_bulk_good_labels( $requested_good_ids, $output )
-				: $this->labels->get_good_label( $order, $requested_good_ids[0], $output );
+				? $this->labels->download_bulk_good_labels( $requested_good_ids, $output )
+				: $this->labels->download_good_label( $order, $requested_good_ids[0], $output );
 		} catch ( \Throwable ) {
 			wp_die( esc_html__( 'SooCool goederenlabeldownload mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
 		}
 
 		$filename = count( $requested_good_ids ) > 1 ? 'soocool-good-labels-' . absint( $order_id ) . '.pdf' : 'soocool-label-' . absint( $order_id ) . '-good-' . absint( $requested_good_ids[0] ) . '.pdf';
-		$this->pdf_response->send( $pdf, $filename );
+		$this->pdf_response->send_file( $pdf, $filename );
 	}
 
 	/** @param array<int, int> $order_ids */
@@ -178,13 +182,13 @@ final class ShippingLabelActions {
 		}
 
 		try {
-			$pdf = $this->labels->get_bulk_labels( $orders, $output );
+			$pdf = $this->labels->download_bulk_labels( $orders, $output );
 		} catch ( \Throwable ) {
 			wp_die( esc_html__( 'SooCool bulkdownload van orderlabels mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
 		}
 
 		$filename = count( $orders ) > 1 ? 'soocool-order-labels.pdf' : 'soocool-order-label-' . absint( $orders[0]->get_id() ) . '.pdf';
-		$this->pdf_response->send( $pdf, $filename );
+		$this->pdf_response->send_file( $pdf, $filename );
 	}
 
 	/** @param array<int, int> $order_ids */
@@ -201,14 +205,14 @@ final class ShippingLabelActions {
 
 		try {
 			$pdf = 1 === count( $orders ) && 1 === count( $good_ids )
-				? $this->labels->get_good_label( $orders[0], $good_ids[0], $output )
-				: $this->labels->get_bulk_good_labels( $good_ids, $output );
+				? $this->labels->download_good_label( $orders[0], $good_ids[0], $output )
+				: $this->labels->download_bulk_good_labels( $good_ids, $output );
 		} catch ( \Throwable ) {
 			wp_die( esc_html__( 'SooCool bulkdownload van goederenlabels mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
 		}
 
 		$filename = count( $good_ids ) > 1 ? 'soocool-good-labels.pdf' : 'soocool-good-label-' . preg_replace( '/[^0-9-]/', '', (string) $good_ids[0] ) . '.pdf';
-		$this->pdf_response->send( $pdf, $filename );
+		$this->pdf_response->send_file( $pdf, $filename );
 	}
 
 	private function handle_single_label_download( string $output ): void {
@@ -219,19 +223,24 @@ final class ShippingLabelActions {
 			wp_die( esc_html__( 'Order niet gevonden.', 'soocool-for-woocommerce' ) );
 		}
 
-		$good_id = $this->query_signed_int( 'good_id' );
+		$has_good_id = $this->query_has( 'good_id' );
+		$good_id     = $this->query_signed_int( 'good_id' );
+		if ( $has_good_id && null === $good_id ) {
+			wp_die( esc_html__( 'SooCool labeldownloadverzoek is ongeldig.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
+		}
+
 		if ( null !== $good_id && ! in_array( $good_id, $this->order_resolver->stored_good_ids( $order ), true ) ) {
 			wp_die( esc_html__( 'De gevraagde SooCool-goederen-ID hoort niet bij deze order.', 'soocool-for-woocommerce' ) );
 		}
 
 		try {
-			$pdf = null !== $good_id ? $this->labels->get_good_label( $order, $good_id, $output ) : $this->labels->get_label( $order, $output );
+			$pdf = null !== $good_id ? $this->labels->download_good_label( $order, $good_id, $output ) : $this->labels->download_label( $order, $output );
 		} catch ( \Throwable ) {
 			wp_die( esc_html__( 'SooCool labeldownload mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
 		}
 
 		$filename = null !== $good_id ? 'soocool-label-' . absint( $order_id ) . '-good-' . preg_replace( '/[^0-9-]/', '', (string) $good_id ) . '.pdf' : 'soocool-label-' . absint( $order_id ) . '.pdf';
-		$this->pdf_response->send( $pdf, $filename );
+		$this->pdf_response->send_file( $pdf, $filename );
 	}
 
 	private function has_order_good_ids_request(): bool {
@@ -247,11 +256,11 @@ final class ShippingLabelActions {
 
 		$ids = array();
 		foreach ( explode( ',', $good_ids ) as $good_id ) {
-			$good_id = trim( $good_id );
-			if ( '' === $good_id || 1 !== preg_match( '/^-?\d+$/', $good_id ) || 0 === (int) $good_id ) {
+			$id = NumericIdentifier::non_zero( trim( $good_id ) );
+			if ( null === $id ) {
 				return array();
 			}
-			$ids[] = (int) $good_id;
+			$ids[] = $id;
 		}
 
 		return array_values( array_unique( $ids ) );
@@ -266,7 +275,7 @@ final class ShippingLabelActions {
 	}
 
 	private function query_string( string $key ): string {
-		if ( ! isset( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read only after capability and nonce gates.
+		if ( ! isset( $_GET[ $key ] ) || ! is_scalar( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read only after capability and nonce gates.
 			return '';
 		}
 
@@ -274,15 +283,10 @@ final class ShippingLabelActions {
 	}
 
 	private function query_int( string $key ): int {
-		return absint( $this->query_string( $key ) );
+		return NumericIdentifier::positive( $this->query_string( $key ) ) ?? 0;
 	}
 
 	private function query_signed_int( string $key ): ?int {
-		$value = trim( $this->query_string( $key ) );
-		if ( '' === $value || 1 !== preg_match( '/^-?\d+$/', $value ) || 0 === (int) $value ) {
-			return null;
-		}
-
-		return (int) $value;
+		return NumericIdentifier::non_zero( trim( $this->query_string( $key ) ) );
 	}
 }

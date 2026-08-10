@@ -40,7 +40,7 @@
     group.classList.remove('is-expanded');
     if (button) {
       button.setAttribute('aria-expanded', 'false');
-      button.textContent = button.getAttribute('data-more-label') || 'Meer dagdelen tonen';
+      button.textContent = button.getAttribute('data-more-label') || '';
     }
   }
 
@@ -184,6 +184,13 @@
     return day ? day.getAttribute('data-soocool-delivery-month') || '' : '';
   }
 
+  function firstAvailableMonth(root) {
+    var available = root ? root.querySelector('input[name="' + dateFieldName + '"]:not(:disabled)') : null;
+    var day = available && available.closest ? available.closest('[data-soocool-delivery-month]') : null;
+
+    return day ? day.getAttribute('data-soocool-delivery-month') || '' : '';
+  }
+
   function setActiveMonth(root, monthKey) {
     var months = deliveryMonths(root);
     if (!root || !months.length) {
@@ -214,7 +221,11 @@
 
     var picker = root.querySelector('[data-soocool-delivery-picker]');
     if (picker) {
-      picker.setAttribute('aria-label', 'Beschikbare bezorgdagen voor ' + month.label);
+      var pickerLabelTemplate = picker.getAttribute('data-soocool-picker-label-template') || '%s';
+      var pickerLabel = pickerLabelTemplate.indexOf('%s') >= 0
+        ? pickerLabelTemplate.replace('%s', month.label)
+        : pickerLabelTemplate + ' ' + month.label;
+      picker.setAttribute('aria-label', pickerLabel.trim());
     }
 
     var nav = root.querySelector('[data-soocool-month-nav]');
@@ -234,7 +245,30 @@
   }
 
   function updateMonthPicker(root) {
-    setActiveMonth(root, selectedMonth(root));
+    var month = selectedMonth(root) || firstAvailableMonth(root) || root.getAttribute('data-soocool-active-month') || '';
+    setActiveMonth(root, month);
+  }
+
+  function focusFirstAvailableDate(root) {
+    if (!root) {
+      return;
+    }
+
+    var input = root.querySelector('[data-soocool-delivery-month]:not([hidden]) input:not(:disabled)');
+    if (input && typeof input.focus === 'function') {
+      input.focus();
+    }
+  }
+
+  function focusSelectedOrFirstTimeSlot(root) {
+    if (!root) {
+      return;
+    }
+
+    var input = root.querySelector('input[name="' + timeFieldName + '"]:checked:not(:disabled)') || root.querySelector('input[name="' + timeFieldName + '"]:not(:disabled)');
+    if (input && typeof input.focus === 'function') {
+      input.focus();
+    }
   }
 
   function moveMonth(root, direction) {
@@ -250,6 +284,9 @@
 
     var nextIndex = Math.max(0, Math.min(months.length - 1, index + direction));
     setActiveMonth(root, months[nextIndex].key);
+    window.setTimeout(function () {
+      focusFirstAvailableDate(root);
+    }, 0);
   }
 
   function updateAll() {
@@ -289,7 +326,7 @@
     }
 
     updateNotice(root);
-    setExpanded(root, false);
+    setExpanded(root, true);
     triggerCheckoutUpdate();
   });
 
@@ -310,6 +347,9 @@
     if (changeButton) {
       var changeRoot = closestRoot(changeButton);
       setExpanded(changeRoot, true);
+      window.setTimeout(function () {
+        focusSelectedOrFirstTimeSlot(changeRoot);
+      }, 0);
       return;
     }
 
@@ -327,8 +367,8 @@
     group.classList.toggle('is-expanded', expanded);
     moreButton.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     moreButton.textContent = expanded
-      ? (moreButton.getAttribute('data-less-label') || 'Minder tonen')
-      : (moreButton.getAttribute('data-more-label') || 'Meer dagdelen tonen');
+      ? (moreButton.getAttribute('data-less-label') || '')
+      : (moreButton.getAttribute('data-more-label') || '');
   });
 
   document.addEventListener('DOMContentLoaded', updateAll);

@@ -68,11 +68,12 @@ final class TaskAddressFactory {
 		if ( '' === trim( $city ) ) {
 			$fields[] = __( 'plaats', 'soocool-for-woocommerce' );
 		}
-		if ( '' === trim( $country ) ) {
-			$fields[] = __( 'land', 'soocool-for-woocommerce' );
+		$country = strtoupper( sanitize_key( $country ) );
+		if ( 1 !== preg_match( '/^[A-Z]{2}$/', $country ) ) {
+			$fields[] = __( 'geldig land', 'soocool-for-woocommerce' );
 		}
-		if ( array() === $this->contacts->for_delivery_order( $order ) ) {
-			$fields[] = __( 'e-mailadres, telefoonnummer of geldig Nederlands mobiel nummer', 'soocool-for-woocommerce' );
+		if ( array() === $this->contacts->for_delivery_order( $order, $country ) ) {
+			$fields[] = __( 'geldig e-mailadres of telefoonnummer', 'soocool-for-woocommerce' );
 		}
 
 		return $fields;
@@ -80,11 +81,11 @@ final class TaskAddressFactory {
 
 	/** @param array<int, string> $missing_fields */
 	public function missing_delivery_fields_message( array $missing_fields ): string {
-		$fields = esc_html( implode( ', ', array_map( 'sanitize_text_field', $missing_fields ) ) );
+		$fields = implode( ', ', array_map( 'sanitize_text_field', $missing_fields ) );
 
 		return sprintf(
 			/* translators: %s: comma-separated list of missing WooCommerce address fields. */
-			esc_html__( 'Bezorgadres is onvolledig. Ontbrekende WooCommerce-velden: %s. Vul het verzend- of factuuradres aan voordat deze order naar SooCool wordt gestuurd.', 'soocool-for-woocommerce' ),
+			__( 'Bezorgadres is onvolledig. Ontbrekende WooCommerce-velden: %s. Vul het verzend- of factuuradres aan voordat deze order naar SooCool wordt gestuurd.', 'soocool-for-woocommerce' ),
 			$fields
 		);
 	}

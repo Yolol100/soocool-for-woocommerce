@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Domain;
 
+use SooCool\WooCommerce\Infrastructure\OptionMutex;
 use SooCool\WooCommerce\Api\ApiClient;
 use SooCool\WooCommerce\Api\ApiException;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
@@ -11,40 +12,52 @@ use SooCool\WooCommerce\WooCommerce\OrderMeta;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Shared SooCool sync primitives used by both the REST sync endpoint and the
- * WooCommerce order actions: a per-order lock that prevents concurrent
- * submissions and a lookup that links to an existing SooCool order instead of
- * creating a duplicate. Previously duplicated in OrderActions and
- * OrderSyncController.
+ * Provides per-order synchronization locking and existing-order lookup.
  */
 final class OrderSyncService {
 
-	private const SYNC_LOCK_TTL_SECONDS = 120;
+	private const SYNC_LOCK_TTL_SECONDS = 300;
 
-	public function __construct( private readonly ApiClient $client, private readonly OrderMeta $meta ) {}
+	/** @var array<int, string> */
+	private array $lock_tokens = array();
 
-	/**
-	 * Acquire a per-order lock. Relies on the unique option_name index so the
-	 * winning add_option() is atomic even if two requests pass the TTL check.
-	 */
+	private readonly RemoteOrderResponseParser $responses;
+
+	public function __construct( private readonly ApiClient $client, private readonly OrderMeta $meta, ?RemoteOrderResponseParser $responses = null ) {
+		$this->responses = $responses ?? new RemoteOrderResponseParser( $meta );
+	}
+
 	public function acquire_lock( int $order_id ): bool {
-		$key     = $this->lock_key( $order_id );
-		$expires = (int) get_option( $key, 0 );
-		$now     = time();
-
-		if ( $expires > $now ) {
+		$value = OptionMutex::acquire( $this->lock_key( $order_id ), self::SYNC_LOCK_TTL_SECONDS );
+		if ( null === $value ) {
 			return false;
 		}
 
-		if ( $expires > 0 ) {
-			delete_option( $key );
+		$this->lock_tokens[ $order_id ] = $value;
+		return true;
+	}
+
+	public function refresh_lock( int $order_id ): bool {
+		$value = $this->lock_tokens[ $order_id ] ?? '';
+		if ( '' === $value ) {
+			return false;
 		}
 
-		return add_option( $key, (string) ( $now + self::SYNC_LOCK_TTL_SECONDS ), '', false );
+		$refreshed = OptionMutex::refresh( $this->lock_key( $order_id ), $value, self::SYNC_LOCK_TTL_SECONDS );
+		if ( null === $refreshed ) {
+			return false;
+		}
+
+		$this->lock_tokens[ $order_id ] = $refreshed;
+		return true;
 	}
 
 	public function release_lock( int $order_id ): void {
-		delete_option( $this->lock_key( $order_id ) );
+		$value = $this->lock_tokens[ $order_id ] ?? '';
+		unset( $this->lock_tokens[ $order_id ] );
+		if ( '' !== $value ) {
+			OptionMutex::release( $this->lock_key( $order_id ), $value );
+		}
 	}
 
 	private function lock_key( int $order_id ): string {
@@ -69,53 +82,37 @@ final class OrderSyncService {
 
 		$body = $response->body();
 		if ( ! is_array( $body ) ) {
-			return array();
+			throw new ApiException( __( 'SooCool gaf een ongeldige zoekresponse terug.', 'soocool-for-woocommerce' ), 502 );
 		}
 
-		foreach ( $this->orders_from_search_response( $body ) as $candidate ) {
-			if ( $this->remote_reference( $candidate ) === $order_reference ) {
-				return $candidate;
-			}
-		}
+		$candidates = $this->responses->candidates( $body, true );
+		$matches           = array();
+		$invalid_match     = false;
+		$matched_order_ids = array();
 
-		return array();
-	}
-
-	/** @param array<string, mixed> $body @return array<int, array<string, mixed>> */
-	private function orders_from_search_response( array $body ): array {
-		$candidates = array();
-		if ( array_is_list( $body ) ) {
-			$candidates = $body;
-		} else {
-			$candidates[] = $body;
-			foreach ( array( 'order', 'data' ) as $key ) {
-				if ( isset( $body[ $key ] ) && is_array( $body[ $key ] ) ) {
-					$candidates = array_merge( $candidates, array_is_list( $body[ $key ] ) ? $body[ $key ] : array( $body[ $key ] ) );
-				}
-			}
-		}
-
-		$orders = array();
 		foreach ( $candidates as $candidate ) {
-			if ( is_array( $candidate ) && '' !== $this->meta->extract_order_id( $candidate ) ) {
-				$orders[] = $candidate;
+			if ( $this->responses->reference( $candidate ) !== $order_reference ) {
+				continue;
 			}
+
+			$order_id = $this->meta->extract_order_id( $candidate );
+			if ( '' === $order_id ) {
+				$invalid_match = true;
+				continue;
+			}
+
+			$matches[]                    = $candidate;
+			$matched_order_ids[ $order_id ] = true;
 		}
 
-		return $orders;
-	}
-
-	/** @param array<string, mixed> $order */
-	private function remote_reference( array $order ): string {
-		foreach ( array( 'orderReference', 'ourReference', 'reference' ) as $key ) {
-			if ( isset( $order[ $key ] ) && ! is_array( $order[ $key ] ) && ! is_object( $order[ $key ] ) ) {
-				$reference = trim( sanitize_text_field( (string) $order[ $key ] ) );
-				if ( '' !== $reference ) {
-					return $reference;
-				}
-			}
+		if ( $invalid_match ) {
+			throw new ApiException( __( 'SooCool gaf een zoekresultaat zonder geldige order-ID terug.', 'soocool-for-woocommerce' ), 502 );
+		}
+		if ( count( $matched_order_ids ) > 1 ) {
+			throw new ApiException( __( 'SooCool gaf meerdere orders met dezelfde orderreferentie terug. Synchronisatie is gestopt om een verkeerde koppeling te voorkomen.', 'soocool-for-woocommerce' ), 409 );
 		}
 
-		return '';
+		return $matches[0] ?? array();
 	}
+
 }

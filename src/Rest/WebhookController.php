@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Rest;
 
+use SooCool\WooCommerce\Infrastructure\OptionMutex;
 use SooCool\WooCommerce\Api\ApiClient;
-use SooCool\WooCommerce\Api\ApiException;
 use SooCool\WooCommerce\Infrastructure\Logger;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
@@ -18,13 +18,25 @@ defined( 'ABSPATH' ) || exit;
 
 final class WebhookController extends AbstractRestController {
 
+	private const ORDER_LOCK_PREFIX         = 'soocool_webhook_order_lock_';
+	private const ORDER_LOCK_TTL_SECONDS    = 120;
+	private const ORDER_LOCK_RETRIES        = 5;
+	private const ORDER_LOCK_RETRY_DELAY_US = 50000;
+
+	private readonly WebhookOrderResolver $orders;
+
+	private readonly WebhookIdentifiers $identifiers;
+
 	public function __construct(
 		private readonly OrderMeta $meta,
 		private readonly Logger $logger,
 		private readonly WebhookAuthenticator $authenticator,
 		private readonly WebhookPayloadExtractor $payloads,
 		private readonly ApiClient $client
-	) {}
+	) {
+		$this->orders      = new WebhookOrderResolver( $this->meta, $this->logger, $this->payloads, $this->client );
+		$this->identifiers = new WebhookIdentifiers();
+	}
 
 	public function register_routes(): void {
 		foreach ( array( '/webhook', '/webhook/(?P<wc_order_id>\d+)' ) as $route ) {
@@ -45,6 +57,14 @@ final class WebhookController extends AbstractRestController {
 	}
 
 	public function receive( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		try {
+			return $this->process_request( $request );
+		} finally {
+			$this->authenticator->release_reservation( $request );
+		}
+	}
+
+	private function process_request( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$raw_body = $request->get_body();
 		if ( is_string( $raw_body ) && strlen( $raw_body ) > WebhookPayloadExtractor::MAX_PAYLOAD_BYTES ) {
 			return new WP_Error( 'soocool_webhook_payload_too_large', __( 'SooCool webhook-payload is te groot.', 'soocool-for-woocommerce' ), array( 'status' => 413 ) );
@@ -54,248 +74,162 @@ final class WebhookController extends AbstractRestController {
 		if ( ! is_array( $payload ) || ! $this->payloads->shape_is_safe( $payload ) ) {
 			return new WP_Error( 'soocool_webhook_invalid_payload', __( 'Ongeldige SooCool webhook-payload.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
 		}
-
-		$soocool_order_id = $this->payloads->soocool_order_id( $payload );
-		$order_reference  = $this->payloads->order_reference( $payload );
-		if ( '' === $order_reference ) {
-			$order_reference = $this->webhook_order_reference( $request );
+		if ( ! $this->payloads->identifiers_are_consistent( $payload ) ) {
+			return new WP_Error( 'soocool_webhook_identifier_conflict', __( 'SooCool webhook bevat conflicterende orderidentificaties.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
 		}
-		$wc_order_id = $this->webhook_wc_order_id( $request );
-		if ( 0 >= $wc_order_id ) {
-			$wc_order_id = $this->payloads->wc_order_id( $payload );
+		if ( ! $this->payloads->event_ordering_is_consistent( $payload ) ) {
+			return new WP_Error( 'soocool_webhook_event_conflict', __( 'SooCool webhook bevat conflicterende eventvolgorde.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
 		}
-		$order       = $this->find_order( $soocool_order_id, $order_reference, $wc_order_id );
+		if ( ! $this->identifiers->request_identifiers_are_consistent( $request ) ) {
+			return $this->orders->identifier_conflict( '', '', 0 );
+		}
 
-		if ( ! $order instanceof WC_Order ) {
+		$soocool_order_id       = $this->payloads->soocool_order_id( $payload );
+		$payload_order_reference = $this->payloads->order_reference( $payload );
+		$request_order_reference = $this->identifiers->webhook_order_reference( $request );
+		$payload_wc_order_id     = $this->payloads->wc_order_id( $payload );
+		$request_wc_order_id     = $this->identifiers->webhook_wc_order_id( $request );
+
+		if ( '' !== $payload_order_reference && '' !== $request_order_reference && ! hash_equals( $payload_order_reference, $request_order_reference ) ) {
+			return $this->orders->identifier_conflict( $soocool_order_id, $request_order_reference, $request_wc_order_id );
+		}
+		if ( 0 < $payload_wc_order_id && 0 < $request_wc_order_id && $payload_wc_order_id !== $request_wc_order_id ) {
+			return $this->orders->identifier_conflict( $soocool_order_id, $payload_order_reference, $request_wc_order_id );
+		}
+
+		$order_reference = '' !== $payload_order_reference ? $payload_order_reference : $request_order_reference;
+		$wc_order_id     = 0 < $request_wc_order_id ? $request_wc_order_id : $payload_wc_order_id;
+		if ( ! $this->authenticator->refresh_reservation( $request ) ) {
+			return new WP_Error( 'soocool_webhook_reservation_lost', __( 'De webhookverwerkingslease is verlopen. Probeer opnieuw.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
+		}
+		$resolved = $this->orders->find_order( $soocool_order_id, $order_reference, $wc_order_id );
+		if ( is_wp_error( $resolved ) ) {
+			return $resolved;
+		}
+		if ( ! $this->authenticator->refresh_reservation( $request ) ) {
+			return new WP_Error( 'soocool_webhook_reservation_lost', __( 'De webhookverwerkingslease is verlopen. Probeer opnieuw.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
+		}
+
+		if ( ! is_array( $resolved ) || ! ( $resolved['order'] ?? null ) instanceof WC_Order ) {
 			$this->logger->info(
-				'SooCool webhook genegeerd: WooCommerce-order niet gevonden.',
+				'SooCool webhook uitgesteld: WooCommerce-order nog niet gevonden.',
 				array(
-					'status'         => 202,
+					'status'         => 503,
 					'path'           => sanitize_text_field( (string) $request->get_route() ),
 					'orderId'        => '' !== $soocool_order_id ? $soocool_order_id : '[missing]',
 					'orderReference' => '' !== $order_reference ? $order_reference : '[missing]',
 					'wcOrderId'      => 0 < $wc_order_id ? (string) $wc_order_id : '[missing]',
 				)
 			);
-			$this->authenticator->mark_processed( $request );
-			return new WP_REST_Response(
-				array(
-					'success' => true,
-					'ignored' => true,
-					'reason'  => 'order_not_found',
-				),
-				202
+
+			return new WP_Error(
+				'soocool_webhook_order_not_ready',
+				__( 'De WooCommerce-order is nog niet beschikbaar. Probeer de webhook later opnieuw.', 'soocool-for-woocommerce' ),
+				array( 'status' => 503 )
 			);
 		}
 
-		$data = $this->payloads->update_data( $payload );
-
-		$changed = $this->meta->save_webhook_update( $order, $data );
-		if ( $changed ) {
-			$order->add_order_note( $this->webhook_note( $data ) );
+		$order      = $resolved['order'];
+		$order_id   = (int) $order->get_id();
+		$lock_key   = self::ORDER_LOCK_PREFIX . md5( (string) $order_id );
+		$lock_value = $this->acquire_order_lock( $lock_key );
+		if ( null === $lock_value ) {
+			return new WP_Error(
+				'soocool_webhook_order_locked',
+				__( 'Een andere SooCool webhook voor deze order wordt nog verwerkt. Probeer het opnieuw.', 'soocool-for-woocommerce' ),
+				array( 'status' => 503 )
+			);
 		}
-		$this->authenticator->mark_processed( $request );
 
-		return new WP_REST_Response(
-			array(
-				'success'  => true,
-				'order_id' => $order->get_id(),
-				'changed'  => $changed,
-			),
-			200
-		);
-	}
-
-	private function find_order( string $soocool_order_id, string $order_reference, int $wc_order_id ): ?WC_Order {
-		if ( '' !== $soocool_order_id ) {
-			$order = $this->find_order_by_meta( OrderMeta::ORDER_ID, $soocool_order_id );
-			if ( $order instanceof WC_Order ) {
-				return $order;
+		try {
+			if ( ! $this->refresh_order_lock( $lock_key, $lock_value ) ) {
+				return new WP_Error( 'soocool_webhook_order_lock_lost', __( 'De orderverwerkingslease is verlopen. Probeer opnieuw.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
 			}
-		}
-
-		if ( '' !== $order_reference ) {
-			$order = $this->find_order_by_reference( $order_reference );
-			if ( $order instanceof WC_Order ) {
-				$this->link_known_webhook_order( $order, $soocool_order_id, $order_reference );
-				return $order;
-			}
-		}
-
-		if ( 0 < $wc_order_id ) {
-			$order = $this->find_order_by_wc_order_id( $wc_order_id );
-			if ( $order instanceof WC_Order ) {
-				$this->link_known_webhook_order( $order, $soocool_order_id, $order_reference );
-				return $order;
-			}
-		}
-
-		$remote_order = '' !== $soocool_order_id ? $this->remote_order( $soocool_order_id ) : array();
-		if ( array() !== $remote_order ) {
-			$remote_reference = $this->payloads->order_reference( $remote_order );
-			if ( '' !== $remote_reference ) {
-				$order = $this->find_order_by_reference( $remote_reference );
-				if ( $order instanceof WC_Order ) {
-					$this->link_remote_order( $order, $remote_order, $remote_reference );
-					return $order;
-				}
-			}
-		}
-
-		return null;
-	}
-
-	private function find_order_by_reference( string $order_reference ): ?WC_Order {
-		foreach ( array( OrderMeta::ORDER_REFERENCE, OrderMeta::OUR_REFERENCE ) as $meta_key ) {
-			$order = $this->find_order_by_meta( $meta_key, $order_reference );
-			if ( $order instanceof WC_Order ) {
-				return $order;
-			}
-		}
-
-		return $this->find_order_by_order_number( $order_reference );
-	}
-
-	private function find_order_by_meta( string $meta_key, string $meta_value ): ?WC_Order {
-		$orders = wc_get_orders(
-			array(
-				'limit'      => 1,
-				'return'     => 'objects',
-				'meta_key'   => $meta_key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Webhook must resolve a WooCommerce order by plugin-owned external references.
-				'meta_value' => $meta_value, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Values are exact plugin-owned SooCool identifiers.
-			)
-		);
-
-		$order = is_array( $orders ) ? ( $orders[0] ?? null ) : null;
-		return $order instanceof WC_Order ? $order : null;
-	}
-
-	private function find_order_by_order_number( string $order_reference ): ?WC_Order {
-		$candidates = array( trim( sanitize_text_field( $order_reference ) ) );
-		if ( 1 === preg_match( '/(\d+)$/', $order_reference, $matches ) ) {
-			$candidates[] = $matches[1];
-		}
-
-		foreach ( array_values( array_unique( $candidates ) ) as $candidate ) {
-			if ( ! ctype_digit( $candidate ) || 0 >= (int) $candidate ) {
-				continue;
-			}
-
-			$order = wc_get_order( (int) $candidate );
+			$order = wc_get_order( $order_id );
 			if ( ! $order instanceof WC_Order ) {
-				continue;
+				return new WP_Error( 'soocool_webhook_order_not_ready', __( 'De WooCommerce-order is niet meer beschikbaar. Probeer de webhook later opnieuw.', 'soocool-for-woocommerce' ), array( 'status' => 503 ) );
 			}
 
-			$order_number = sanitize_text_field( (string) $order->get_order_number() );
-			if ( $order_number === $order_reference || $order_number === $candidate || (string) $order->get_id() === $candidate ) {
-				return $order;
+			$resolved_reference = $this->scalar_reference( $resolved['reference'] ?? '' );
+			$remote_order       = is_array( $resolved['remote_order'] ?? null ) ? $resolved['remote_order'] : array();
+			if ( method_exists( $order, 'read_meta_data' ) ) {
+				$order->read_meta_data( true );
+			}
+
+			$delivery_timestamp = $this->authenticator->delivery_timestamp( $request );
+			$event_timestamp    = $this->payloads->event_timestamp( $payload );
+			if ( 0 < $event_timestamp && 0 < $delivery_timestamp && $event_timestamp > $delivery_timestamp + 300 ) {
+				return new WP_Error( 'soocool_webhook_event_timestamp_invalid', __( 'SooCool webhook-eventtijd ligt onrealistisch in de toekomst.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
+			}
+
+			if ( ! $this->authenticator->refresh_reservation( $request ) || ! $this->refresh_order_lock( $lock_key, $lock_value ) ) {
+				return new WP_Error( 'soocool_webhook_lease_lost', __( 'De webhookverwerkingslease is verlopen. Probeer opnieuw.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
+			}
+
+			$data   = $this->payloads->update_data( $payload );
+			$result = $this->meta->apply_webhook_update(
+				$order,
+				$data,
+				true,
+				array(
+					'sequence'  => $this->payloads->event_sequence( $payload ),
+					'timestamp' => $event_timestamp,
+					'event_id'  => $this->authenticator->event_id( $request ),
+				)
+			);
+			if ( $result['accepted'] ) {
+				if ( array() !== $remote_order ) {
+					$this->orders->link_remote_order( $order, $remote_order, $resolved_reference );
+				} else {
+					$this->orders->link_known_webhook_order( $order, $soocool_order_id, $resolved_reference );
+				}
+			}
+			if ( $result['changed'] ) {
+				$order->add_order_note( $this->webhook_note( $data ) );
+			}
+			$this->authenticator->mark_processed( $request );
+
+			return new WP_REST_Response(
+				array(
+					'success'  => true,
+					'order_id' => $order->get_id(),
+					'changed'  => $result['changed'],
+					'ignored'  => ! $result['accepted'],
+					'reason'   => $result['reason'],
+				),
+				200
+			);
+		} finally {
+			OptionMutex::release( $lock_key, $lock_value );
+		}
+	}
+
+	private function acquire_order_lock( string $key ): ?string {
+		for ( $attempt = 0; $attempt < self::ORDER_LOCK_RETRIES; ++$attempt ) {
+			$value = OptionMutex::acquire( $key, self::ORDER_LOCK_TTL_SECONDS );
+			if ( null !== $value ) {
+				return $value;
+			}
+			if ( $attempt + 1 < self::ORDER_LOCK_RETRIES ) {
+				usleep( self::ORDER_LOCK_RETRY_DELAY_US );
 			}
 		}
 
 		return null;
 	}
 
-	private function find_order_by_wc_order_id( int $order_id ): ?WC_Order {
-		if ( 0 >= $order_id ) {
-			return null;
+	private function refresh_order_lock( string $key, string &$value ): bool {
+		$refreshed = OptionMutex::refresh( $key, $value, self::ORDER_LOCK_TTL_SECONDS );
+		if ( null === $refreshed ) {
+			return false;
 		}
 
-		$order = wc_get_order( $order_id );
-		return $order instanceof WC_Order ? $order : null;
+		$value = $refreshed;
+		return true;
 	}
 
-	/** @return array<string, mixed> */
-	private function remote_order( string $soocool_order_id ): array {
-		try {
-			$response = $this->client->get_order( $soocool_order_id );
-		} catch ( ApiException ) {
-			return array();
-		}
-
-		$body = $response->body();
-		if ( ! is_array( $body ) ) {
-			return array();
-		}
-
-		if ( array_is_list( $body ) ) {
-			$body = is_array( $body[0] ?? null ) ? $body[0] : array();
-		}
-
-		foreach ( array( 'order', 'data' ) as $key ) {
-			if ( isset( $body[ $key ] ) && is_array( $body[ $key ] ) ) {
-				$candidate = $body[ $key ];
-				if ( isset( $candidate['order'] ) && is_array( $candidate['order'] ) ) {
-					$candidate = $candidate['order'];
-				}
-				return $candidate;
-			}
-		}
-
-		return $body;
-	}
-
-	private function link_known_webhook_order( WC_Order $order, string $soocool_order_id, string $order_reference ): void {
-		if ( '' === $soocool_order_id ) {
-			return;
-		}
-
-		$current_soocool_order_id = $this->meta->get_soocool_order_id( $order );
-		if ( '' !== $current_soocool_order_id && $current_soocool_order_id !== $soocool_order_id ) {
-			return;
-		}
-
-		$body = array( 'orderId' => $soocool_order_id );
-		if ( '' !== $order_reference ) {
-			$body['orderReference'] = $order_reference;
-		}
-
-		$this->link_remote_order( $order, $body, $order_reference );
-	}
-
-	/** @param array<string, mixed> $remote_order */
-	private function link_remote_order( WC_Order $order, array $remote_order, string $order_reference ): void {
-		try {
-			$this->meta->save_success( $order, $remote_order, $order_reference );
-		} catch ( \InvalidArgumentException ) {
-			// Keep the webhook update working even when the remote lookup response omits a stable orderId.
-		}
-	}
-
-	private function webhook_wc_order_id( WP_REST_Request $request ): int {
-		$route_value = $request->get_param( 'wc_order_id' );
-		if ( is_scalar( $route_value ) && ctype_digit( trim( (string) $route_value ) ) && 0 < (int) $route_value ) {
-			return (int) $route_value;
-		}
-
-		$params = $request->get_query_params();
-		if ( ! is_array( $params ) ) {
-			return 0;
-		}
-
-		foreach ( array( 'wc_order_id', 'woo_order_id', 'woocommerce_order_id' ) as $key ) {
-			$value = $params[ $key ] ?? null;
-			if ( is_scalar( $value ) && ctype_digit( trim( (string) $value ) ) && 0 < (int) $value ) {
-				return (int) $value;
-			}
-		}
-
-		return 0;
-	}
-
-	private function webhook_order_reference( WP_REST_Request $request ): string {
-		$params = $request->get_query_params();
-		if ( ! is_array( $params ) ) {
-			return '';
-		}
-
-		foreach ( array( 'order_reference', 'orderReference', 'soocool_order_reference', 'reference' ) as $key ) {
-			$value = $params[ $key ] ?? null;
-			if ( is_scalar( $value ) && '' !== trim( (string) $value ) ) {
-				return sanitize_text_field( (string) $value );
-			}
-		}
-
-		return '';
+	private function scalar_reference( mixed $value ): string {
+		return is_scalar( $value ) ? trim( sanitize_text_field( (string) $value ) ) : '';
 	}
 
 	/** @param array<string, string> $data */

@@ -27,7 +27,6 @@ final class Notices {
 		}
 
 		$this->render_checkout_blocks_notice();
-		$this->render_webhook_signature_notice();
 	}
 
 	private function render_checkout_blocks_notice(): void {
@@ -50,14 +49,4 @@ final class Notices {
 		);
 	}
 
-	private function render_webhook_signature_notice(): void {
-		if ( $this->options->webhook_signature_required() && ! $this->options->query_token_fallback_enabled() ) {
-			return;
-		}
-
-		printf(
-			'<div class="notice notice-warning"><p>%s</p></div>',
-			esc_html__( 'SooCool webhook-HMAC is niet volledig afgedwongen of query-token fallback is ingeschakeld. Gebruik dit alleen als tijdelijke legacy-modus en test webhooks op staging.', 'soocool-for-woocommerce' )
-		);
-	}
 }

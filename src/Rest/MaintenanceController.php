@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Rest;
 
+use SooCool\WooCommerce\Infrastructure\NumericIdentifier;
 use SooCool\WooCommerce\WooCommerce\OrderActions;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WP_REST_Response;
@@ -12,10 +13,7 @@ use WP_REST_Server;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Operator maintenance actions. Currently exposes a "resync failed orders"
- * action that queues a bounded batch of orders whose SooCool sync previously
- * failed. Work is queued through Action Scheduler when available, with WP-Cron
- * as the fallback, so a large backlog never blocks the request.
+ * Queues bounded resynchronization batches through Action Scheduler or WP-Cron.
  */
 final class MaintenanceController extends AbstractRestController {
 
@@ -40,8 +38,7 @@ final class MaintenanceController extends AbstractRestController {
 		$order_ids   = $batch['order_ids'];
 		$total_found = $batch['total_found'];
 		$batch_total = count( $order_ids );
-		$remaining   = max( 0, $total_found - $batch_total );
-		$truncated   = $remaining > 0;
+		$unprocessed = max( 0, $total_found - $batch_total );
 
 		if ( 0 === $total_found ) {
 			return new WP_REST_Response(
@@ -75,6 +72,9 @@ final class MaintenanceController extends AbstractRestController {
 
 			++$failed;
 		}
+
+		$remaining = $unprocessed + $failed;
+		$truncated = $remaining > 0;
 
 		$message = sprintf(
 			/* translators: 1: queued orders, 2: duplicate orders, 3: failed schedules, 4: remaining failed orders. */
@@ -114,8 +114,9 @@ final class MaintenanceController extends AbstractRestController {
 				'return'     => 'ids',
 				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Bounded maintenance query.
 					array(
-						'key'   => OrderMeta::SYNC_STATUS,
-						'value' => 'failed',
+						'key'     => OrderMeta::SYNC_STATUS,
+						'value'   => OrderMeta::failure_statuses(),
+						'compare' => 'IN',
 					),
 				),
 			)
@@ -125,7 +126,7 @@ final class MaintenanceController extends AbstractRestController {
 		$total  = ( is_object( $query ) && isset( $query->total ) ) ? absint( $query->total ) : count( $orders );
 
 		return array(
-			'order_ids'   => array_values( array_filter( array_map( 'absint', $orders ) ) ),
+			'order_ids'   => NumericIdentifier::positive_list( $orders ),
 			'total_found' => $total,
 		);
 	}

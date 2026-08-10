@@ -38,7 +38,7 @@ final class SettingsController extends AbstractRestController {
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'update' ),
 					'permission_callback' => array( $this, 'can_manage' ),
-					'args'                => $this->schema_args(),
+					'args'                => $this->settings_schema->args(),
 				),
 			)
 		);
@@ -55,7 +55,7 @@ final class SettingsController extends AbstractRestController {
 		}
 
 		$payload = array();
-		foreach ( array_keys( $this->schema_args() ) as $key ) {
+		foreach ( array_keys( $this->settings_schema->args() ) as $key ) {
 			if ( $request->has_param( $key ) ) {
 				$payload[ $key ] = $request->get_param( $key );
 			}
@@ -66,13 +66,11 @@ final class SettingsController extends AbstractRestController {
 			return $validation_error;
 		}
 
-		$this->options->update( $payload );
-		return $this->get();
-	}
+		if ( ! $this->options->update( $payload ) ) {
+			return new WP_Error( 'soocool_settings_save_failed', __( 'Instellingen konden niet worden opgeslagen.', 'soocool-for-woocommerce' ), array( 'status' => 500 ) );
+		}
 
-	/** @return array<string, array<string, mixed>> */
-	private function schema_args(): array {
-		return $this->settings_schema->args();
+		return $this->get();
 	}
 
 }

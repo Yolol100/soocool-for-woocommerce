@@ -30,8 +30,14 @@ final class AssetResolver {
 	}
 
 	public static function version( string $relative_directory, string $file, string $fallback = SOOCOOL_VERSION ): string {
-		$mtime = filemtime( self::path( $relative_directory, $file ) );
+		$path = self::path( $relative_directory, $file );
+		if ( '' === $file || ! is_readable( $path ) ) {
+			return $fallback;
+		}
 
-		return false !== $mtime ? (string) $mtime : $fallback;
+		$mtime        = filemtime( $path );
+		$base_version = '' !== trim( $fallback ) ? trim( $fallback ) : SOOCOOL_VERSION;
+
+		return false !== $mtime ? $base_version . '-' . (string) $mtime : $base_version;
 	}
 }

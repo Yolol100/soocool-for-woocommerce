@@ -13,9 +13,8 @@ abstract class AbstractRestController extends WP_REST_Controller {
 	/**
 	 * REST API namespace.
 	 *
-	 * Inherited WP_REST_Controller properties stay untyped. WordPress core
-	 * declares these properties without native types; typed or readonly
-	 * redeclarations cause fatal errors on modern PHP versions.
+	 * Core leaves these inherited properties untyped, so native type
+	 * redeclarations are not compatible.
 	 *
 	 * @var string
 	 */

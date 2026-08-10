@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Admin;
 
+use SooCool\WooCommerce\Infrastructure\NumericIdentifier;
 use SooCool\WooCommerce\WooCommerce\OrderActions;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Adds a "Naar SooCool versturen" bulk action to the HPOS and legacy orders lists.
- * Work is queued through Action Scheduler when available, with WP-Cron as the
- * fallback, so a large selection never blocks the admin request on a slow SooCool API.
+ * Queues bounded bulk synchronization for HPOS and legacy order lists.
  */
 final class BulkSyncActions {
 
@@ -21,6 +20,7 @@ final class BulkSyncActions {
 	private const QUEUED_PARAM      = 'soocool_bulk_queued';
 	private const SYNCED_PARAM      = 'soocool_bulk_synced';
 	private const FAILED_PARAM      = 'soocool_bulk_failed';
+	private const DUPLICATES_PARAM  = 'soocool_bulk_duplicates';
 	private const REMAINING_PARAM   = 'soocool_bulk_remaining';
 	private const ERROR_PARAM       = 'soocool_bulk_error';
 
@@ -55,7 +55,7 @@ final class BulkSyncActions {
 			return $redirect_to;
 		}
 
-		$order_ids = array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) );
+		$order_ids = NumericIdentifier::positive_list( $ids );
 		$total     = count( $order_ids );
 
 		if ( 0 === $total ) {
@@ -73,17 +73,28 @@ final class BulkSyncActions {
 			);
 		}
 
-		$queued = 0;
+		$queued     = 0;
+		$duplicates = 0;
+		$failed     = 0;
 		foreach ( $order_ids as $order_id ) {
-			if ( OrderActions::QUEUE_SCHEDULED === $this->actions->schedule_send_to_soocool( (int) $order_id ) ) {
+			$result = $this->actions->schedule_send_to_soocool( (int) $order_id );
+			if ( OrderActions::QUEUE_SCHEDULED === $result ) {
 				++$queued;
+				continue;
 			}
+			if ( OrderActions::QUEUE_DUPLICATE === $result ) {
+				++$duplicates;
+				continue;
+			}
+			++$failed;
 		}
 
 		return add_query_arg(
 			array(
-				self::MODE_PARAM   => 'scheduled',
-				self::QUEUED_PARAM => $queued,
+				self::MODE_PARAM       => 'scheduled',
+				self::QUEUED_PARAM     => $queued,
+				self::DUPLICATES_PARAM => $duplicates,
+				self::FAILED_PARAM     => $failed,
 			),
 			$redirect_to
 		);
@@ -94,11 +105,11 @@ final class BulkSyncActions {
 			return;
 		}
 
-		$mode = isset( $_GET[ self::MODE_PARAM ] ) ? sanitize_key( wp_unslash( (string) $_GET[ self::MODE_PARAM ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect notice.
+		$mode = $this->query_key( self::MODE_PARAM ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect notice.
 
 		if ( 'error' === $mode ) {
-			$error = isset( $_GET[ self::ERROR_PARAM ] ) ? sanitize_key( wp_unslash( (string) $_GET[ self::ERROR_PARAM ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect notice.
-			$total = isset( $_GET[ self::QUEUED_PARAM ] ) ? absint( wp_unslash( $_GET[ self::QUEUED_PARAM ] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$error = $this->query_key( self::ERROR_PARAM ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect notice.
+			$total = $this->query_absint( self::QUEUED_PARAM ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 			if ( 'too_many' === $error && $total > self::MAX_BULK_ORDERS ) {
 				printf(
@@ -116,17 +127,20 @@ final class BulkSyncActions {
 		}
 
 		if ( 'scheduled' === $mode ) {
-			$queued = isset( $_GET[ self::QUEUED_PARAM ] ) ? absint( wp_unslash( $_GET[ self::QUEUED_PARAM ] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$message = 0 === $queued
-				? __( 'Er zijn geen nieuwe SooCool achtergrondsynchronisaties ingepland. De geselecteerde orders staan al ingepland.', 'soocool-for-woocommerce' )
-				: sprintf(
-					/* translators: %d: number of orders queued for background sync to SooCool. */
-					_n( '%d nieuwe order is ingepland voor SooCool-synchronisatie op de achtergrond. Orders die al ingepland waren, zijn overgeslagen.', '%d nieuwe orders zijn ingepland voor SooCool-synchronisatie op de achtergrond. Orders die al ingepland waren, zijn overgeslagen.', $queued, 'soocool-for-woocommerce' ),
-					$queued
-				);
+			$queued     = $this->query_absint( self::QUEUED_PARAM );
+			$duplicates = $this->query_absint( self::DUPLICATES_PARAM );
+			$failed     = $this->query_absint( self::FAILED_PARAM ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$message = sprintf(
+				/* translators: 1: queued orders, 2: already queued orders, 3: scheduling failures. */
+				__( '%1$d nieuwe SooCool-synchronisaties ingepland. %2$d stonden al ingepland. %3$d konden niet worden ingepland.', 'soocool-for-woocommerce' ),
+				$queued,
+				$duplicates,
+				$failed
+			);
 
 			printf(
-				'<div class="notice notice-info is-dismissible"><p>%s</p></div>',
+				'<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>',
+				esc_attr( $failed > 0 ? 'warning' : 'info' ),
 				esc_html( $message )
 			);
 			return;
@@ -136,9 +150,9 @@ final class BulkSyncActions {
 			return;
 		}
 
-		$synced    = isset( $_GET[ self::SYNCED_PARAM ] ) ? absint( wp_unslash( $_GET[ self::SYNCED_PARAM ] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$failed    = isset( $_GET[ self::FAILED_PARAM ] ) ? absint( wp_unslash( $_GET[ self::FAILED_PARAM ] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$remaining = isset( $_GET[ self::REMAINING_PARAM ] ) ? absint( wp_unslash( $_GET[ self::REMAINING_PARAM ] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$synced    = $this->query_absint( self::SYNCED_PARAM ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect notice.
+		$failed    = $this->query_absint( self::FAILED_PARAM ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect notice.
+		$remaining = $this->query_absint( self::REMAINING_PARAM ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect notice.
 
 		$message = sprintf(
 			/* translators: %d: number of orders sent to SooCool. */
@@ -168,4 +182,22 @@ final class BulkSyncActions {
 			esc_html( $message )
 		);
 	}
+	private function query_key( string $key ): string {
+		$value = $this->query_scalar( $key );
+		return '' === $value ? '' : sanitize_key( $value );
+	}
+
+	private function query_absint( string $key ): int {
+		$value = $this->query_scalar( $key );
+		return '' === $value ? 0 : absint( $value );
+	}
+
+	private function query_scalar( string $key ): string {
+		if ( ! isset( $_GET[ $key ] ) || ! is_scalar( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect notice.
+			return '';
+		}
+
+		return wp_unslash( (string) $_GET[ $key ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect notice.
+	}
+
 }

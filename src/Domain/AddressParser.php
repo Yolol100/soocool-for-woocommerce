@@ -20,8 +20,8 @@ final class AddressParser {
 			);
 		}
 
-		if ( preg_match( '/^(.*?)[\s,]+(\d+[\d\w\-\/ ]*)$/u', $street, $matches ) ) {
-			$parsed_street = trim( (string) $matches[1] );
+		if ( preg_match( '/^(.*)[\s,]+(\d+(?:\s*[\p{L}]|[-\/][\p{L}\d]+)?(?:\s+(?:bis|hs|hoog|sous|rood|zwart))?)$/ui', $street, $matches ) ) {
+			$parsed_street = rtrim( trim( (string) $matches[1] ), ',' );
 			$parsed_number = trim( (string) $matches[2] );
 			if ( '' !== $parsed_street && '' !== $parsed_number ) {
 				return array(

@@ -17,9 +17,11 @@ final class ShippingLabelOrderResolver {
 		$orders = array();
 		foreach ( $order_ids as $selected_order_id ) {
 			$order = wc_get_order( $selected_order_id );
-			if ( $order instanceof WC_Order ) {
-				$orders[] = $order;
+			if ( ! $order instanceof WC_Order ) {
+				return array();
 			}
+
+			$orders[] = $order;
 		}
 
 		return $orders;
@@ -34,7 +36,16 @@ final class ShippingLabelOrderResolver {
 	public function good_ids_from_orders( array $orders ): array {
 		$good_ids = array();
 		foreach ( $orders as $order ) {
-			foreach ( $this->stored_good_ids( $order ) as $good_id ) {
+			if ( ! $order instanceof WC_Order ) {
+				return array();
+			}
+
+			$order_good_ids = $this->stored_good_ids( $order );
+			if ( array() === $order_good_ids ) {
+				return array();
+			}
+
+			foreach ( $order_good_ids as $good_id ) {
 				$good_ids[] = $good_id;
 			}
 		}

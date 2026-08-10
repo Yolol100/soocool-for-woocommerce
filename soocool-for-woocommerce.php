@@ -2,15 +2,15 @@
 /**
  * Plugin Name: SooCool for WooCommerce
  * Description: Koppelt WooCommerce-orders aan de SooCool transport-API.
- * Version: 0.5.35
+ * Version: 0.7.24
  * Author: Webactueel
  * Text Domain: soocool-for-woocommerce
  * Domain Path: /languages
  * Requires PHP: 8.1
  * Requires at least: 6.5
  * Requires Plugins: woocommerce
- * WC requires at least: 8.0
- * WC tested up to: 10.8
+ * WC requires at least: 8.2
+ * WC tested up to: 10.9
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Update URI: false
@@ -25,17 +25,21 @@ defined( 'ABSPATH' ) || exit;
 define( 'SOOCOOL_PLUGIN_FILE', __FILE__ );
 define( 'SOOCOOL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SOOCOOL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'SOOCOOL_VERSION', '0.5.35' );
+define( 'SOOCOOL_VERSION', '0.7.24' );
 
 if ( ! function_exists( 'soocool_deactivate_legacy_duplicate_plugin' ) ) {
-	function soocool_deactivate_legacy_duplicate_plugin(): void {
+	function soocool_deactivate_legacy_duplicate_plugin( bool $require_capability = true ): void {
+		if ( $require_capability && ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'activate_plugins' ) ) ) {
+			return;
+		}
+
 		if ( ! function_exists( 'deactivate_plugins' ) || ! function_exists( 'plugin_basename' ) || ! function_exists( 'is_plugin_active' ) ) {
 			return;
 		}
 
 		$current_basename = plugin_basename( __FILE__ );
 		$legacy_basename  = 'soocool-for-woocommerce-main/soocool-for-woocommerce.php';
-		if ( 'soocool-for-woocommerce/soocool-for-woocommerce.php' !== $current_basename || $legacy_basename === $current_basename ) {
+		if ( 'soocool-for-woocommerce/soocool-for-woocommerce.php' !== $current_basename ) {
 			return;
 		}
 
@@ -50,6 +54,7 @@ add_action(
 	static function (): void {
 		if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
 			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', __FILE__, false );
 		}
 	}
 );
@@ -93,13 +98,14 @@ register_deactivation_hook(
 	__FILE__,
 	static function (): void {
 		SooCool\WooCommerce\WooCommerce\OrderActions::unschedule_all();
+		SooCool\WooCommerce\Rest\WebhookAuthenticator::unschedule_cleanup();
 	}
 );
 
 register_activation_hook(
 	__FILE__,
 	static function (): void {
-		soocool_deactivate_legacy_duplicate_plugin();
+		soocool_deactivate_legacy_duplicate_plugin( false );
 		if ( PHP_VERSION_ID < 80100 ) {
 			deactivate_plugins( plugin_basename( __FILE__ ) );
 			wp_die( esc_html__( 'SooCool for WooCommerce vereist PHP 8.1 of hoger.', 'soocool-for-woocommerce' ) );
@@ -116,25 +122,34 @@ register_activation_hook(
 );
 
 add_action(
-	'plugins_loaded',
+	'init',
 	static function (): void {
 		load_plugin_textdomain(
 			'soocool-for-woocommerce',
 			false,
 			dirname( plugin_basename( __FILE__ ) ) . '/languages'
 		);
+	},
+	0
+);
 
+add_action(
+	'plugins_loaded',
+	static function (): void {
 		if ( PHP_VERSION_ID < 80100 ) {
 			add_action(
 				'admin_notices',
 				static function (): void {
+					if ( ! current_user_can( 'activate_plugins' ) ) {
+						return;
+					}
+
 					echo '<div class="notice notice-error"><p>' . esc_html__( 'SooCool for WooCommerce vereist PHP 8.1 of hoger.', 'soocool-for-woocommerce' ) . '</p></div>';
 				}
 			);
 			return;
 		}
 
-		( new SooCool\WooCommerce\Infrastructure\OptionRepository() )->migrate_for_current_version();
 		SooCool\WooCommerce\Plugin::boot();
 	}
 );

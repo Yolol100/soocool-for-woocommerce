@@ -13,8 +13,12 @@ final class DeliveryCheckoutRequest {
 
 	public function posted_delivery_date(): string {
 		$value = $this->posted_value( self::FIELD_DATE );
+		if ( 1 !== preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) ) {
+			return '';
+		}
 
-		return 1 === preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) ? $value : '';
+		$parts = array_map( 'intval', explode( '-', $value ) );
+		return checkdate( $parts[1], $parts[2], $parts[0] ) ? $value : '';
 	}
 
 	/** @return array{time_from:string,time_to:string} */
@@ -46,7 +50,30 @@ final class DeliveryCheckoutRequest {
 			return sanitize_text_field( (string) $posted_data[ $field ] );
 		}
 
+		if ( function_exists( 'WC' ) && WC() && WC()->session && in_array( $field, array( self::FIELD_DATE, self::FIELD_TIME_SLOT ), true ) ) {
+			$value = WC()->session->get( $field, '' );
+			return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
+		}
+
 		return '';
+	}
+
+	public function persist_selection( string $date, string $time_from, string $time_to ): void {
+		if ( ! function_exists( 'WC' ) || ! WC() || ! WC()->session ) {
+			return;
+		}
+
+		WC()->session->set( self::FIELD_DATE, $date );
+		WC()->session->set( self::FIELD_TIME_SLOT, $time_from . '|' . $time_to );
+	}
+
+	public function clear_persisted_selection(): void {
+		if ( ! function_exists( 'WC' ) || ! WC() || ! WC()->session ) {
+			return;
+		}
+
+		WC()->session->__unset( self::FIELD_DATE );
+		WC()->session->__unset( self::FIELD_TIME_SLOT );
 	}
 
 	/** @param array<int, array<string, mixed>> $options */

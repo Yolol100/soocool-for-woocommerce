@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Domain;
 
+use SooCool\WooCommerce\Domain\RemoteStatusPolicy;
 use SooCool\WooCommerce\Api\ApiClient;
 use SooCool\WooCommerce\Api\ApiException;
+use SooCool\WooCommerce\Infrastructure\Logger;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use SooCool\WooCommerce\Infrastructure\SecretSanitizer;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
@@ -23,7 +25,8 @@ final class OrderSyncCoordinator {
 		private readonly OptionRepository $options,
 		private readonly OrderSyncService $sync,
 		private readonly RemoteStatusMapper $remote_status,
-		private readonly SecretSanitizer $sanitizer
+		private readonly SecretSanitizer $sanitizer,
+		private readonly Logger $logger
 	) {}
 
 	/** @return array<string, mixed> */
@@ -35,12 +38,18 @@ final class OrderSyncCoordinator {
 
 		$order_id = (int) $order->get_id();
 		if ( ! $this->sync->acquire_lock( $order_id ) ) {
-			return $this->result( false, __( 'SooCool-synchronisatie draait al voor deze order. Probeer het zo opnieuw.', 'soocool-for-woocommerce' ), 409 );
+			return $this->result(
+				false,
+				__( 'SooCool-synchronisatie draait al voor deze order. Probeer het zo opnieuw.', 'soocool-for-woocommerce' ),
+				409,
+				array( 'retryable' => true )
+			);
 		}
 
 		try {
 			$this->meta->save_pending( $order );
 			$payload        = $this->builder->build( $order );
+			$this->assert_lock_refreshed( $order_id );
 			$existing_order = $this->sync->find_existing_order( (string) $payload['orderReference'] );
 			if ( array() !== $existing_order ) {
 				$soocool_order_id = $this->meta->extract_order_id( $existing_order );
@@ -51,17 +60,18 @@ final class OrderSyncCoordinator {
 					200,
 					array(
 						'orderId'      => $soocool_order_id,
-						'ourReference' => isset( $existing_order['ourReference'] ) ? sanitize_text_field( (string) $existing_order['ourReference'] ) : sanitize_text_field( (string) $payload['orderReference'] ),
+						'ourReference' => $this->response_reference( $existing_order, (string) $payload['orderReference'] ),
 						'existing'     => true,
 					)
 				);
 			}
 
+			$this->assert_lock_refreshed( $order_id );
 			$response         = $this->client->create_order( $payload );
 			$body             = is_array( $response->body() ) ? $response->body() : array();
 			$soocool_order_id = $this->meta->extract_order_id( $body );
 			if ( '' === $soocool_order_id ) {
-				throw new ApiException( esc_html__( 'SooCool gaf geen geldige order-ID terug.', 'soocool-for-woocommerce' ) );
+				throw new ApiException( __( 'SooCool gaf geen geldige order-ID terug.', 'soocool-for-woocommerce' ), 502 );
 			}
 
 			$this->meta->save_success( $order, $body, (string) $payload['orderReference'] );
@@ -71,7 +81,7 @@ final class OrderSyncCoordinator {
 				200,
 				array(
 					'orderId'      => $soocool_order_id,
-					'ourReference' => isset( $body['ourReference'] ) ? sanitize_text_field( (string) $body['ourReference'] ) : sanitize_text_field( (string) $payload['orderReference'] ),
+					'ourReference' => $this->response_reference( $body, (string) $payload['orderReference'] ),
 					'existing'     => false,
 				)
 			);
@@ -84,8 +94,9 @@ final class OrderSyncCoordinator {
 			$template = __( 'SooCool-synchronisatie mislukt: %s', 'soocool-for-woocommerce' );
 			$message  = $this->public_api_error_message( $exception, __( 'SooCool-synchronisatie mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ), $template );
 			$this->meta->save_error( $order, $message );
-			return $this->result( false, $message, $this->safe_status_code( $exception->status_code() ) );
-		} catch ( \Throwable ) {
+			return $this->result( false, $message, $this->safe_status_code( $exception->status_code() ), array( 'retryable' => $exception->is_retryable() ) );
+		} catch ( \Throwable $exception ) {
+			$this->log_unexpected_error( 'sync', $order, $exception );
 			$message = __( 'SooCool-synchronisatie is onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details.', 'soocool-for-woocommerce' );
 			$this->meta->save_error( $order, $message );
 			return $this->result( false, $message, 500 );
@@ -101,9 +112,16 @@ final class OrderSyncCoordinator {
 			return $this->result( false, __( 'SooCool-update overgeslagen omdat deze WooCommerce-order nog niet aan een SooCool order-ID is gekoppeld.', 'soocool-for-woocommerce' ), 409 );
 		}
 
+		$order_id = (int) $order->get_id();
+		if ( ! $this->sync->acquire_lock( $order_id ) ) {
+			return $this->result( false, __( 'Er draait al een SooCool-actie voor deze order. Probeer het zo opnieuw.', 'soocool-for-woocommerce' ), 409 );
+		}
+
 		try {
 			$payload = $this->builder->build( $order );
+			$this->assert_lock_refreshed( $order_id );
 			$this->client->update_order( $soocool_order_id, $payload );
+			$this->assert_lock_refreshed( $order_id );
 			$this->meta->save_updated( $order );
 			return $this->result( true, __( 'Bestaande SooCool-order bijgewerkt.', 'soocool-for-woocommerce' ) );
 		} catch ( PayloadValidationException $exception ) {
@@ -115,11 +133,14 @@ final class OrderSyncCoordinator {
 			$template = __( 'SooCool-update mislukt: %s', 'soocool-for-woocommerce' );
 			$message  = $this->public_api_error_message( $exception, __( 'SooCool-update mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ), $template );
 			$this->meta->save_error( $order, $message );
-			return $this->result( false, $message, $this->safe_status_code( $exception->status_code() ) );
-		} catch ( \Throwable ) {
+			return $this->result( false, $message, $this->safe_status_code( $exception->status_code() ), array( 'retryable' => $exception->is_retryable() ) );
+		} catch ( \Throwable $exception ) {
+			$this->log_unexpected_error( 'update', $order, $exception );
 			$message = __( 'SooCool-update onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details.', 'soocool-for-woocommerce' );
 			$this->meta->save_error( $order, $message );
 			return $this->result( false, $message, 500 );
+		} finally {
+			$this->sync->release_lock( $order_id );
 		}
 	}
 
@@ -130,15 +151,25 @@ final class OrderSyncCoordinator {
 			return $this->result( false, __( 'SooCool-statusupdate overgeslagen omdat deze WooCommerce-order niet aan een SooCool order-ID is gekoppeld.', 'soocool-for-woocommerce' ), 409 );
 		}
 
+		$order_id = (int) $order->get_id();
+		if ( ! $this->sync->acquire_lock( $order_id ) ) {
+			return $this->result( false, __( 'Er draait al een SooCool-actie voor deze order. Probeer het zo opnieuw.', 'soocool-for-woocommerce' ), 409 );
+		}
+
 		try {
+			$this->assert_lock_refreshed( $order_id );
 			$response = $this->client->get_order( $soocool_order_id );
+			$this->assert_lock_refreshed( $order_id );
 			$body     = is_array( $response->body() ) ? $response->body() : array();
 			if ( array() === $body ) {
-				throw new ApiException( esc_html__( 'SooCool gaf geen geldige orderresponse terug.', 'soocool-for-woocommerce' ) );
+				throw new ApiException( __( 'SooCool gaf geen geldige orderresponse terug.', 'soocool-for-woocommerce' ), 502 );
 			}
 
-			if ( '' === $this->meta->extract_order_id( $body ) ) {
+			$remote_order_id = $this->meta->extract_order_id( $body );
+			if ( '' === $remote_order_id ) {
 				$body['orderId'] = $soocool_order_id;
+			} elseif ( ! hash_equals( $soocool_order_id, $remote_order_id ) ) {
+				throw new ApiException( __( 'SooCool gaf een andere order-ID terug dan de opgevraagde order.', 'soocool-for-woocommerce' ), 502 );
 			}
 
 			$this->meta->save_success( $order, $body, $this->meta->get_our_reference( $order ) );
@@ -156,11 +187,14 @@ final class OrderSyncCoordinator {
 			$template = __( 'SooCool-statusupdate mislukt: %s', 'soocool-for-woocommerce' );
 			$message  = $this->public_api_error_message( $exception, __( 'SooCool-statusupdate mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ), $template );
 			$this->meta->save_error( $order, $message );
-			return $this->result( false, $message, $this->safe_status_code( $exception->status_code() ) );
-		} catch ( \Throwable ) {
+			return $this->result( false, $message, $this->safe_status_code( $exception->status_code() ), array( 'retryable' => $exception->is_retryable() ) );
+		} catch ( \Throwable $exception ) {
+			$this->log_unexpected_error( 'refresh', $order, $exception );
 			$message = __( 'SooCool-statusupdate onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details.', 'soocool-for-woocommerce' );
 			$this->meta->save_error( $order, $message );
 			return $this->result( false, $message, 500 );
+		} finally {
+			$this->sync->release_lock( $order_id );
 		}
 	}
 
@@ -171,21 +205,94 @@ final class OrderSyncCoordinator {
 			return $this->result( false, __( 'SooCool-annulering overgeslagen omdat deze WooCommerce-order niet aan een SooCool order-ID is gekoppeld.', 'soocool-for-woocommerce' ), 409 );
 		}
 
+		$order_id = (int) $order->get_id();
+		if ( ! $this->sync->acquire_lock( $order_id ) ) {
+			return $this->result( false, __( 'Er draait al een SooCool-actie voor deze order. Probeer het zo opnieuw.', 'soocool-for-woocommerce' ), 409, array( 'retryable' => true ) );
+		}
+
 		try {
+			$this->assert_lock_refreshed( $order_id );
+			try {
+				$remote_response = $this->client->get_order( $soocool_order_id );
+				$remote_order    = is_array( $remote_response->body() ) ? $remote_response->body() : array();
+			} catch ( ApiException $exception ) {
+				if ( 404 !== $exception->status_code() ) {
+					throw $exception;
+				}
+				$this->meta->save_cancelled( $order );
+				return $this->result( true, __( 'SooCool-order bestond niet meer en is lokaal als geannuleerd verwerkt.', 'soocool-for-woocommerce' ), 200, array( 'idempotent' => true ) );
+			}
+
+			$remote_data   = $this->remote_status->map( $remote_order );
+			$remote_status = (string) ( $remote_data['status'] ?? '' );
+			$cancellable   = (bool) apply_filters(
+				'soocool_remote_order_cancellable',
+				$this->remote_status_policy()->allows_remote_cancel( $remote_status ),
+				$remote_order,
+				$order,
+				$remote_status
+			);
+			if ( ! $cancellable ) {
+				return $this->result( false, __( 'De huidige SooCool-status staat annulering via de plugin niet toe. Controleer de order handmatig in SooCool.', 'soocool-for-woocommerce' ), 409, array( 'manual_intervention' => true ) );
+			}
+
+			$this->assert_lock_refreshed( $order_id );
 			$this->client->cancel_order( $soocool_order_id );
+			$this->assert_lock_refreshed( $order_id );
 			$this->meta->save_cancelled( $order );
 			return $this->result( true, __( 'SooCool-order geannuleerd.', 'soocool-for-woocommerce' ) );
 		} catch ( ApiException $exception ) {
+			if ( 404 === $exception->status_code() ) {
+				$this->meta->save_cancelled( $order );
+				return $this->result( true, __( 'SooCool-order bestond niet meer en is lokaal als geannuleerd verwerkt.', 'soocool-for-woocommerce' ), 200, array( 'idempotent' => true ) );
+			}
 			/* translators: %s: Sanitized SooCool API error details. */
 			$template = __( 'SooCool-annulering mislukt: %s', 'soocool-for-woocommerce' );
 			$message  = $this->public_api_error_message( $exception, __( 'SooCool-annulering mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ), $template );
 			$this->meta->save_error( $order, $message );
-			return $this->result( false, $message, $this->safe_status_code( $exception->status_code() ) );
-		} catch ( \Throwable ) {
+			return $this->result( false, $message, $this->safe_status_code( $exception->status_code() ), array( 'retryable' => $exception->is_retryable() ) );
+		} catch ( \Throwable $exception ) {
+			$this->log_unexpected_error( 'cancel', $order, $exception );
 			$message = __( 'SooCool-annulering onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details.', 'soocool-for-woocommerce' );
 			$this->meta->save_error( $order, $message );
 			return $this->result( false, $message, 500 );
+		} finally {
+			$this->sync->release_lock( $order_id );
 		}
+	}
+
+	private function remote_status_policy(): RemoteStatusPolicy {
+		return new RemoteStatusPolicy();
+	}
+
+	private function assert_lock_refreshed( int $order_id ): void {
+		if ( ! $this->sync->refresh_lock( $order_id ) ) {
+			throw new ApiException( __( 'De SooCool-orderlock kon niet veilig worden vernieuwd. De actie is gestopt om parallelle verwerking te voorkomen.', 'soocool-for-woocommerce' ), 409 );
+		}
+	}
+
+	private function log_unexpected_error( string $action, WC_Order $order, \Throwable $exception ): void {
+		$this->logger->error(
+			'Unexpected SooCool order action error.',
+			array(
+				'action'    => sanitize_key( $action ),
+				'wcOrderId' => (string) $order->get_id(),
+				'error'     => $exception->getMessage(),
+			)
+		);
+	}
+
+	/** @param array<string, mixed> $body */
+	private function response_reference( array $body, string $fallback ): string {
+		$value = $body['ourReference'] ?? null;
+		if ( is_scalar( $value ) ) {
+			$reference = trim( sanitize_text_field( (string) $value ) );
+			if ( '' !== $reference ) {
+				return $reference;
+			}
+		}
+
+		return sanitize_text_field( $fallback );
 	}
 
 	/** @param array<string, mixed> $data @return array<string, mixed> */

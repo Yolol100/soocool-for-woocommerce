@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Admin;
 
+use SooCool\WooCommerce\WooCommerce\OrderActions;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Adds a "SooCool" sync-status column and a status filter dropdown to both the
- * HPOS and the legacy WooCommerce orders list tables.
+ * Adds SooCool status controls to HPOS and legacy WooCommerce order lists.
  */
 final class OrderListColumn {
 
@@ -77,8 +77,8 @@ final class OrderListColumn {
 	}
 
 	private function render_badge( WC_Order $order ): void {
-		$status   = (string) $order->get_meta( OrderMeta::SYNC_STATUS, true );
-		$tracking = (string) $order->get_meta( OrderMeta::TRACKING_CODE, true );
+		$status   = $this->meta->get_sync_status( $order );
+		$tracking = $this->meta->get_tracking_code( $order );
 
 		printf(
 			'<span class="%1$s">%2$s</span>',
@@ -90,7 +90,37 @@ final class OrderListColumn {
 			echo '<br /><small class="soocool-order-tracking-code">' . esc_html( $tracking ) . '</small>';
 		}
 
+		$this->render_sync_action( $order, $status );
 		$this->render_label_links( $order );
+	}
+
+	private function render_sync_action( WC_Order $order, string $status ): void {
+		if ( ! current_user_can( 'manage_woocommerce' ) || $this->meta->is_synced( $order ) ) {
+			return;
+		}
+
+		$order_id = absint( $order->get_id() );
+		if ( 0 >= $order_id ) {
+			return;
+		}
+
+		$status       = sanitize_key( $status );
+		$is_failed    = in_array( $status, $this->presenter->failed_statuses(), true );
+		$is_pending   = in_array( $status, $this->presenter->pending_statuses(), true );
+		$button_label = $is_failed
+			? __( 'Opnieuw synchroniseren', 'soocool-for-woocommerce' )
+			: ( $is_pending ? __( 'Nu synchroniseren', 'soocool-for-woocommerce' ) : __( 'Synchroniseer nu', 'soocool-for-woocommerce' ) );
+
+		echo '<div class="soocool-list-sync-action soocool-order-sync-action">';
+		echo '<button type="button" class="button button-secondary soocool-list-sync-action__button" data-soocool-manual-sync="1" data-action="' . esc_attr( OrderActions::MANUAL_SYNC_AJAX_ACTION ) . '" data-order-id="' . esc_attr( (string) $order_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( OrderActions::MANUAL_SYNC_NONCE_ACTION . $order_id ) ) . '" data-soocool-confirm="' . esc_attr__( 'Deze order nu naar SooCool synchroniseren?', 'soocool-for-woocommerce' ) . '">' . esc_html( $button_label ) . '</button>';
+		echo '<div class="soocool-order-alert soocool-manual-sync-feedback" hidden aria-live="polite"></div>';
+
+		$error = $this->meta->get_last_error( $order );
+		if ( $is_failed && '' !== $error ) {
+			echo '<details class="soocool-list-sync-error-details"><summary>' . esc_html__( 'Foutdetail', 'soocool-for-woocommerce' ) . '</summary><small class="soocool-list-sync-error">' . esc_html( $error ) . '</small></details>';
+		}
+
+		echo '</div>';
 	}
 
 	private function render_label_links( WC_Order $order ): void {
@@ -131,7 +161,7 @@ final class OrderListColumn {
 	}
 
 	private function print_select(): void {
-		$selected = isset( $_GET[ self::FILTER_PARAM ] ) ? sanitize_key( wp_unslash( (string) $_GET[ self::FILTER_PARAM ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list filter.
+		$selected = $this->selected_filter(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list filter.
 
 		echo '<select name="' . esc_attr( self::FILTER_PARAM ) . '" id="soocool-sync-filter">';
 		echo '<option value="">' . esc_html__( 'SooCool: alles', 'soocool-for-woocommerce' ) . '</option>';
@@ -151,7 +181,7 @@ final class OrderListColumn {
 	 * @return array<string, mixed>
 	 */
 	public function filter_hpos_query_args( array $query_args ): array {
-		$filter = isset( $_GET[ self::FILTER_PARAM ] ) ? sanitize_key( wp_unslash( (string) $_GET[ self::FILTER_PARAM ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list filter.
+		$filter = $this->selected_filter(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list filter.
 		$clause = $this->meta_query_clause( $filter );
 		if ( array() === $clause ) {
 			return $query_args;
@@ -169,7 +199,7 @@ final class OrderListColumn {
 			return;
 		}
 
-		$filter = isset( $_GET[ self::FILTER_PARAM ] ) ? sanitize_key( wp_unslash( (string) $_GET[ self::FILTER_PARAM ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list filter.
+		$filter = $this->selected_filter(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list filter.
 		$clause = $this->meta_query_clause( $filter );
 		if ( array() === $clause ) {
 			return;
@@ -232,4 +262,12 @@ final class OrderListColumn {
 
 		return array();
 	}
+	private function selected_filter(): string {
+		if ( ! isset( $_GET[ self::FILTER_PARAM ] ) || ! is_scalar( $_GET[ self::FILTER_PARAM ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list filter.
+			return '';
+		}
+
+		return sanitize_key( wp_unslash( (string) $_GET[ self::FILTER_PARAM ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list filter.
+	}
+
 }

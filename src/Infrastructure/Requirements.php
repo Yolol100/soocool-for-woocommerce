@@ -8,7 +8,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class Requirements {
 
-	private const MINIMUM_WOOCOMMERCE_VERSION = '8.0';
+	private const MINIMUM_WOOCOMMERCE_VERSION = '8.2';
 
 	public function is_supported(): bool {
 		return '' === $this->get_missing_message();

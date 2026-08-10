@@ -6,6 +6,7 @@ namespace SooCool\WooCommerce\Rest;
 
 use SooCool\WooCommerce\Domain\OrderSyncCoordinator;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
+use WC_Order;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -28,12 +29,12 @@ final class OrderSyncController extends AbstractRestController {
 					'id'    => array(
 						'type'              => 'integer',
 						'sanitize_callback' => 'absint',
-						'validate_callback' => static fn ( $value ): bool => absint( $value ) > 0,
+						'validate_callback' => static fn ( $value ): bool => is_scalar( $value ) && absint( $value ) > 0,
 					),
 					'force' => array(
 						'type'              => 'boolean',
 						'required'          => false,
-						'sanitize_callback' => static fn ( $value ): bool => filter_var( $value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE ) ?? (bool) $value,
+						'sanitize_callback' => static fn ( $value ): bool => is_scalar( $value ) ? ( filter_var( $value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE ) ?? false ) : false,
 					),
 				),
 			)
@@ -42,7 +43,7 @@ final class OrderSyncController extends AbstractRestController {
 
 	public function sync( WP_REST_Request $request ): WP_REST_Response {
 		$order = wc_get_order( (int) $request['id'] );
-		if ( ! $order ) {
+		if ( ! $order instanceof WC_Order ) {
 			return new WP_REST_Response(
 				array(
 					'success' => false,
@@ -64,7 +65,7 @@ final class OrderSyncController extends AbstractRestController {
 			);
 		}
 
-		$result = $this->coordinator->sync_order( $order, $requested_force && (bool) $settings['allow_resubmit'] );
+		$result = $this->coordinator->sync_order( $order, $requested_force );
 		$status = (int) ( $result['status'] ?? 200 );
 		unset( $result['status'] );
 

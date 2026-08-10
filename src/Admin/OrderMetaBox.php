@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Admin;
 
+use SooCool\WooCommerce\Infrastructure\NumericIdentifier;
 use SooCool\WooCommerce\Checkout\DeliverySchedule;
 use SooCool\WooCommerce\Domain\OrderSyncCoordinator;
 use SooCool\WooCommerce\WooCommerce\OrderActions;
@@ -39,9 +40,9 @@ final class OrderMetaBox {
 		}
 
 		$soocool_order_id = $this->meta->get_soocool_order_id( $order );
-		$status           = (string) $order->get_meta( OrderMeta::SYNC_STATUS, true );
-		$error            = (string) $order->get_meta( OrderMeta::LAST_ERROR, true );
-		$tracking_code    = (string) $order->get_meta( OrderMeta::TRACKING_CODE, true );
+		$status           = $this->meta->get_sync_status( $order );
+		$error            = $this->meta->get_last_error( $order );
+		$tracking_code    = $this->meta->get_tracking_code( $order );
 		$good_ids         = $this->meta->get_good_ids( $order );
 		$delivery_label  = $this->meta->get_requested_delivery_label( $order );
 		$delivery_date   = $this->meta->get_requested_delivery_date( $order );
@@ -84,7 +85,6 @@ final class OrderMetaBox {
 		}
 		echo '</div>';
 	}
-
 
 	private function render_sync_action( WC_Order $order, string $status ): void {
 		if ( $this->meta->is_synced( $order ) ) {
@@ -155,6 +155,8 @@ final class OrderMetaBox {
 		$notice = isset( $_GET['soocool_notice'] ) && is_scalar( $_GET['soocool_notice'] ) ? sanitize_key( wp_unslash( (string) $_GET['soocool_notice'] ) ) : '';
 		if ( 'delivery_date_updated' === $notice ) {
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'SooCool bezorgmoment bijgewerkt.', 'soocool-for-woocommerce' ) . '</p></div>';
+		} elseif ( 'delivery_date_updated_remote_failed' === $notice ) {
+			echo '<div class="notice notice-warning is-dismissible"><p>' . esc_html__( 'SooCool bezorgmoment bijgewerkt.', 'soocool-for-woocommerce' ) . ' ' . esc_html__( 'SooCool-update na wijziging van het bezorgmoment is mislukt.', 'soocool-for-woocommerce' ) . '</p></div>';
 		} elseif ( 'invalid_delivery_date' === $notice ) {
 			echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__( 'Kies een geldig beschikbaar SooCool bezorgmoment.', 'soocool-for-woocommerce' ) . '</p></div>';
 		} elseif ( 'sync_success' === $notice ) {
@@ -166,7 +168,7 @@ final class OrderMetaBox {
 
 	public function handle_update_delivery_date(): void {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Order ID is needed to build the nonce action and is sanitized before use; nonce is checked immediately below.
-		$order_id = isset( $_POST['order_id'] ) && is_scalar( $_POST['order_id'] ) ? absint( wp_unslash( (string) $_POST['order_id'] ) ) : 0;
+		$order_id = isset( $_POST['order_id'] ) && is_scalar( $_POST['order_id'] ) ? ( NumericIdentifier::positive( wp_unslash( (string) $_POST['order_id'] ) ) ?? 0 ) : 0;
 		if ( 0 >= $order_id ) {
 			wp_die( esc_html__( 'Ongeldige order.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
 		}
@@ -193,17 +195,21 @@ final class OrderMetaBox {
 		$time_from = (string) ( $parts[1] ?? '' );
 		$time_to   = (string) ( $parts[2] ?? '' );
 
-		if ( ! $this->schedule->is_valid_date( $date ) || ! $this->schedule->is_valid_time_slot( $date, $time_from, $time_to ) ) {
+		$new_time = $this->schedule->available_time_slot_label( $date, $time_from, $time_to );
+		if ( '' === $new_time ) {
 			$this->redirect_with_notice( $order, 'invalid_delivery_date' );
 		}
 
 		$current_date  = $this->meta->get_requested_delivery_date( $order );
 		$current_label = $this->meta->get_requested_delivery_label( $order );
+		$current_from  = $this->meta->get_requested_delivery_time_from( $order );
+		$current_to    = $this->meta->get_requested_delivery_time_to( $order );
 		$current_time  = $this->meta->get_requested_delivery_time_label( $order );
 		$new_label     = $this->schedule->format_label( $date );
-		$new_time      = $this->schedule->format_time_slot_label( $time_from, $time_to );
 
-		$changed = $date !== $current_date || $time_from !== $this->meta->get_requested_delivery_time_from( $order ) || $time_to !== $this->meta->get_requested_delivery_time_to( $order );
+		$moment_changed = $date !== $current_date || $time_from !== $current_from || $time_to !== $current_to;
+		$labels_changed = $new_label !== $current_label || $new_time !== $current_time;
+		$changed        = $moment_changed || $labels_changed;
 		if ( $changed ) {
 			$order->update_meta_data( OrderMeta::REQUESTED_DELIVERY_DATE, $date );
 			$order->update_meta_data( OrderMeta::REQUESTED_DELIVERY_LABEL, $new_label );
@@ -226,22 +232,23 @@ final class OrderMetaBox {
 			);
 		}
 
-		$this->sync_delivery_moment_to_soocool( $order );
-		$this->redirect_with_notice( $order, 'delivery_date_updated' );
+		$remote_updated = ! $moment_changed || $this->sync_delivery_moment_to_soocool( $order );
+		$this->redirect_with_notice( $order, $remote_updated ? 'delivery_date_updated' : 'delivery_date_updated_remote_failed' );
 	}
 
-	private function sync_delivery_moment_to_soocool( WC_Order $order ): void {
+	private function sync_delivery_moment_to_soocool( WC_Order $order ): bool {
 		if ( '' === $this->meta->get_soocool_order_id( $order ) ) {
-			return;
+			return true;
 		}
 
 		$result = $this->coordinator->update_order( $order );
 		if ( (bool) ( $result['success'] ?? false ) ) {
 			$order->add_order_note( __( 'SooCool-order bijgewerkt met het gekozen bezorgmoment.', 'soocool-for-woocommerce' ) );
-			return;
+			return true;
 		}
 
 		$order->add_order_note( sanitize_text_field( (string) ( $result['message'] ?? __( 'SooCool-update na wijziging van het bezorgmoment is mislukt.', 'soocool-for-woocommerce' ) ) ) );
+		return false;
 	}
 
 	private function render_delivery_date_editor( WC_Order $order, string $current_date, string $current_label, string $current_time_from, string $current_time_to ): void {
