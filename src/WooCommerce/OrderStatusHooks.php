@@ -16,13 +16,14 @@ final class OrderStatusHooks {
 	public function register(): void {
 		add_action( 'woocommerce_order_status_changed', array( $this, 'maybe_auto_submit' ), 10, 4 );
 		add_action( 'woocommerce_checkout_order_created', array( $this, 'maybe_auto_submit_created_order' ), 20 );
+		add_action( 'woocommerce_checkout_order_processed', array( $this, 'maybe_auto_submit_processed_order' ), 20, 3 );
 		add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'maybe_auto_submit_created_order' ), 20 );
 	}
 
 	public function maybe_auto_submit( int $order_id, string $old_status, string $new_status, mixed $order = null ): void {
 		unset( $old_status );
 		$settings = $this->options->all();
-		if ( ! (bool) $settings['auto_submit_enabled'] || $new_status !== (string) $settings['auto_submit_status'] ) {
+		if ( ! (bool) $settings['auto_submit_enabled'] || ! $this->matches_auto_submit_status( $new_status, (string) $settings['auto_submit_status'] ) ) {
 			return;
 		}
 
@@ -43,13 +44,22 @@ final class OrderStatusHooks {
 		);
 	}
 
+	public function maybe_auto_submit_processed_order( int $order_id, mixed $posted_data = null, mixed $order = null ): void {
+		unset( $posted_data );
+		if ( ! $order instanceof WC_Order ) {
+			$order = wc_get_order( $order_id );
+		}
+
+		$this->maybe_auto_submit_created_order( $order );
+	}
+
 	public function maybe_auto_submit_created_order( mixed $order ): void {
 		if ( ! $order instanceof WC_Order ) {
 			return;
 		}
 
 		$settings = $this->options->all();
-		if ( ! (bool) $settings['auto_submit_enabled'] || ! $this->created_order_matches_auto_submit_status( $order->get_status(), (string) $settings['auto_submit_status'] ) ) {
+		if ( ! (bool) $settings['auto_submit_enabled'] || ! $this->matches_auto_submit_status( $order->get_status(), (string) $settings['auto_submit_status'] ) ) {
 			return;
 		}
 		if ( ! $this->order_requires_delivery( $order ) ) {
@@ -84,7 +94,7 @@ final class OrderStatusHooks {
 		$order->add_order_note( __( 'SooCool-synchronisatie kon niet op de achtergrond worden ingepland. Gebruik de knop “Synchroniseer nu met SooCool” of controleer WooCommerce Action Scheduler en WP-Cron.', 'soocool-for-woocommerce' ) );
 	}
 
-	private function created_order_matches_auto_submit_status( string $order_status, string $configured_status ): bool {
+	private function matches_auto_submit_status( string $order_status, string $configured_status ): bool {
 		$order_status      = sanitize_key( $order_status );
 		$configured_status = sanitize_key( $configured_status );
 

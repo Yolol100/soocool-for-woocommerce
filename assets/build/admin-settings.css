@@ -935,12 +935,7 @@ background: #111111;
   }
 
   .soocool-log-entry__summary {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .soocool-log-entry__summary > time {
-  grid-column: 2;
-      justify-self: start;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 
@@ -1175,57 +1170,29 @@ border-color: var(--soocool-color-accent);
 }
 
 .soocool-delivery-dashboard {
-display: grid;
-  gap: 0;
-  overflow: hidden;
-  background: var(--soocool-color-surface);
-  border: 1px solid var(--soocool-color-border);
-  border-radius: var(--soocool-radius-md);
-  box-shadow: var(--soocool-shadow-sm);
-}
-
-.soocool-delivery-overview,
-.soocool-delivery-section {
-  padding: 20px 24px;
-}
-
-.soocool-delivery-overview {
-display: block;
-  background: #fff;
-  border-bottom: 1px solid #f0f0f1;
-}
-
-.soocool-delivery-overview h3,
-.soocool-delivery-section__header h3 {
-margin: 0 0 8px;
-  color: var(--soocool-color-text);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.35;
-}
-
-.soocool-delivery-overview .soocool-muted {
-  margin: 0;
-}
-
-.soocool-delivery-section + .soocool-delivery-section {
-  border-top: 1px solid #f0f0f1;
-}
-
-.soocool-delivery-section {
-display: grid;
-  gap: 10px;
-}
-
-.soocool-delivery-section__header {
-display: grid;
-  gap: 4px;
-}
-
-.soocool-delivery-section__header--split {
-grid-template-columns: minmax(0, 1fr) auto;
+  display: grid;
   gap: 16px;
-  align-items: center;
+  min-width: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.soocool-delivery-dashboard > .soocool-delivery-accordion {
+  width: 100%;
+  min-width: 0;
+}
+
+.soocool-delivery-accordion .soocool-disclosure__content {
+  min-width: 0;
+}
+
+.soocool-delivery-schedule-toolbar {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .soocool-delivery-settings-list {
@@ -1253,14 +1220,14 @@ display: grid;
 }
 
 .soocool-delivery-setting-row--number {
-  grid-template-columns: minmax(0, 1fr) 112px;
-  align-items: center;
-  background: linear-gradient(180deg, #ffffff 0%, var(--soocool-color-surface-soft) 100%);
-  border-color: rgba(217, 162, 115, 0.55);
+  grid-template-columns: 1fr;
+  align-items: start;
+  background: #ffffff;
+  border-color: var(--soocool-color-border);
 }
 
 .soocool-delivery-setting-row--number .soocool-delivery-setting-control--number {
-  justify-content: flex-end;
+  justify-content: stretch;
 }
 
 .soocool-delivery-setting-copy h4,
@@ -1322,14 +1289,15 @@ position: absolute;
 }
 
 .soocool-delivery-setting-control--number .components-base-control {
-width: 112px;
-  max-width: 100%;
+  width: 100%;
+  max-width: none;
 }
 
 .soocool-delivery-setting-control--number :where(input[type="number"], .components-text-control__input) {
-  text-align: center;
+  width: 100%;
+  text-align: left;
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .soocool-delivery-setting-control--holidays .components-base-control {
@@ -1359,34 +1327,31 @@ border-color: var(--soocool-color-accent);
 }
 
 @media (max-width: 782px) {
-  .soocool-delivery-overview,
-  .soocool-delivery-section {
-    padding: 16px;
-  }
-
-  .soocool-delivery-overview,
-  .soocool-delivery-section__header--split {
-    display: grid;
+  .soocool-delivery-settings-list {
     grid-template-columns: 1fr;
-    align-items: start;
   }
 
   .soocool-delivery-setting-row {
-  grid-template-columns: 1fr;
-      gap: 10px;
-      align-items: start;
-      padding: 14px;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    align-items: start;
+    padding: 14px;
   }
 
   .soocool-delivery-setting-row--number .soocool-delivery-setting-control--number {
-    justify-content: flex-start;
+    justify-content: stretch;
+  }
+
+  .soocool-delivery-schedule-toolbar {
+    justify-content: stretch;
   }
 
   .soocool-delivery-add-rule.components-button {
-  width: 100%;
-      justify-content: center;
+    width: 100%;
+    justify-content: center;
   }
 }
+
 
 .soocool-delivery-schedule-cards {
 display: grid;
@@ -1409,22 +1374,34 @@ background: #fff;
 display: grid;
 	grid-template-columns: minmax(0, 1fr) auto;
 	gap: 10px;
-	align-items: center;
-	padding: 13px 14px;
+	align-items: stretch;
+	padding: 0;
 	border-bottom: 1px solid #f0f0f1;
 }
 
-.soocool-delivery-schedule-card__toggle {
+#soocool-admin-app .soocool-shell .soocool-delivery-schedule-card__toggle.components-button {
 display: flex;
 	align-items: center;
+	justify-content: flex-start;
 	gap: 12px;
 	width: 100%;
-	padding: 0;
-	background: transparent;
-	border: 0;
-	color: #1d2327;
+	min-height: 70px;
+	height: auto;
+	padding: 16px 20px;
+	background: #ffffff !important;
+	border: 0 !important;
+	border-radius: 0;
+	box-shadow: none !important;
+	color: #1d2327 !important;
+	font: inherit;
 	text-align: left;
 	cursor: pointer;
+}
+
+#soocool-admin-app .soocool-shell .soocool-delivery-schedule-card__toggle.components-button:hover,
+#soocool-admin-app .soocool-shell .soocool-delivery-schedule-card__toggle.components-button:focus {
+	background: var(--soocool-color-surface-soft) !important;
+	color: var(--soocool-color-text) !important;
 }
 
 .soocool-delivery-schedule-card__toggle:focus-visible,
@@ -1478,7 +1455,7 @@ display: inline-flex;
 	align-items: center;
 	justify-content: flex-end;
 	gap: 8px;
-	padding-left: 10px;
+	padding: 14px 16px 14px 0;
 }
 
 .soocool-delivery-schedule-card__actions .components-toggle-control {
@@ -1812,8 +1789,6 @@ display: inline-grid;
   .soocool-card-header,
   .soocool-fields,
   .soocool-settings-card,
-  .soocool-delivery-overview,
-  .soocool-delivery-section,
   .soocool-delivery-schedule-card__panel {
     padding: 12px;
   }
@@ -2070,12 +2045,13 @@ display: grid;
 
 .soocool-log-entry {
 display: grid;
-  gap: 7px;
-  padding: 10px 13px;
+  gap: 9px;
+  padding: 13px 15px;
   background: #ffffff;
   border: 1px solid var(--soocool-color-border);
   border-left: 3px solid #8c8f94;
-  border-radius: var(--soocool-radius-sm);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .soocool-log-entry.is-error {
@@ -2111,9 +2087,22 @@ display: inline-flex;
   align-items: center;
   color: var(--soocool-color-text-soft);
   background: #f0f0f1;
+  border: 1px solid transparent;
   border-radius: 999px;
   font-size: 11px;
   line-height: 1.2;
+}
+
+.soocool-http-pill.is-success {
+  color: #116329;
+  background: #edfaef;
+  border-color: #b8dfc0;
+}
+
+.soocool-http-pill.is-error {
+  color: var(--soocool-color-danger);
+  background: #fcf0f1;
+  border-color: #efc2c7;
 }
 
 .soocool-log-meta > code {
@@ -2141,7 +2130,7 @@ display: inline-flex;
   align-items: center;
   color: var(--soocool-color-text-soft);
   list-style: none;
-  background: #f6f7f7;
+  background: transparent;
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
@@ -3036,15 +3025,9 @@ display: flex;
 
 .soocool-log-entry__summary {
 display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-}
-
-.soocool-log-entry__badges {
-display: flex;
-  gap: 5px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
 }
 
 .soocool-log-entry__content {
@@ -3052,31 +3035,44 @@ display: flex;
 }
 
 .soocool-log-entry__content h3 {
-margin: 0;
+margin: 0 0 7px;
   overflow: visible;
   font-size: 13px;
+  font-weight: 600;
   line-height: 1.4;
   text-overflow: clip;
   white-space: normal;
 }
 
+.soocool-log-entry__meta-row,
+.soocool-log-entry__badges,
 .soocool-log-entry__content .soocool-log-meta {
-gap: 5px;
-  margin-top: 3px;
+display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.soocool-log-entry__meta-row {
+  min-width: 0;
+}
+
+.soocool-log-entry__content .soocool-log-meta {
+  margin: 0;
 }
 
 .soocool-log-entry__content .soocool-log-meta > span,
 .soocool-log-entry__content .soocool-log-meta > code,
 .soocool-log-entry__badges .soocool-http-pill,
 .soocool-log-entry__badges .soocool-log-level {
-min-height: 20px;
-  padding: 2px 6px;
+min-height: 22px;
+  padding: 2px 7px;
   font-size: 10px;
 }
 
 .soocool-log-entry__summary > time {
 align-self: start;
-  padding-top: 2px;
+  padding-top: 1px;
   white-space: nowrap;
 }
 
@@ -3164,9 +3160,9 @@ min-height: 30px;
     grid-template-columns: 1fr;
   }
 
-  .soocool-log-entry__badges,
   .soocool-log-entry__summary > time {
     grid-column: 1;
+    justify-self: start;
   }
 
   .soocool-log-entry__content h3 {

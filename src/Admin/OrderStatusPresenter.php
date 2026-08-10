@@ -28,6 +28,19 @@ final class OrderStatusPresenter {
 		);
 	}
 
+	public function display_status( string $status, bool $has_remote_order ): string {
+		$status = sanitize_key( $status );
+		if ( ! $has_remote_order ) {
+			return $status;
+		}
+
+		if ( in_array( $status, array_merge( $this->failed_statuses(), $this->cancelled_statuses() ), true ) ) {
+			return $status;
+		}
+
+		return 'synced';
+	}
+
 	public function label( string $status ): string {
 		$status = sanitize_key( $status );
 
@@ -58,6 +71,20 @@ final class OrderStatusPresenter {
 			''                    => __( 'Niet gesynchroniseerd', 'soocool-for-woocommerce' ),
 			default               => __( 'Onbekende SooCool-status', 'soocool-for-woocommerce' ),
 		};
+	}
+
+	public function display_error( string $error ): string {
+		$error = trim( sanitize_text_field( $error ) );
+		if ( '' === $error ) {
+			return '';
+		}
+
+		$normalized = strtolower( $error );
+		if ( str_contains( $normalized, 'heeft geen geldig gewicht' ) && str_contains( $normalized, 'productgewicht' ) ) {
+			return __( 'Deze fout komt uit een oudere productgewichtcontrole. Synchroniseer opnieuw; de huidige versie gebruikt het WooCommerce- of variatiegewicht, een eenduidig gewicht uit de productnaam (zoals 1kg) of het ingestelde fallbackgewicht.', 'soocool-for-woocommerce' );
+		}
+
+		return $error;
 	}
 
 	public function badge_class( string $status ): string {

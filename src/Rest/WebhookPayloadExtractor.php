@@ -113,7 +113,7 @@ final class WebhookPayloadExtractor {
 					continue;
 				}
 
-				$status = $this->statuses->normalize( sanitize_text_field( (string) $container[ $key ] ) );
+				$status = $this->statuses->normalize_remote( sanitize_text_field( (string) $container[ $key ] ) );
 				if ( '' !== $status ) {
 					return $status;
 				}

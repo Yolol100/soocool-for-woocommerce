@@ -41,7 +41,8 @@ final class OrderMetaBox {
 
 		$soocool_order_id = $this->meta->get_soocool_order_id( $order );
 		$status           = $this->meta->get_sync_status( $order );
-		$error            = $this->meta->get_last_error( $order );
+		$display_status   = $this->presenter->display_status( $status, '' !== $soocool_order_id );
+		$error            = $this->presenter->display_error( $this->meta->get_last_error( $order ) );
 		$tracking_code    = $this->meta->get_tracking_code( $order );
 		$good_ids         = $this->meta->get_good_ids( $order );
 		$delivery_label  = $this->meta->get_requested_delivery_label( $order );
@@ -49,7 +50,7 @@ final class OrderMetaBox {
 		$time_label      = $this->meta->get_requested_delivery_time_label( $order );
 
 		echo '<div class="soocool-order-card">';
-		echo '<div class="soocool-order-card__header"><span class="soocool-order-card__kicker">' . esc_html__( 'SooCool-status', 'soocool-for-woocommerce' ) . '</span><span class="' . esc_attr( $this->presenter->badge_class( $status ) ) . '">' . esc_html( $this->presenter->label( $status ) ) . '</span></div>';
+		echo '<div class="soocool-order-card__header"><span class="soocool-order-card__kicker">' . esc_html__( 'SooCool-status', 'soocool-for-woocommerce' ) . '</span><span class="' . esc_attr( $this->presenter->badge_class( $display_status ) ) . '">' . esc_html( $this->presenter->label( $display_status ) ) . '</span></div>';
 		echo '<div class="soocool-order-section-title">' . esc_html__( 'Status & koppeling', 'soocool-for-woocommerce' ) . '</div>';
 		echo '<dl class="soocool-order-meta-list">';
 		$this->render_meta_row( __( 'SooCool order-ID', 'soocool-for-woocommerce' ), '' !== $soocool_order_id ? $soocool_order_id : __( 'Nog niet gekoppeld', 'soocool-for-woocommerce' ) );
@@ -173,7 +174,7 @@ final class OrderMetaBox {
 			wp_die( esc_html__( 'Ongeldige order.', 'soocool-for-woocommerce' ), '', array( 'response' => 400 ) );
 		}
 
-		check_admin_referer( 'soocool_update_delivery_date_' . $order_id );
+		check_admin_referer( 'soocool_update_delivery_date_' . $order_id, '_soocool_delivery_nonce' );
 
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			wp_die( esc_html__( 'Je mag deze order niet bijwerken.', 'soocool-for-woocommerce' ), '', array( 'response' => 403 ) );
@@ -232,7 +233,7 @@ final class OrderMetaBox {
 			);
 		}
 
-		$remote_updated = ! $moment_changed || $this->sync_delivery_moment_to_soocool( $order );
+		$remote_updated = $this->sync_delivery_moment_to_soocool( $order );
 		$this->redirect_with_notice( $order, $remote_updated ? 'delivery_date_updated' : 'delivery_date_updated_remote_failed' );
 	}
 
@@ -261,11 +262,10 @@ final class OrderMetaBox {
 			return;
 		}
 
-		echo '<form class="soocool-order-action-group soocool-order-delivery-editor" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<div class="soocool-order-action-group soocool-order-delivery-editor">';
 		echo '<div class="soocool-order-action-group__title">' . esc_html__( 'Bezorgmoment', 'soocool-for-woocommerce' ) . '</div>';
-		echo '<input type="hidden" name="action" value="soocool_update_delivery_date" />';
 		echo '<input type="hidden" name="order_id" value="' . esc_attr( (string) $order->get_id() ) . '" />';
-		wp_nonce_field( 'soocool_update_delivery_date_' . (int) $order->get_id() );
+		wp_nonce_field( 'soocool_update_delivery_date_' . (int) $order->get_id(), '_soocool_delivery_nonce', false );
 		echo '<label class="screen-reader-text" for="soocool-requested-delivery-moment">' . esc_html__( 'Kies bezorgmoment', 'soocool-for-woocommerce' ) . '</label>';
 		echo '<select id="soocool-requested-delivery-moment" class="soocool-order-delivery-editor__select" name="soocool_requested_delivery_moment">';
 
@@ -301,9 +301,9 @@ final class OrderMetaBox {
 		}
 
 		echo '</select>';
-		echo '<button type="submit" class="button button-secondary soocool-order-button">' . esc_html__( 'Bezorgmoment bijwerken', 'soocool-for-woocommerce' ) . '</button>';
+		echo '<button type="submit" class="button button-secondary soocool-order-button" name="action" value="soocool_update_delivery_date" formaction="' . esc_url( admin_url( 'admin-post.php' ) ) . '" formmethod="post" formnovalidate>' . esc_html__( 'Bezorgmoment bijwerken', 'soocool-for-woocommerce' ) . '</button>';
 		echo '<p class="description soocool-order-action-help">' . esc_html__( 'Alleen geldige bezorgmomenten met een actief dagdeel kunnen worden opgeslagen. Opnieuw verzonden WooCommerce e-mails gebruiken het bijgewerkte moment.', 'soocool-for-woocommerce' ) . '</p>';
-		echo '</form>';
+		echo '</div>';
 	}
 
 	private function redirect_with_notice( WC_Order $order, string $notice ): void {

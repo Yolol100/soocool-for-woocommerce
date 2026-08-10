@@ -53,7 +53,11 @@ final class OrderSyncCoordinator {
 			$existing_order = $this->sync->find_existing_order( (string) $payload['orderReference'] );
 			if ( array() !== $existing_order ) {
 				$soocool_order_id = $this->meta->extract_order_id( $existing_order );
-				$this->meta->save_success( $order, $existing_order, (string) $payload['orderReference'] );
+				$remote_data      = $this->remote_status->map( $existing_order );
+				if ( $this->remote_status->has_status_data( $remote_data ) ) {
+					$this->meta->save_webhook_update( $order, $remote_data, false );
+				}
+				$this->meta->save_success( $order, $existing_order, (string) $payload['orderReference'], true );
 				return $this->result(
 					true,
 					__( 'Bestaande SooCool-order gevonden op orderreferentie. Er is geen dubbele SooCool-order aangemaakt.', 'soocool-for-woocommerce' ),
@@ -74,7 +78,11 @@ final class OrderSyncCoordinator {
 				throw new ApiException( __( 'SooCool gaf geen geldige order-ID terug.', 'soocool-for-woocommerce' ), 502 );
 			}
 
-			$this->meta->save_success( $order, $body, (string) $payload['orderReference'] );
+			$remote_data = $this->remote_status->map( $body );
+			if ( $this->remote_status->has_status_data( $remote_data ) ) {
+				$this->meta->save_webhook_update( $order, $remote_data, false );
+			}
+			$this->meta->save_success( $order, $body, (string) $payload['orderReference'], true );
 			return $this->result(
 				true,
 				__( 'Order naar SooCool verstuurd.', 'soocool-for-woocommerce' ),
@@ -172,9 +180,10 @@ final class OrderSyncCoordinator {
 				throw new ApiException( __( 'SooCool gaf een andere order-ID terug dan de opgevraagde order.', 'soocool-for-woocommerce' ), 502 );
 			}
 
-			$this->meta->save_success( $order, $body, $this->meta->get_our_reference( $order ) );
 			$remote_data = $this->remote_status->map( $body );
 			$changed     = $this->remote_status->has_status_data( $remote_data ) ? $this->meta->save_webhook_update( $order, $remote_data, false ) : false;
+
+			$this->meta->save_success( $order, $body, $this->meta->get_our_reference( $order ), true );
 
 			return $this->result(
 				true,
@@ -267,7 +276,7 @@ final class OrderSyncCoordinator {
 
 	private function assert_lock_refreshed( int $order_id ): void {
 		if ( ! $this->sync->refresh_lock( $order_id ) ) {
-			throw new ApiException( __( 'De SooCool-orderlock kon niet veilig worden vernieuwd. De actie is gestopt om parallelle verwerking te voorkomen.', 'soocool-for-woocommerce' ), 409 );
+			throw new ApiException( __( 'De SooCool-orderlock kon niet veilig worden vernieuwd. De actie is gestopt om parallelle verwerking te voorkomen.', 'soocool-for-woocommerce' ), 409, array(), true );
 		}
 	}
 

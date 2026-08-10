@@ -115,8 +115,8 @@ final class MaintenanceController extends AbstractRestController {
 				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Bounded maintenance query.
 					array(
 						'key'     => OrderMeta::SYNC_STATUS,
-						'value'   => OrderMeta::failure_statuses(),
-						'compare' => 'IN',
+						'value'   => 'failed',
+						'compare' => '=',
 					),
 				),
 			)

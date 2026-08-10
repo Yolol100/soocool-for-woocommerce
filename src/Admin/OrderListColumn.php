@@ -77,13 +77,14 @@ final class OrderListColumn {
 	}
 
 	private function render_badge( WC_Order $order ): void {
-		$status   = $this->meta->get_sync_status( $order );
-		$tracking = $this->meta->get_tracking_code( $order );
+		$status         = $this->meta->get_sync_status( $order );
+		$display_status = $this->presenter->display_status( $status, $this->meta->is_synced( $order ) );
+		$tracking       = $this->meta->get_tracking_code( $order );
 
 		printf(
 			'<span class="%1$s">%2$s</span>',
-			esc_attr( $this->presenter->badge_class( $status ) ),
-			esc_html( $this->presenter->label( $status ) )
+			esc_attr( $this->presenter->badge_class( $display_status ) ),
+			esc_html( $this->presenter->label( $display_status ) )
 		);
 
 		if ( '' !== $tracking ) {
@@ -115,7 +116,7 @@ final class OrderListColumn {
 		echo '<button type="button" class="button button-secondary soocool-list-sync-action__button" data-soocool-manual-sync="1" data-action="' . esc_attr( OrderActions::MANUAL_SYNC_AJAX_ACTION ) . '" data-order-id="' . esc_attr( (string) $order_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( OrderActions::MANUAL_SYNC_NONCE_ACTION . $order_id ) ) . '" data-soocool-confirm="' . esc_attr__( 'Deze order nu naar SooCool synchroniseren?', 'soocool-for-woocommerce' ) . '">' . esc_html( $button_label ) . '</button>';
 		echo '<div class="soocool-order-alert soocool-manual-sync-feedback" hidden aria-live="polite"></div>';
 
-		$error = $this->meta->get_last_error( $order );
+		$error = $this->presenter->display_error( $this->meta->get_last_error( $order ) );
 		if ( $is_failed && '' !== $error ) {
 			echo '<details class="soocool-list-sync-error-details"><summary>' . esc_html__( 'Foutdetail', 'soocool-for-woocommerce' ) . '</summary><small class="soocool-list-sync-error">' . esc_html( $error ) . '</small></details>';
 		}
@@ -218,15 +219,19 @@ final class OrderListColumn {
 	private function meta_query_clause( string $filter ): array {
 		if ( 'not_synced' === $filter ) {
 			return array(
-				'relation' => 'OR',
+				'relation' => 'AND',
+				$this->missing_remote_order_clause(),
 				array(
-					'key'     => OrderMeta::SYNC_STATUS,
-					'compare' => 'NOT EXISTS',
-				),
-				array(
-					'key'     => OrderMeta::SYNC_STATUS,
-					'value'   => '',
-					'compare' => '=',
+					'relation' => 'OR',
+					array(
+						'key'     => OrderMeta::SYNC_STATUS,
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => OrderMeta::SYNC_STATUS,
+						'value'   => '',
+						'compare' => '=',
+					),
 				),
 			);
 		}
@@ -235,19 +240,42 @@ final class OrderListColumn {
 			return array(
 				'relation' => 'AND',
 				array(
-					'key'     => OrderMeta::SYNC_STATUS,
+					'key'     => OrderMeta::ORDER_ID,
 					'compare' => 'EXISTS',
 				),
 				array(
-					'key'     => OrderMeta::SYNC_STATUS,
-					'value'   => $this->presenter->non_synced_statuses(),
-					'compare' => 'NOT IN',
+					'key'     => OrderMeta::ORDER_ID,
+					'value'   => '',
+					'compare' => '!=',
+				),
+				array(
+					'relation' => 'OR',
+					array(
+						'key'     => OrderMeta::SYNC_STATUS,
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => OrderMeta::SYNC_STATUS,
+						'value'   => array_merge( $this->presenter->failed_statuses(), $this->presenter->cancelled_statuses() ),
+						'compare' => 'NOT IN',
+					),
 				),
 			);
 		}
 
+		if ( 'pending' === $filter ) {
+			return array(
+				'relation' => 'AND',
+				array(
+					'key'     => OrderMeta::SYNC_STATUS,
+					'value'   => $this->presenter->pending_statuses(),
+					'compare' => 'IN',
+				),
+				$this->missing_remote_order_clause(),
+			);
+		}
+
 		$status_groups = array(
-			'pending'   => $this->presenter->pending_statuses(),
 			'failed'    => $this->presenter->failed_statuses(),
 			'cancelled' => $this->presenter->cancelled_statuses(),
 		);
@@ -261,6 +289,22 @@ final class OrderListColumn {
 		}
 
 		return array();
+	}
+
+	/** @return array<string, mixed> */
+	private function missing_remote_order_clause(): array {
+		return array(
+			'relation' => 'OR',
+			array(
+				'key'     => OrderMeta::ORDER_ID,
+				'compare' => 'NOT EXISTS',
+			),
+			array(
+				'key'     => OrderMeta::ORDER_ID,
+				'value'   => '',
+				'compare' => '=',
+			),
+		);
 	}
 	private function selected_filter(): string {
 		if ( ! isset( $_GET[ self::FILTER_PARAM ] ) || ! is_scalar( $_GET[ self::FILTER_PARAM ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list filter.

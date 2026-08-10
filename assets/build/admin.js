@@ -281,7 +281,7 @@
         detailsRef.current.open = true;
       }
     }, [props.defaultOpen, props.forceOpen]);
-    return el('details', { className: 'soocool-disclosure', ref: detailsRef },
+    return el('details', { className: 'soocool-disclosure' + (props.className ? ' ' + props.className : ''), ref: detailsRef },
       el('summary', { className: 'soocool-disclosure__summary' },
         el('span', null, el('strong', null, props.title), props.description ? el('small', null, props.description) : null),
         el('span', { className: 'soocool-disclosure__chevron', 'aria-hidden': true })
@@ -900,21 +900,25 @@
       setExpandedSlotLists(next);
     }
     var schedule = normalizeSchedule();
+    var daysAhead = Number(settings.checkout_delivery_days_ahead);
+    var daysAheadHasIssue = !Number.isInteger(daysAhead) || daysAhead < 7 || daysAhead > 92;
+    var holidaysHaveIssue = invalidHolidayDates(settings.checkout_delivery_holidays).length > 0;
+    var surchargeAmounts = [
+      settings.checkout_delivery_netherlands_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_surcharge_amount,
+      settings.checkout_delivery_netherlands_evening_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_evening_surcharge_amount,
+      settings.checkout_delivery_belgium_surcharge_amount == null ? 2 : settings.checkout_delivery_belgium_surcharge_amount,
+      settings.checkout_delivery_belgium_evening_surcharge_amount == null ? 1.5 : settings.checkout_delivery_belgium_evening_surcharge_amount
+    ];
+    var surchargeHasIssue = surchargeAmounts.some(function(amount){ return !isMoneyInputValid(amount); });
+    var generalHasIssue = daysAheadHasIssue || holidaysHaveIssue;
     function scheduleIssues(){
       var issues = [];
       var seenDays = {};
-      var daysAhead = Number(settings.checkout_delivery_days_ahead);
-      if (!Number.isInteger(daysAhead) || daysAhead < 7 || daysAhead > 92) { issues.push(__('Het aantal dagen vooruit moet een heel getal tussen 7 en 92 zijn.', 'soocool-for-woocommerce')); }
-      if (invalidHolidayDates(settings.checkout_delivery_holidays).length) { issues.push(__('Gebruik voor geblokkeerde datums geldige datums in het formaat JJJJ-MM-DD.', 'soocool-for-woocommerce')); }
+      if (daysAheadHasIssue) { issues.push(__('Het aantal dagen vooruit moet een heel getal tussen 7 en 92 zijn.', 'soocool-for-woocommerce')); }
+      if (holidaysHaveIssue) { issues.push(__('Gebruik voor geblokkeerde datums geldige datums in het formaat JJJJ-MM-DD.', 'soocool-for-woocommerce')); }
       var activeRules = schedule.filter(function(rule){ return rule.enabled !== false; });
       if (!activeRules.length) { issues.push(__('Activeer minimaal één bezorgdag.', 'soocool-for-woocommerce')); }
-      var surchargeAmounts = [
-        settings.checkout_delivery_netherlands_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_surcharge_amount,
-        settings.checkout_delivery_netherlands_evening_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_evening_surcharge_amount,
-        settings.checkout_delivery_belgium_surcharge_amount == null ? 2 : settings.checkout_delivery_belgium_surcharge_amount,
-        settings.checkout_delivery_belgium_evening_surcharge_amount == null ? 1.5 : settings.checkout_delivery_belgium_evening_surcharge_amount
-      ];
-      if (surchargeAmounts.some(function(amount){ return !isMoneyInputValid(amount); })) {
+      if (surchargeHasIssue) {
         issues.push(__('Controleer de bezorgtoeslagen: gebruik een bedrag tussen € 0 en € 999 met maximaal twee decimalen.', 'soocool-for-woocommerce'));
       }
       schedule.forEach(function(rule){
@@ -944,6 +948,9 @@
       return issues;
     }
     var validationIssues = scheduleIssues();
+    var generalIssueCount = (daysAheadHasIssue ? 1 : 0) + (holidaysHaveIssue ? 1 : 0);
+    var surchargeIssueCount = surchargeHasIssue ? 1 : 0;
+    var scheduleHasIssue = validationIssues.length > generalIssueCount + surchargeIssueCount;
     var canAddRule = schedule.length < soocoolWeekdayOptions.length;
     return el(FieldGroup, { title: __('Bezorgschema', 'soocool-for-woocommerce'), badge: __('Checkout', 'soocool-for-woocommerce'), description: __('Stel per bezorgdag de uiterste besteltijd en dagdelen in. Checkout Blocks blijft staging-first totdat pariteit is gevalideerd.', 'soocool-for-woocommerce') },
       s.errorMessage ? el(ErrorNotice, { message: s.errorMessage }) : null,
@@ -952,57 +959,8 @@
         el('ul', { className: 'soocool-validation-list' }, validationIssues.map(function(issue, index){ return el('li', { key: index }, issue); }))
       ) : null,
       el('div', { className: 'soocool-delivery-dashboard' },
-        el('div', { className: 'soocool-delivery-overview' },
-          el('div', null,
-            el('h3', null, __('Checkout bezorgmoment', 'soocool-for-woocommerce')),
-            el('p', { className: 'soocool-muted' }, __('Klanten kiezen een bezorgdag en daarna een dagdeel. De keuze wordt bij de order opgeslagen en in WooCommerce-e-mails getoond.', 'soocool-for-woocommerce'))
-          )
-        ),
-        el('section', { className: 'soocool-delivery-section' },
-          el('div', { className: 'soocool-delivery-section__header' }, el('h3', null, __('Algemene instellingen', 'soocool-for-woocommerce'))),
-          el('div', { className: 'soocool-delivery-settings-list' },
-            el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--toggle' },
-              el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Activeer bezorgkeuze in de checkout', 'soocool-for-woocommerce')), el('p', null, __('Schakel dit uit om terug te vallen op de bestaande delivery offset.', 'soocool-for-woocommerce'))),
-              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--toggle' }, el(c.ToggleControl, { label: __('Activeer bezorgkeuze in de checkout', 'soocool-for-woocommerce'), checked: settings.checkout_delivery_enabled !== false, onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_enabled: v }); setSettings(next); } }))
-            ),
-            el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--toggle' },
-              el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Verlopen dagdelen verbergen', 'soocool-for-woocommerce')), el('p', null, __('Verbergt verlopen dagdelen voor een rustigere checkout.', 'soocool-for-woocommerce'))),
-              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--toggle' }, el(c.ToggleControl, { label: __('Verlopen dagdelen verbergen', 'soocool-for-woocommerce'), checked: settings.checkout_delivery_hide_unavailable_slots !== false, onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_hide_unavailable_slots: v }); setSettings(next); } }))
-            ),
-            el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--number' },
-              el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Aantal dagen vooruit tonen', 'soocool-for-woocommerce')), el('p', null, __('7–92 dagen zichtbaar in checkout.', 'soocool-for-woocommerce'))),
-              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 7, max: 92, label: __('Aantal dagen vooruit tonen', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_days_ahead == null ? 92 : settings.checkout_delivery_days_ahead), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_days_ahead: v }); setSettings(next); }, 'aria-invalid': !Number.isInteger(Number(settings.checkout_delivery_days_ahead)) || Number(settings.checkout_delivery_days_ahead) < 7 || Number(settings.checkout_delivery_days_ahead) > 92 ? 'true' : 'false' }))
-            ),
-            el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--holidays' },
-              el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Geblokkeerde datums / feestdagen', 'soocool-for-woocommerce')), el('p', null, __('Komma-gescheiden datums in JJJJ-MM-DD, bijvoorbeeld 2026-12-25, 2026-12-26.', 'soocool-for-woocommerce'))),
-              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--holidays' }, el(c.TextControl, { label: __('Geblokkeerde datums / feestdagen', 'soocool-for-woocommerce'), hideLabelFromVision: true, 'aria-invalid': invalidHolidayDates(settings.checkout_delivery_holidays).length ? 'true' : 'false', value: settings.checkout_delivery_holidays || '', onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_holidays: v }); setSettings(next); } }))
-            )
-          )
-        ),
-        el(DisclosureCard, { id: 'delivery-surcharges', title: __('Bezorgtoeslagen', 'soocool-for-woocommerce'), description: __('Optionele toeslagen per afleverland en voor avondbezorging.', 'soocool-for-woocommerce') },
-          el('div', { className: 'soocool-surcharge-grid' },
-            el(Card, null,
-              el('h3', null, __('Nederland', 'soocool-for-woocommerce')),
-              el('p', { className: 'soocool-field-help' }, __('Zet een bedrag op 0 om de betreffende toeslag uit te schakelen.', 'soocool-for-woocommerce')),
-              el(MoneyControl, { label: __('Standaard bezorgtoeslag Nederland', 'soocool-for-woocommerce'), value: settings.checkout_delivery_netherlands_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_surcharge_amount, invalid: !isMoneyInputValid(settings.checkout_delivery_netherlands_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_surcharge_amount), onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_netherlands_surcharge_amount: v })); } }),
-              el(MoneyControl, { label: __('Avondtoeslag Nederland', 'soocool-for-woocommerce'), value: settings.checkout_delivery_netherlands_evening_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_evening_surcharge_amount, invalid: !isMoneyInputValid(settings.checkout_delivery_netherlands_evening_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_evening_surcharge_amount), onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_netherlands_evening_surcharge_amount: v })); } })
-            ),
-            el(Card, null,
-              el('h3', null, __('België', 'soocool-for-woocommerce')),
-              el('p', { className: 'soocool-field-help' }, __('Zet een bedrag op 0 om de betreffende toeslag uit te schakelen.', 'soocool-for-woocommerce')),
-              el(MoneyControl, { label: __('Standaard bezorgtoeslag België', 'soocool-for-woocommerce'), value: settings.checkout_delivery_belgium_surcharge_amount == null ? 2 : settings.checkout_delivery_belgium_surcharge_amount, invalid: !isMoneyInputValid(settings.checkout_delivery_belgium_surcharge_amount == null ? 2 : settings.checkout_delivery_belgium_surcharge_amount), onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_belgium_surcharge_amount: v })); } }),
-              el(MoneyControl, { label: __('Avondtoeslag België', 'soocool-for-woocommerce'), value: settings.checkout_delivery_belgium_evening_surcharge_amount == null ? 1.5 : settings.checkout_delivery_belgium_evening_surcharge_amount, invalid: !isMoneyInputValid(settings.checkout_delivery_belgium_evening_surcharge_amount == null ? 1.5 : settings.checkout_delivery_belgium_evening_surcharge_amount), onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_belgium_evening_surcharge_amount: v })); } })
-            )
-          ),
-          el('div', { className: 'soocool-field-grid two' },
-            el(c.ToggleControl, { label: __('Bezorgtoeslagen zijn belastbaar', 'soocool-for-woocommerce'), help: __('Standaard uitgeschakeld om bestaande winkelbedragen niet stil te wijzigen.', 'soocool-for-woocommerce'), checked: !!settings.checkout_delivery_fee_taxable, onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_fee_taxable: v })); } }),
-            el(c.TextControl, { label: __('Belastingklasse voor bezorgtoeslagen', 'soocool-for-woocommerce'), help: __('Laat leeg voor de standaardklasse; gebruik anders de WooCommerce-slug van de belastingklasse.', 'soocool-for-woocommerce'), value: settings.checkout_delivery_fee_tax_class || '', onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_fee_tax_class: v })); } })
-          ),
-          el(Note, null, __('De checkout toont automatisch een Nederlandse toelichting wanneer voor het gekozen land of dagdeel een toeslag geldt.', 'soocool-for-woocommerce'))
-        ),
-        el('section', { className: 'soocool-delivery-section soocool-delivery-section--schedule' },
-          el('div', { className: 'soocool-delivery-section__header soocool-delivery-section__header--split' },
-            el('div', null, el('h3', null, __('Bezorgschema', 'soocool-for-woocommerce')), el('p', { className: 'soocool-field-help' }, __('Elke bezorgdag beheert een eigen cut-off en één of meer aanpasbare dagdelen.', 'soocool-for-woocommerce'))),
+        el(DisclosureCard, { className: 'soocool-delivery-accordion soocool-delivery-accordion--schedule', defaultOpen: true, forceOpen: scheduleHasIssue, title: __('Bezorgschema', 'soocool-for-woocommerce'), description: __('Elke bezorgdag beheert een eigen cut-off en één of meer aanpasbare dagdelen.', 'soocool-for-woocommerce') },
+          el('div', { className: 'soocool-delivery-schedule-toolbar' },
             el(c.Button, { variant: 'secondary', onClick: addRule, disabled: !canAddRule, className: 'soocool-delivery-add-rule' }, el('span', { className: 'dashicons dashicons-plus-alt2', 'aria-hidden': true }), el('span', null, canAddRule ? __('Bezorgdag toevoegen', 'soocool-for-woocommerce') : __('Alle weekdagen toegevoegd', 'soocool-for-woocommerce')))
           ),
           el('div', { className: 'soocool-delivery-schedule-cards' },
@@ -1014,7 +972,7 @@
               var activeSlots = slots.filter(function(slot){ return slot.enabled !== false; }).length;
               return el('article', { className: 'soocool-delivery-schedule-card' + (rule.enabled === false ? ' is-disabled' : ''), key: ruleIndex },
                 el('div', { className: 'soocool-delivery-schedule-card__top' },
-                  el('button', { type: 'button', id: buttonId, className: 'soocool-delivery-schedule-card__toggle', 'aria-expanded': isOpen ? 'true' : 'false', 'aria-controls': panelId, onClick: function(){ toggleCard(ruleIndex); } },
+                  el(c.Button, { variant: 'tertiary', id: buttonId, className: 'soocool-delivery-schedule-card__toggle', 'aria-expanded': isOpen ? 'true' : 'false', 'aria-controls': panelId, onClick: function(){ toggleCard(ruleIndex); } },
                     el('span', { className: 'soocool-delivery-schedule-card__summary' },
                       el('span', { className: 'soocool-delivery-schedule-card__title' }, weekdayByValue[rule.delivery_weekday] || rule.delivery_weekday),
                       el('span', { className: 'soocool-delivery-schedule-card__meta' }, __('Bestelbaar t/m', 'soocool-for-woocommerce') + ' ' + (weekdayByValue[rule.cutoff_weekday] || rule.cutoff_weekday) + ' ' + (rule.cutoff_time || '13:00')),
@@ -1084,6 +1042,47 @@
               );
             })
           )
+        ),
+        el(DisclosureCard, { className: 'soocool-delivery-accordion soocool-delivery-accordion--general', defaultOpen: generalHasIssue, forceOpen: generalHasIssue, title: __('Algemene instellingen', 'soocool-for-woocommerce'), description: __('Klanten kiezen een bezorgdag en daarna een dagdeel. De keuze wordt bij de order opgeslagen en in WooCommerce-e-mails getoond.', 'soocool-for-woocommerce') },
+          el('div', { className: 'soocool-delivery-settings-list' },
+            el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--toggle' },
+              el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Activeer bezorgkeuze in de checkout', 'soocool-for-woocommerce')), el('p', null, __('Schakel dit uit om terug te vallen op de bestaande delivery offset.', 'soocool-for-woocommerce'))),
+              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--toggle' }, el(c.ToggleControl, { label: __('Activeer bezorgkeuze in de checkout', 'soocool-for-woocommerce'), checked: settings.checkout_delivery_enabled !== false, onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_enabled: v }); setSettings(next); } }))
+            ),
+            el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--toggle' },
+              el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Verlopen dagdelen verbergen', 'soocool-for-woocommerce')), el('p', null, __('Verbergt verlopen dagdelen voor een rustigere checkout.', 'soocool-for-woocommerce'))),
+              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--toggle' }, el(c.ToggleControl, { label: __('Verlopen dagdelen verbergen', 'soocool-for-woocommerce'), checked: settings.checkout_delivery_hide_unavailable_slots !== false, onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_hide_unavailable_slots: v }); setSettings(next); } }))
+            ),
+            el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--number' },
+              el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Aantal dagen vooruit tonen', 'soocool-for-woocommerce')), el('p', null, __('7–92 dagen zichtbaar in checkout.', 'soocool-for-woocommerce'))),
+              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--number' }, el(c.TextControl, { type: 'number', min: 7, max: 92, label: __('Aantal dagen vooruit tonen', 'soocool-for-woocommerce'), hideLabelFromVision: true, value: String(settings.checkout_delivery_days_ahead == null ? 92 : settings.checkout_delivery_days_ahead), onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_days_ahead: v }); setSettings(next); }, 'aria-invalid': !Number.isInteger(Number(settings.checkout_delivery_days_ahead)) || Number(settings.checkout_delivery_days_ahead) < 7 || Number(settings.checkout_delivery_days_ahead) > 92 ? 'true' : 'false' }))
+            ),
+            el('div', { className: 'soocool-delivery-setting-row soocool-delivery-setting-row--holidays' },
+              el('div', { className: 'soocool-delivery-setting-copy' }, el('h4', null, __('Geblokkeerde datums / feestdagen', 'soocool-for-woocommerce')), el('p', null, __('Komma-gescheiden datums in JJJJ-MM-DD, bijvoorbeeld 2026-12-25, 2026-12-26.', 'soocool-for-woocommerce'))),
+              el('div', { className: 'soocool-delivery-setting-control soocool-delivery-setting-control--holidays' }, el(c.TextControl, { label: __('Geblokkeerde datums / feestdagen', 'soocool-for-woocommerce'), hideLabelFromVision: true, 'aria-invalid': invalidHolidayDates(settings.checkout_delivery_holidays).length ? 'true' : 'false', value: settings.checkout_delivery_holidays || '', onChange: function(v){ var next = Object.assign({}, settings, { checkout_delivery_holidays: v }); setSettings(next); } }))
+            )
+          )
+        ),
+        el(DisclosureCard, { className: 'soocool-delivery-accordion soocool-delivery-accordion--surcharges', defaultOpen: surchargeHasIssue, forceOpen: surchargeHasIssue, title: __('Bezorgtoeslagen', 'soocool-for-woocommerce'), description: __('Optionele toeslagen per afleverland en voor avondbezorging.', 'soocool-for-woocommerce') },
+          el('div', { className: 'soocool-surcharge-grid' },
+            el(Card, null,
+              el('h3', null, __('Nederland', 'soocool-for-woocommerce')),
+              el('p', { className: 'soocool-field-help' }, __('Zet een bedrag op 0 om de betreffende toeslag uit te schakelen.', 'soocool-for-woocommerce')),
+              el(MoneyControl, { label: __('Standaard bezorgtoeslag Nederland', 'soocool-for-woocommerce'), value: settings.checkout_delivery_netherlands_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_surcharge_amount, invalid: !isMoneyInputValid(settings.checkout_delivery_netherlands_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_surcharge_amount), onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_netherlands_surcharge_amount: v })); } }),
+              el(MoneyControl, { label: __('Avondtoeslag Nederland', 'soocool-for-woocommerce'), value: settings.checkout_delivery_netherlands_evening_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_evening_surcharge_amount, invalid: !isMoneyInputValid(settings.checkout_delivery_netherlands_evening_surcharge_amount == null ? 0 : settings.checkout_delivery_netherlands_evening_surcharge_amount), onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_netherlands_evening_surcharge_amount: v })); } })
+            ),
+            el(Card, null,
+              el('h3', null, __('België', 'soocool-for-woocommerce')),
+              el('p', { className: 'soocool-field-help' }, __('Zet een bedrag op 0 om de betreffende toeslag uit te schakelen.', 'soocool-for-woocommerce')),
+              el(MoneyControl, { label: __('Standaard bezorgtoeslag België', 'soocool-for-woocommerce'), value: settings.checkout_delivery_belgium_surcharge_amount == null ? 2 : settings.checkout_delivery_belgium_surcharge_amount, invalid: !isMoneyInputValid(settings.checkout_delivery_belgium_surcharge_amount == null ? 2 : settings.checkout_delivery_belgium_surcharge_amount), onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_belgium_surcharge_amount: v })); } }),
+              el(MoneyControl, { label: __('Avondtoeslag België', 'soocool-for-woocommerce'), value: settings.checkout_delivery_belgium_evening_surcharge_amount == null ? 1.5 : settings.checkout_delivery_belgium_evening_surcharge_amount, invalid: !isMoneyInputValid(settings.checkout_delivery_belgium_evening_surcharge_amount == null ? 1.5 : settings.checkout_delivery_belgium_evening_surcharge_amount), onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_belgium_evening_surcharge_amount: v })); } })
+            )
+          ),
+          el('div', { className: 'soocool-field-grid two' },
+            el(c.ToggleControl, { label: __('Bezorgtoeslagen zijn belastbaar', 'soocool-for-woocommerce'), help: __('Standaard uitgeschakeld om bestaande winkelbedragen niet stil te wijzigen.', 'soocool-for-woocommerce'), checked: !!settings.checkout_delivery_fee_taxable, onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_fee_taxable: v })); } }),
+            el(c.TextControl, { label: __('Belastingklasse voor bezorgtoeslagen', 'soocool-for-woocommerce'), help: __('Laat leeg voor de standaardklasse; gebruik anders de WooCommerce-slug van de belastingklasse.', 'soocool-for-woocommerce'), value: settings.checkout_delivery_fee_tax_class || '', onChange: function(v){ setSettings(Object.assign({}, settings, { checkout_delivery_fee_tax_class: v })); } })
+          ),
+          el(Note, null, __('De checkout toont automatisch een Nederlandse toelichting wanneer voor het gekozen land of dagdeel een toeslag geldt.', 'soocool-for-woocommerce'))
         )
       ),
       el('div', { className: 'soocool-actions soocool-save-row soocool-save-row--delivery' + (s.dirty ? ' is-dirty' : '') },
@@ -1283,18 +1282,22 @@
       var identifiers = logIdentifiers(log);
       var wcOrderId = /^\d+$/.test(identifiers.wooCommerce) && Number(identifiers.wooCommerce) > 0 ? identifiers.wooCommerce : '';
       var orderUrl = wcOrderId && adminConfig.ordersUrl ? adminConfig.ordersUrl + '&s=' + encodeURIComponent(wcOrderId) : '';
+      var httpStatus = Number(context.status || 0);
+      var httpStatusClass = httpStatus >= 200 && httpStatus < 300 ? ' is-success' : httpStatus >= 400 ? ' is-error' : '';
       return el('article', { className: 'soocool-log-entry is-' + (log.level || 'info'), key: String(log.created_at) + index },
         el('div', { className: 'soocool-log-entry__summary' },
-          el('div', { className: 'soocool-log-entry__badges' },
-            el('span', { className: 'soocool-log-level is-' + log.level }, log.level === 'error' ? __('Fout', 'soocool-for-woocommerce') : __('Info', 'soocool-for-woocommerce')),
-            context.status ? el('span', { className: 'soocool-http-pill' }, 'HTTP ' + String(context.status)) : null
-          ),
           el('div', { className: 'soocool-log-entry__content' },
             el('h3', null, logSummary(log)),
-            el('div', { className: 'soocool-log-meta' },
-              context.method ? el('span', null, context.method) : null,
-              context.path ? el('code', null, context.path) : null,
-              context.orderReference ? el('span', null, __('Referentie', 'soocool-for-woocommerce') + ': ' + String(context.orderReference)) : null
+            el('div', { className: 'soocool-log-entry__meta-row' },
+              el('div', { className: 'soocool-log-entry__badges' },
+                el('span', { className: 'soocool-log-level is-' + log.level }, log.level === 'error' ? __('Fout', 'soocool-for-woocommerce') : __('Info', 'soocool-for-woocommerce')),
+                context.status ? el('span', { className: 'soocool-http-pill' + httpStatusClass }, 'HTTP ' + String(context.status)) : null
+              ),
+              el('div', { className: 'soocool-log-meta' },
+                context.method ? el('span', null, context.method) : null,
+                context.path ? el('code', null, context.path) : null,
+                context.orderReference ? el('span', null, __('Referentie', 'soocool-for-woocommerce') + ': ' + String(context.orderReference)) : null
+              )
             )
           ),
           el('time', { dateTime: log.created_at || '' }, formatDateTime(log.created_at))

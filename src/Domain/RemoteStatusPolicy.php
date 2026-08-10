@@ -94,6 +94,16 @@ final class RemoteStatusPolicy {
 		return in_array( $status, $this->allowed_statuses(), true ) ? $status : '';
 	}
 
+	public function normalize_remote( string $status ): string {
+		$status = $this->normalize( $status );
+		return match ( $status ) {
+			'pending'   => 'soocool_pending',
+			'failed'    => 'soocool_failed',
+			'cancelled' => 'soocool_cancelled',
+			default     => $status,
+		};
+	}
+
 	public function allows_remote_cancel( string $status ): bool {
 		$status = $this->normalize( $status );
 		if ( '' === $status ) {

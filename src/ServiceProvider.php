@@ -106,7 +106,7 @@ final class ServiceProvider {
 			ShippingLabelPdfResponse::class => new ShippingLabelPdfResponse(),
 			AdminMenu::class => new AdminMenu(),
 			Assets::class => new Assets( $this->get( OptionRepository::class ) ),
-			Notices::class => new Notices( $this->get( Requirements::class ), $this->get( OptionRepository::class ) ),
+			Notices::class => new Notices( $this->get( Requirements::class ) ),
 			PrivacyPolicy::class => new PrivacyPolicy(),
 			SettingsValidator::class => new SettingsValidator( $this->get( OptionRepository::class ) ),
 			SettingsSchema::class => new SettingsSchema( $this->get( SettingsValidator::class ) ),

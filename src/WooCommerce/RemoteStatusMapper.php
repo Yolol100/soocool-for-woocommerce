@@ -53,7 +53,7 @@ final class RemoteStatusMapper {
 					continue;
 				}
 
-				$status = $this->statuses->normalize( $value );
+				$status = $this->statuses->normalize_remote( $value );
 				if ( '' !== $status ) {
 					return $status;
 				}

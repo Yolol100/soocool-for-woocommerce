@@ -131,8 +131,8 @@ final class BulkSyncActions {
 			$duplicates = $this->query_absint( self::DUPLICATES_PARAM );
 			$failed     = $this->query_absint( self::FAILED_PARAM ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$message = sprintf(
-				/* translators: 1: queued orders, 2: already queued orders, 3: scheduling failures. */
-				__( '%1$d nieuwe SooCool-synchronisaties ingepland. %2$d stonden al ingepland. %3$d konden niet worden ingepland.', 'soocool-for-woocommerce' ),
+				/* translators: 1: queued orders, 2: already synchronized or queued orders, 3: scheduling failures. */
+				__( '%1$d nieuwe SooCool-synchronisaties ingepland. %2$d waren al gesynchroniseerd of stonden al ingepland. %3$d konden niet worden ingepland.', 'soocool-for-woocommerce' ),
 				$queued,
 				$duplicates,
 				$failed

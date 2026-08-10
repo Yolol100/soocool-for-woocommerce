@@ -353,9 +353,10 @@ final class WebhookOrderResolver {
 
 	public function link_remote_order( WC_Order $order, array $remote_order, string $order_reference ): void {
 		try {
-			$this->meta->save_success( $order, $remote_order, $order_reference );
+			$this->meta->save_success( $order, $remote_order, $order_reference, true );
 		} catch ( \InvalidArgumentException ) {
 			// Keep the webhook update working even when the remote lookup response omits a stable orderId.
+			return;
 		}
 	}
 

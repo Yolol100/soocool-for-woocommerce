@@ -95,6 +95,10 @@ final class DeliveryOptions {
 			return;
 		}
 
+		if ( $this->checkout_uses_free_shipping( $cart ) ) {
+			return;
+		}
+
 		$country = $this->checkout_delivery_country();
 		if ( ! in_array( $country, array( 'NL', 'BE' ), true ) ) {
 			return;
@@ -241,7 +245,7 @@ final class DeliveryOptions {
 		}
 
 		if ( $required ) {
-			$shipping_methods = $this->selected_shipping_methods( $checkout_data, $woocommerce );
+			$shipping_methods = $this->selected_shipping_methods( $checkout_data, $woocommerce, $cart );
 			if ( array() !== $shipping_methods ) {
 				$required = false;
 				foreach ( $shipping_methods as $method ) {
@@ -257,19 +261,44 @@ final class DeliveryOptions {
 	}
 
 	/** @param array<string, mixed> $checkout_data @return array<int, string> */
-	private function selected_shipping_methods( array $checkout_data, mixed $woocommerce ): array {
+	private function selected_shipping_methods( array $checkout_data, mixed $woocommerce, mixed $cart = null ): array {
 		$methods = $checkout_data['shipping_method'] ?? array();
 		if ( ! is_array( $methods ) ) {
 			$methods = is_scalar( $methods ) ? array( $methods ) : array();
 		}
 
-		if ( array() === $methods && is_object( $woocommerce ) && isset( $woocommerce->session ) && is_object( $woocommerce->session ) && method_exists( $woocommerce->session, 'get' ) ) {
-			$session_methods = $woocommerce->session->get( 'chosen_shipping_methods', array() );
-			$methods         = is_array( $session_methods ) ? $session_methods : array();
+		$clean = $this->normalize_shipping_methods( $methods );
+		if ( array() !== $clean ) {
+			return $clean;
 		}
 
+		if ( null === $cart && is_object( $woocommerce ) && isset( $woocommerce->cart ) && is_object( $woocommerce->cart ) ) {
+			$cart = $woocommerce->cart;
+		}
+
+		$shipping_calculated = is_object( $cart ) && method_exists( $cart, 'has_calculated_shipping' ) && (bool) $cart->has_calculated_shipping();
+		if ( $shipping_calculated ) {
+			$selected_rates = is_object( $cart ) && method_exists( $cart, 'get_shipping_methods' ) ? $cart->get_shipping_methods() : array();
+			return is_iterable( $selected_rates ) ? $this->normalize_shipping_methods( $selected_rates ) : array();
+		}
+
+		if ( is_object( $woocommerce ) && isset( $woocommerce->session ) && is_object( $woocommerce->session ) && method_exists( $woocommerce->session, 'get' ) ) {
+			$session_methods = $woocommerce->session->get( 'chosen_shipping_methods', array() );
+			if ( is_array( $session_methods ) ) {
+				return $this->normalize_shipping_methods( $session_methods );
+			}
+		}
+
+		return array();
+	}
+
+	/** @param iterable<mixed> $methods @return array<int, string> */
+	private function normalize_shipping_methods( iterable $methods ): array {
 		$clean = array();
 		foreach ( $methods as $method ) {
+			if ( is_object( $method ) && method_exists( $method, 'get_method_id' ) ) {
+				$method = $method->get_method_id();
+			}
 			if ( ! is_scalar( $method ) ) {
 				continue;
 			}
@@ -281,6 +310,25 @@ final class DeliveryOptions {
 		}
 
 		return array_values( array_unique( $clean ) );
+	}
+
+	private function checkout_uses_free_shipping( mixed $cart ): bool {
+		$woocommerce = function_exists( 'WC' ) ? WC() : null;
+		$methods     = $this->selected_shipping_methods( array(), $woocommerce, $cart );
+
+		$has_delivery_method = false;
+		foreach ( array_values( array_unique( $methods ) ) as $method ) {
+			if ( 'local_pickup' === $method || str_starts_with( $method, 'local_pickup:' ) ) {
+				continue;
+			}
+
+			$has_delivery_method = true;
+			if ( 'free_shipping' !== $method && ! str_starts_with( $method, 'free_shipping:' ) ) {
+				return false;
+			}
+		}
+
+		return $has_delivery_method;
 	}
 
 	private function checkout_delivery_country(): string {

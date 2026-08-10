@@ -125,12 +125,32 @@ final class OrderMeta {
 		return 1 === preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $time ) ? $time : '';
 	}
 
-	/** @param array<string, mixed> $body */
-	public function save_success( WC_Order $order, array $body, string $order_reference = '' ): void {
-		$preserve_workflow_status = $this->has_nonfailure_authoritative_workflow_status( $order, true );
-		$soocool_order_id         = $this->extract_order_id( $body );
+	/**
+	 * @param array<string, mixed> $body
+	 * @param bool $preserve_existing_failure Keep an existing failure while a lookup/refresh
+	 *                                        is still waiting for an authoritative remote status.
+	 */
+	public function save_success( WC_Order $order, array $body, string $order_reference = '', bool $preserve_existing_failure = false ): void {
+		if ( method_exists( $order, 'read_meta_data' ) ) {
+			$order->read_meta_data( true );
+		}
+
+		$previous_order_id = $this->get_soocool_order_id( $order );
+		$soocool_order_id  = $this->extract_order_id( $body );
 		if ( '' === $soocool_order_id ) {
 			throw new \InvalidArgumentException( 'Missing valid SooCool order ID.' );
+		}
+
+		$same_remote_order        = '' !== $previous_order_id && hash_equals( $previous_order_id, $soocool_order_id );
+		$remote_order_changed     = '' !== $previous_order_id && ! $same_remote_order;
+		$current_sync_status      = $this->get_sync_status( $order );
+		$preserve_failure_status  = $preserve_existing_failure && ! $remote_order_changed && in_array( $current_sync_status, array( 'soocool_failed', 'soocool_rejected' ), true );
+		$preserve_workflow_status = ! $remote_order_changed && ( $preserve_failure_status || $this->has_nonfailure_authoritative_workflow_status( $order ) );
+
+		if ( $remote_order_changed ) {
+			foreach ( array( self::TRACKING_CODE, self::TRACKING_URL, self::GOOD_IDS, self::LAST_WEBHOOK_AT, self::LAST_WEBHOOK_EVENT_AT, self::LAST_WEBHOOK_EVENT_ID, self::LAST_WEBHOOK_SEQUENCE, self::WEBHOOK_EVENT_IDS ) as $remote_meta_key ) {
+				$order->delete_meta_data( $remote_meta_key );
+			}
 		}
 
 		$order->update_meta_data( self::ORDER_ID, $soocool_order_id );
@@ -143,6 +163,8 @@ final class OrderMeta {
 		$good_ids = $this->extract_good_ids( $body );
 		if ( array() !== $good_ids ) {
 			$order->update_meta_data( self::GOOD_IDS, implode( ',', $good_ids ) );
+		} elseif ( $this->has_explicit_empty_goods_collection( $body ) ) {
+			$order->delete_meta_data( self::GOOD_IDS );
 		}
 
 		$our_reference = '';
@@ -160,20 +182,24 @@ final class OrderMeta {
 			$order->update_meta_data( self::SYNC_STATUS, 'synced' );
 		}
 		$order->update_meta_data( self::LAST_SYNCED_AT, current_time( 'mysql' ) );
-		$order->delete_meta_data( self::LAST_ERROR );
+		if ( ! $preserve_failure_status ) {
+			$order->delete_meta_data( self::LAST_ERROR );
+		}
 		$order->save();
-		do_action( 'soocool_order_synced', $order );
+		if ( ! $preserve_failure_status ) {
+			do_action( 'soocool_order_synced', $order );
+		}
 	}
 
 	public function save_pending( WC_Order $order ): void {
-		if ( ! $this->has_nonfailure_authoritative_workflow_status( $order, true ) ) {
+		if ( ! $this->has_authoritative_workflow_status( $order, true ) ) {
 			$order->update_meta_data( self::SYNC_STATUS, 'pending' );
 		}
 		$order->save();
 	}
 
 	public function save_retry_pending( WC_Order $order, string $message ): void {
-		if ( ! $this->has_nonfailure_authoritative_workflow_status( $order, true ) ) {
+		if ( ! $this->has_authoritative_workflow_status( $order, true ) ) {
 			$order->update_meta_data( self::SYNC_STATUS, 'pending' );
 		}
 		$order->update_meta_data( self::LAST_ERROR, sanitize_text_field( $message ) );
@@ -181,11 +207,17 @@ final class OrderMeta {
 	}
 
 	public function save_updated( WC_Order $order ): void {
-		if ( ! $this->has_nonfailure_authoritative_workflow_status( $order, true ) ) {
+		$authoritative_status = $this->has_authoritative_workflow_status( $order, true );
+		$current_status       = $this->get_sync_status( $order );
+		$remote_failure       = in_array( $current_status, array( 'soocool_failed', 'soocool_rejected' ), true );
+
+		if ( ! $authoritative_status ) {
 			$order->update_meta_data( self::SYNC_STATUS, 'synced' );
 		}
 		$order->update_meta_data( self::LAST_SYNCED_AT, current_time( 'mysql' ) );
-		$order->delete_meta_data( self::LAST_ERROR );
+		if ( ! $remote_failure ) {
+			$order->delete_meta_data( self::LAST_ERROR );
+		}
 		$order->save();
 	}
 
@@ -259,9 +291,9 @@ final class OrderMeta {
 			$changed = true;
 		}
 
-		$failure_status    = in_array( $status, self::failure_statuses(), true );
-		$successful_update = $changed && ! $failure_status;
-		if ( $successful_update && '' !== $this->get_last_error( $order ) ) {
+		$failure_status                 = in_array( $status, self::failure_statuses(), true );
+		$successful_status_confirmation = '' !== $status && ! $failure_status;
+		if ( $successful_status_confirmation && '' !== $this->get_last_error( $order ) ) {
 			$order->delete_meta_data( self::LAST_ERROR );
 			$changed = true;
 		}
@@ -366,6 +398,24 @@ final class OrderMeta {
 		}
 
 		return '' !== $fallback ? sanitize_text_field( $fallback ) : '';
+	}
+
+	/** @param array<string, mixed> $body */
+	private function has_explicit_empty_goods_collection( array $body ): bool {
+		$found_empty = false;
+		foreach ( $this->response_containers( $body ) as $container ) {
+			if ( ! array_key_exists( 'goods', $container ) ) {
+				continue;
+			}
+
+			if ( ! is_array( $container['goods'] ) || array() !== $container['goods'] ) {
+				return false;
+			}
+
+			$found_empty = true;
+		}
+
+		return $found_empty;
 	}
 
 	/** @param array<string, mixed> $body @return array<int, int> */

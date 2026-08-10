@@ -125,12 +125,20 @@ final class DeliveryOptionsIntegration {
 
 	/** @return array{date:string,time_from:string,time_to:string}|null */
 	private function persist_request_selection( WP_REST_Request $request ): ?array {
-		$selection = $this->selection_from_request( $request );
-		if ( null === $selection ) {
-			$this->checkout_request->clear_persisted_selection();
+		$fields = $request->get_param( 'additional_fields' );
+		if ( ! is_array( $fields ) ) {
+			$fallback = $request['additional_fields'] ?? null;
+			$fields   = is_array( $fallback ) ? $fallback : null;
+		}
+
+		// Checkout update requests may omit additional_fields entirely. In that case this
+		// request is unrelated to our field, so keep the previously persisted selection.
+		if ( ! is_array( $fields ) || ! array_key_exists( self::FIELD_ID, $fields ) ) {
 			return null;
 		}
-		if ( ! $this->schedule->is_valid_time_slot( $selection['date'], $selection['time_from'], $selection['time_to'] ) ) {
+
+		$selection = $this->parse_value( $fields[ self::FIELD_ID ] );
+		if ( null === $selection || ! $this->schedule->is_valid_time_slot( $selection['date'], $selection['time_from'], $selection['time_to'] ) ) {
 			$this->checkout_request->clear_persisted_selection();
 			return null;
 		}
@@ -168,15 +176,6 @@ final class DeliveryOptionsIntegration {
 		return $options;
 	}
 
-	/** @return array{date:string,time_from:string,time_to:string}|null */
-	private function selection_from_request( WP_REST_Request $request ): ?array {
-		$fields = $request->get_param( 'additional_fields' );
-		if ( ! is_array( $fields ) ) {
-			$fields = $request['additional_fields'] ?? array();
-		}
-		$value = is_array( $fields ) ? ( $fields[ self::FIELD_ID ] ?? '' ) : '';
-		return $this->parse_value( $value );
-	}
 
 	/** @return array{date:string,time_from:string,time_to:string}|null */
 	private function parse_value( mixed $value ): ?array {

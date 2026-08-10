@@ -241,7 +241,7 @@ final class ShippingLabelService {
 		}
 
 		try {
-			$this->meta->save_success( $order, $remote_order, $order_reference );
+			$this->meta->save_success( $order, $remote_order, $order_reference, true );
 		} catch ( \Throwable ) {
 			return $soocool_order_id;
 		}

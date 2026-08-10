@@ -30,7 +30,7 @@ final class OrderEmailLabels {
 		add_filter( 'woocommerce_email_attachments', array( $this, 'add_admin_label_attachments' ), 10, 4 );
 		add_action( 'soocool_order_synced', array( $this, 'schedule_prefetch' ) );
 		add_action( self::PREFETCH_HOOK, array( $this, 'prefetch_for_order' ), 10, 2 );
-		add_action( self::CLEANUP_HOOK, array( $this, 'cleanup_cached_files' ) );
+		add_action( self::CLEANUP_HOOK, array( $this, 'cleanup_cached_files' ), 10, 3 );
 		add_action( 'wp_mail_succeeded', array( $this, 'cleanup_temporary_files' ) );
 		add_action( 'wp_mail_failed', array( $this, 'cleanup_temporary_files' ) );
 		add_action( 'shutdown', array( $this, 'cleanup_temporary_files' ) );
@@ -95,14 +95,21 @@ final class OrderEmailLabels {
 		if ( array() === $paths ) {
 			return;
 		}
-		$this->cleanup_cached_files( $order_id );
-		if ( ! set_transient( $this->cache_key( $order_id ), $paths, self::CACHE_TTL ) ) {
+		$this->cleanup_current_cache( $order_id );
+		$generation = wp_generate_uuid4();
+		$cache      = array(
+			'generation' => $generation,
+			'paths'      => $paths,
+		);
+		if ( ! set_transient( $this->cache_key( $order_id ), $cache, self::CACHE_TTL ) ) {
 			$this->delete_paths( $paths );
 			$this->logger->error( 'SooCool email label cache could not be persisted.', array( 'wcOrderId' => $order_id ) );
 			return;
 		}
-		if ( false === wp_next_scheduled( self::CLEANUP_HOOK, array( $order_id ) ) ) {
-			wp_schedule_single_event( time() + self::CACHE_TTL, self::CLEANUP_HOOK, array( $order_id ) );
+		if ( ! wp_schedule_single_event( time() + self::CACHE_TTL, self::CLEANUP_HOOK, array( $order_id, $paths, $generation ) ) ) {
+			delete_transient( $this->cache_key( $order_id ) );
+			$this->delete_paths( $paths );
+			$this->logger->error( 'SooCool email label cleanup could not be scheduled.', array( 'wcOrderId' => $order_id ) );
 		}
 	}
 
@@ -112,8 +119,8 @@ final class OrderEmailLabels {
 			return $attachments;
 		}
 
-		$cached = get_transient( $this->cache_key( (int) $object->get_id() ) );
-		$paths  = is_array( $cached ) ? array_values( array_filter( $cached, array( $this, 'is_valid_cached_pdf' ) ) ) : array();
+		$cached = $this->cache_payload( get_transient( $this->cache_key( (int) $object->get_id() ) ) );
+		$paths  = array_values( array_filter( $cached['paths'], array( $this, 'is_valid_cached_pdf' ) ) );
 		if ( array() === $paths ) {
 			$this->logger->info( 'SooCool admin email sent without labels because the asynchronous cache was empty.', array( 'wcOrderId' => $object->get_id() ) );
 			return $attachments;
@@ -127,12 +134,70 @@ final class OrderEmailLabels {
 		return array_values( array_unique( $attachments ) );
 	}
 
-	public function cleanup_cached_files( int $order_id ): void {
-		$cached = get_transient( $this->cache_key( $order_id ) );
-		if ( is_array( $cached ) ) {
-			$this->delete_paths( $cached );
+	/** @param array<int, mixed> $expected_paths */
+	public function cleanup_cached_files( int $order_id, array $expected_paths = array(), string $expected_generation = '' ): void {
+		$expected_paths = $this->valid_path_strings( $expected_paths );
+		if ( array() === $expected_paths ) {
+			return;
 		}
+
+		$cached            = $this->cache_payload( get_transient( $this->cache_key( $order_id ) ) );
+		$cached_paths      = $cached['paths'];
+		$cached_generation = $cached['generation'];
+		$same_generation   = '' !== $expected_generation
+			? '' !== $cached_generation && hash_equals( $cached_generation, $expected_generation )
+			: '' === $cached_generation;
+		if ( $same_generation && $cached_paths === $expected_paths ) {
+			$this->delete_paths( $expected_paths );
+			delete_transient( $this->cache_key( $order_id ) );
+			return;
+		}
+
+		// A stale cleanup task may outlive a newer cache generation. Never delete a
+		// path that is currently referenced by that newer cache, even if a temporary
+		// filename happens to be reused.
+		$current_paths = array_fill_keys( $cached_paths, true );
+		$this->delete_paths(
+			array_values(
+				array_filter(
+					$expected_paths,
+					static fn ( string $path ): bool => ! isset( $current_paths[ $path ] )
+				)
+			)
+		);
+	}
+
+	private function cleanup_current_cache( int $order_id ): void {
+		$cached = $this->cache_payload( get_transient( $this->cache_key( $order_id ) ) );
+		$this->delete_paths( $cached['paths'] );
 		delete_transient( $this->cache_key( $order_id ) );
+	}
+
+	/** @return array{generation: string, paths: array<int, string>} */
+	private function cache_payload( mixed $cached ): array {
+		if ( ! is_array( $cached ) ) {
+			return array( 'generation' => '', 'paths' => array() );
+		}
+
+		if ( isset( $cached['paths'] ) && is_array( $cached['paths'] ) ) {
+			$generation = isset( $cached['generation'] ) && is_scalar( $cached['generation'] )
+				? sanitize_text_field( (string) $cached['generation'] )
+				: '';
+			return array(
+				'generation' => $generation,
+				'paths'      => $this->valid_path_strings( $cached['paths'] ),
+			);
+		}
+
+		// Backwards compatibility for transients created before cache generations were
+		// stored explicitly. Existing two-argument cleanup events must remain safe after
+		// updating the plugin.
+		return array( 'generation' => '', 'paths' => $this->valid_path_strings( $cached ) );
+	}
+
+	/** @param array<int, mixed> $paths @return array<int, string> */
+	private function valid_path_strings( array $paths ): array {
+		return array_values( array_filter( $paths, static fn ( mixed $path ): bool => is_string( $path ) && '' !== $path ) );
 	}
 
 	public function cleanup_temporary_files(): void {

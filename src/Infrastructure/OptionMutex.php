@@ -44,7 +44,14 @@ final class OptionMutex {
 			return null;
 		}
 
-		$replacement = ( time() + $ttl_seconds ) . '|' . $token;
+		$current_expiration = self::expiration( $value );
+		$new_expiration     = time() + $ttl_seconds;
+		if ( 0 < $current_expiration ) {
+			// wpdb::update() reports 0 for a no-op update, so keep each refresh value distinct.
+			$new_expiration = max( $new_expiration, $current_expiration + 1 );
+		}
+
+		$replacement = $new_expiration . '|' . $token;
 		return self::compare_and_swap( $key, maybe_serialize( $value ), $replacement ) ? $replacement : null;
 	}
 

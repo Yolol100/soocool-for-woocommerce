@@ -4,6 +4,8 @@
  */
 
 #soocool-order-status,
+.soocool-order-badge,
+.soocool-list-sync-action,
 .soocool-list-label-actions,
 .soocool-confirm-modal {
 --soocool-color-text: #171717;
@@ -88,13 +90,16 @@ margin: 0;
 
 .soocool-order-card__header {
   display: grid;
-  gap: 8px;
-  align-items: start;
-  justify-content: space-between;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
 }
 
 .soocool-order-badge {
   display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  vertical-align: middle;
   align-items: center;
   padding: 4px 9px;
   color: var(--soocool-color-text);
@@ -288,9 +293,12 @@ display: grid;
 .soocool-order-delivery-editor__select {
 width: 100%;
   min-height: 34px;
+  padding-right: 32px;
   border-color: var(--soocool-color-border-strong);
   border-radius: 4px;
+  font-size: 13px;
 }
+
 
 .soocool-order-delivery-editor__select:focus {
 border-color: var(--soocool-color-accent);
@@ -385,7 +393,7 @@ min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
   overflow-wrap: anywhere;
-  word-break: break-word;
+  word-break: normal;
 }
 
 #soocool-order-status .soocool-order-button,
@@ -403,7 +411,11 @@ height: auto;
   line-height: 1.35;
   white-space: normal;
   overflow-wrap: anywhere;
-  word-break: break-word;
+  word-break: normal;
+}
+
+.column-soocool_status {
+  width: 190px;
 }
 
 .soocool-list-sync-action {
@@ -415,7 +427,7 @@ display: grid;
 
 .soocool-list-sync-action__button {
 width: 100%;
-  max-width: 216px;
+  max-width: 190px;
   height: auto;
   min-height: 34px;
   padding: 6px 10px;
@@ -427,11 +439,11 @@ width: 100%;
 .soocool-list-sync-action .soocool-manual-sync-feedback {
 display: block;
   overflow-wrap: anywhere;
-  word-break: break-word;
+  word-break: normal;
 }
 
 .soocool-list-sync-error-details {
-max-width: 216px;
+max-width: 190px;
   color: #8a2424;
   font-size: 11px;
   line-height: 1.35;
@@ -451,12 +463,12 @@ width: max-content;
 
 .soocool-list-sync-error {
 display: block;
-  max-width: 216px;
+  max-width: 190px;
   color: #8a2424;
   font-size: 11px;
   line-height: 1.35;
   overflow-wrap: anywhere;
-  word-break: break-word;
+  word-break: normal;
 }
 
 .soocool-list-sync-action .soocool-manual-sync-feedback.is-success {
@@ -469,7 +481,7 @@ display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 216px;
+  max-width: 190px;
   min-height: 38px;
   padding: 6px 10px;
   border: 1px solid rgba(191, 4, 19, 0.48);

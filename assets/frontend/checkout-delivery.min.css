@@ -1,1 +1,860 @@
-.soocool-delivery-options{--soocool-delivery-focus:#7a0010;--soocool-delivery-focus-gap:#ffffff;box-sizing:border-box;width:100%;max-width:100%;min-width:0;overflow-x:hidden;margin:0 0 20px;padding:14px;border:1px solid rgba(197,22,29,0.13);border-radius:14px;background:#fff;box-shadow:0 10px 26px rgba(20,20,20,0.055);} .soocool-delivery-options *,.soocool-delivery-options *::before,.soocool-delivery-options *::after{box-sizing:border-box;} .soocool-delivery-options__title{margin:0 0 7px !important;color:#292929 !important;font-size:17px !important;font-weight:700 !important;line-height:1.2 !important;letter-spacing:normal !important;} .soocool-delivery-options__intro{margin:0 0 12px;color:#292929;font-size:14px;line-height:1.42;} .soocool-delivery-options__intro p{margin:0;} .soocool-delivery-options__intro p+p{margin-top:2px;} .soocool-delivery-options__notice,.soocool-delivery-time-empty{margin:0 0 12px;padding:10px 11px;border:1px solid #e8e8e8;border-radius:10px;background:#fafafa;color:#555;font-size:13px;line-height:1.4;} .soocool-delivery-options__alert[hidden],.soocool-delivery-time-group[hidden]{display:none;} .soocool-delivery-options__alert{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:9px 10px;border:1px solid rgba(197,22,29,0.18);border-radius:10px;background:rgba(197,22,29,0.055);color:#681015;font-size:13px;line-height:1.35;} .soocool-delivery-options__alert-text{min-width:0;overflow-wrap:anywhere;} .soocool-delivery-options__change{padding:0;border:0;background:transparent;color:#a5121a;font:inherit;font-weight:700;text-decoration:none !important;cursor:pointer;} .soocool-delivery-options__change:focus-visible,.soocool-delivery-time-more:focus-visible{outline:2px solid var(--soocool-delivery-focus);box-shadow:0 0 0 2px var(--soocool-delivery-focus-gap);outline-offset:3px;} .soocool-delivery-options__section-label{margin:14px 0 7px;color:#292929;font-size:14px;font-weight:700;line-height:1.2;} .soocool-delivery-options__month-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;padding:4px;border:1px solid #f0dadd;border-radius:12px;background:#fffafa;} .soocool-delivery-options__month-nav[hidden]{display:none;} .soocool-delivery-options__month-label{min-width:0;color:#292929;font-size:13px;font-weight:700;line-height:1.2;letter-spacing:0.01em;text-align:center;} .soocool-delivery-options__month-button{display:inline-flex;align-items:center;justify-content:center;inline-size:32px;block-size:30px;padding:0;border:1px solid transparent;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(20,20,20,0.04);color:#292929;font-size:22px;font-weight:700;line-height:1;cursor:pointer;} .soocool-delivery-options__month-button:hover,.soocool-delivery-options__month-button:focus{border-color:rgba(197,22,29,0.42);background:rgba(197,22,29,0.045);color:#a5121a;text-decoration:none;} .soocool-delivery-options__month-button:disabled{border-color:#eeeeee;background:#f8f8f8;color:#9a9a9a;cursor:not-allowed;} .soocool-delivery-options__month-button:focus-visible{outline:2px solid var(--soocool-delivery-focus);box-shadow:0 0 0 2px var(--soocool-delivery-focus-gap);outline-offset:2px;} .soocool-delivery-options__picker{display:grid;width:100%;max-width:100%;min-width:0;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;overflow:visible;padding:0;} .soocool-delivery-day{display:block;min-width:0;} .soocool-delivery-day input,.soocool-delivery-time-slot input{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;} .soocool-delivery-day__card{display:grid;place-items:center;min-height:46px;padding:5px 4px;border:1px solid #dedede;border-radius:12px;background:linear-gradient(180deg,#ffffff 0%,#fdfdfd 100%);color:#191919;text-align:center;inline-size:100%;transition:border-color 150ms ease,background-color 150ms ease,box-shadow 150ms ease,transform 150ms ease;} .soocool-delivery-day.is-available,.soocool-delivery-time-slot.is-available{cursor:pointer;} .soocool-delivery-day.is-available:hover .soocool-delivery-day__card{border-color:rgba(197,22,29,0.42);box-shadow:0 5px 14px rgba(20,20,20,0.07);transform:translateY(-1px);} .soocool-delivery-day input:checked+.soocool-delivery-day__card{position:relative;border-color:#c5161d;background:#fff7f8;box-shadow:0 0 0 1px rgba(197,22,29,0.11),0 8px 18px rgba(197,22,29,0.1);} .soocool-delivery-day input:checked+.soocool-delivery-day__card::after{content:"✓";position:absolute;top:4px;right:4px;display:inline-grid;place-items:center;inline-size:17px;block-size:17px;border-radius:999px;background:#c5161d;color:#fff;font-size:11px;font-weight:700;line-height:1;} .soocool-delivery-day input:focus-visible+.soocool-delivery-day__card,.soocool-delivery-time-slot input:focus-visible+.soocool-delivery-time-slot__card{outline:2px solid var(--soocool-delivery-focus);box-shadow:0 0 0 2px var(--soocool-delivery-focus-gap);outline-offset:2px;} .soocool-delivery-day.is-disabled{cursor:not-allowed;pointer-events:none;} .soocool-delivery-day.is-disabled .soocool-delivery-day__card{border-color:#d6d6d6;border-style:dashed;background:#f1f1f1;color:#9a9a9a;cursor:not-allowed;box-shadow:none;opacity:0.78;} .soocool-delivery-day.is-disabled .soocool-delivery-day__day{text-decoration:line-through;text-decoration-thickness:2px;} .soocool-delivery-day__weekday,.soocool-delivery-day__month{font-size:10.5px;font-weight:600;line-height:1.1;text-transform:uppercase;letter-spacing:0.02em;} .soocool-delivery-day__day{margin:1px 0;font-size:15.5px;font-weight:700;line-height:1;} .soocool-delivery-options__screen-reader-text{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);border:0;white-space:nowrap;} .soocool-delivery-options__time{margin-top:2px;} .soocool-delivery-options.is-time-collapsed .soocool-delivery-options__time{display:none;} .soocool-delivery-options__time-help{margin:-2px 0 8px;color:#292929;font-size:14px;line-height:1.35;} .soocool-delivery-time-list{display:grid;width:100%;max-width:100%;min-width:0;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;} .soocool-delivery-time-slot{display:block;} .soocool-delivery-time-slot.is-available{cursor:pointer;} .soocool-delivery-time-slot.is-extra{display:none;} .soocool-delivery-time-group.is-expanded .soocool-delivery-time-slot.is-extra{display:block;} .soocool-delivery-time-slot__card{display:flex;max-width:100%;min-width:0;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:10px 12px;border:1px solid #dedede;border-radius:10px;background:#fff;color:#1d1d1d;box-shadow:0 1px 2px rgba(20,20,20,0.03);transition:border-color 150ms ease,background-color 150ms ease,box-shadow 150ms ease;} .soocool-delivery-time-slot.is-available:hover .soocool-delivery-time-slot__card{border-color:rgba(197,22,29,0.42);background:#fffafa;box-shadow:0 2px 8px rgba(20,20,20,0.05);} .soocool-delivery-time-slot input:checked+.soocool-delivery-time-slot__card{border-color:#c5161d;background:#fff7f8;box-shadow:0 0 0 1px rgba(197,22,29,0.08);} .soocool-delivery-time-slot__main{display:grid;gap:2px;min-width:0;} .soocool-delivery-time-slot__name{color:#191919;overflow:hidden;text-overflow:ellipsis;font-size:15px;font-weight:600;line-height:1.25;white-space:nowrap;} .soocool-delivery-time-slot__range{color:#666;font-size:13px;font-weight:500;line-height:1.25;white-space:nowrap;} .soocool-delivery-time-slot__status{color:#777;font-size:12px;line-height:1.2;} .soocool-delivery-time-slot__check{position:relative;inline-size:16px;block-size:16px;border:1.5px solid #bdbdbd;border-radius:999px;background:#fff;flex:0 0 auto;} .soocool-delivery-time-slot__check::after{position:absolute;inset:50% auto auto 50%;inline-size:6px;block-size:6px;border-radius:999px;background:#c5161d;content:"";opacity:0;transform:translate(-50%,-50%) scale(0.6);transition:opacity 150ms ease,transform 150ms ease;} .soocool-delivery-time-slot input:checked+.soocool-delivery-time-slot__card .soocool-delivery-time-slot__check{border-color:#c5161d;} .soocool-delivery-time-slot input:checked+.soocool-delivery-time-slot__card .soocool-delivery-time-slot__check::after{opacity:1;transform:translate(-50%,-50%) scale(1);} .soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__card{border-color:#eeeeee;background:#f8f8f8;color:#6c6c6c;cursor:not-allowed;box-shadow:none;} .soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__name,.soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__range,.soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__status{color:#6c6c6c;} .soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__check{border-color:#d6d6d6;background:#f1f1f1;} button.soocool-delivery-time-more,.soocool-delivery-options .soocool-delivery-time-more{display:inline-flex;align-items:center;justify-content:center;margin-top:10px;padding:13px 18px;border:0;border-radius:6px;background:#c5161d;color:#fff;font-size:14px;line-height:1.2;font-weight:700;text-decoration:none;} button.soocool-delivery-time-more:hover,button.soocool-delivery-time-more:focus,.soocool-delivery-options .soocool-delivery-time-more:hover,.soocool-delivery-options .soocool-delivery-time-more:focus{background:#b61219;color:#fff;text-decoration:none;} .soocool-order-delivery-detail{margin:0 0 32px;} .woocommerce-checkout .soocool-delivery-options,.woocommerce-checkout-review-order .soocool-delivery-options,#order_review .soocool-delivery-options,#payment .soocool-delivery-options{inline-size:min(100%,calc(100vw - 64px));max-inline-size:100%;margin-inline:0;overflow:hidden;} .soocool-delivery-options__picker,.soocool-delivery-options__time,.soocool-delivery-time-group,.soocool-delivery-time-list,.soocool-delivery-time-slot,.soocool-delivery-time-slot__card,.soocool-delivery-options__alert{max-inline-size:100%;min-inline-size:0;} .soocool-delivery-options__time,.soocool-delivery-time-group,.soocool-delivery-time-list{overflow:hidden;} @media (max-width:680px){.soocool-delivery-options__picker{grid-template-columns:repeat(3,minmax(0,1fr));}} @media (max-width:600px){.soocool-delivery-options{padding:14px;} .soocool-delivery-options__picker{gap:6px;} .soocool-delivery-day__card{min-height:48px;} .soocool-delivery-time-slot__card{min-height:50px;padding:9px 11px;} .woocommerce-checkout .soocool-delivery-options,.woocommerce-checkout-review-order .soocool-delivery-options,#order_review .soocool-delivery-options,#payment .soocool-delivery-options{inline-size:min(100%,calc(100vw - 28px));}} @media (max-width:560px){.soocool-delivery-options__picker,.soocool-delivery-time-list{grid-template-columns:repeat(2,minmax(0,1fr));}} @media (max-width:380px){.soocool-delivery-options__picker,.soocool-delivery-time-list{grid-template-columns:1fr;}} @supports (container-type:inline-size){.soocool-delivery-options{container-type:inline-size;} @container (max-width:520px){.soocool-delivery-options__picker{grid-template-columns:repeat(3,minmax(0,1fr));} .soocool-delivery-time-list{grid-template-columns:1fr;}} @container (max-width:420px){.soocool-delivery-options{padding:14px;} .soocool-delivery-options__picker{grid-template-columns:repeat(2,minmax(0,1fr));} .soocool-delivery-options__month-nav{gap:6px;} .soocool-delivery-options__month-button{inline-size:32px;block-size:32px;}} @container (max-width:300px){.soocool-delivery-options__picker,.soocool-delivery-time-list{grid-template-columns:1fr;}}} .soocool-delivery-options__step{display:flex;align-items:center;gap:8px;margin:13px 0 8px;} .soocool-delivery-options__step-number{display:inline-grid;place-items:center;inline-size:22px;block-size:22px;border-radius:999px;background:#c5161d;color:#ffffff;font-size:12px;font-weight:800;line-height:1;} @media (max-width:480px){.soocool-delivery-options{padding:12px;} .soocool-delivery-options__title{font-size:16px !important;} .soocool-delivery-options__intro,.soocool-delivery-options__time-help{font-size:13px;} .soocool-delivery-options__alert{display:grid;} .soocool-delivery-options__change{width:100%;min-height:36px;border-radius:6px;background:#c5161d;color:#ffffff;} .soocool-delivery-options__picker{grid-template-columns:repeat(2,minmax(0,1fr));} .soocool-delivery-time-list{grid-template-columns:1fr;}} @supports (container-type:inline-size){@container (max-width:440px){.soocool-delivery-options__alert{display:grid;} .soocool-delivery-options__change{width:100%;min-height:36px;border-radius:6px;background:#c5161d;color:#ffffff;}}} @media (max-width:390px){.soocool-delivery-options{inline-size:100%;padding:10px;border-radius:10px;} .woocommerce-checkout .soocool-delivery-options,.woocommerce-checkout-review-order .soocool-delivery-options,#order_review .soocool-delivery-options,#payment .soocool-delivery-options{inline-size:100%;max-inline-size:100%;} .soocool-delivery-options__picker,.soocool-delivery-time-list{grid-template-columns:1fr;} .soocool-delivery-options__alert,.soocool-delivery-time-slot__card{gap:6px;} .soocool-delivery-day__card,.soocool-delivery-time-slot__card,.soocool-delivery-options__notice,.soocool-delivery-time-empty{overflow-wrap:anywhere;}} .soocool-delivery-options .soocool-delivery-day.is-available .soocool-delivery-day__card{border-color:#dddddd;background:#ffffff;color:#111111;} .soocool-delivery-options .soocool-delivery-day.is-available:hover .soocool-delivery-day__card{border-color:rgba(197,22,29,0.42);background:#fff7f8;} .soocool-delivery-options .soocool-delivery-day.is-disabled{cursor:not-allowed;pointer-events:none;} .soocool-delivery-options .soocool-delivery-day.is-disabled .soocool-delivery-day__card{border:1px dashed #d6d6d6;background:#f1f1f1;color:#9a9a9a;cursor:not-allowed;opacity:0.78;box-shadow:none;transform:none;} .soocool-delivery-options .soocool-delivery-day input:checked+.soocool-delivery-day__card{border-color:#c5161d;background:#fff2f3;} .soocool-order-delivery-detail__title{margin-top:1rem;margin-bottom:14px;} .soocool-order-delivery-detail__card{display:grid;gap:10px;padding:18px 20px;border:1px solid #e5e5e5;border-left:4px solid #c5161d;border-radius:8px;background:#fff;color:#191919;box-shadow:0 8px 24px rgba(20,20,20,0.06);} .soocool-order-delivery-detail__row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;color:#191919;font-size:15px;line-height:1.45;} .soocool-order-delivery-detail__row span{color:#555;} .soocool-order-delivery-detail__row strong{color:#191919;text-align:right;} .soocool-order-delivery-detail__trace{margin:8px 0 0;padding-top:12px;border-top:1px solid #eeeeee;color:#555;font-size:14px;line-height:1.5;} .soocool-order-delivery-detail__trace strong{color:#191919;} @media (max-width:600px){.soocool-order-delivery-detail__card{padding:16px;} .soocool-order-delivery-detail__row{display:block;} .soocool-order-delivery-detail__row strong{display:block;margin-top:2px;text-align:left;}} @media (forced-colors:active){.soocool-delivery-options,.soocool-delivery-day__card,.soocool-delivery-time-slot__card,.soocool-delivery-options__notice,.soocool-delivery-options__alert,.soocool-delivery-time-empty{border-color:CanvasText;box-shadow:none;} .soocool-delivery-options__change:focus-visible,.soocool-delivery-options__month-button:focus-visible,.soocool-delivery-time-more:focus-visible,.soocool-delivery-day input:focus-visible+.soocool-delivery-day__card,.soocool-delivery-time-slot input:focus-visible+.soocool-delivery-time-slot__card{outline:3px solid Highlight;outline-offset:2px;box-shadow:none;} .soocool-delivery-day input:checked+.soocool-delivery-day__card,.soocool-delivery-time-slot input:checked+.soocool-delivery-time-slot__card{border-color:Highlight;outline:2px solid Highlight;} .soocool-delivery-day.is-disabled .soocool-delivery-day__card,.soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__card{color:GrayText;border-color:GrayText;border-style:dashed;} .soocool-delivery-time-slot__check{background:Highlight;color:HighlightText;}} @media (prefers-reduced-motion:reduce){.soocool-delivery-options *,.soocool-delivery-options *::before,.soocool-delivery-options *::after{scroll-behavior:auto !important;transition-duration:0.01ms !important;animation-duration:0.01ms !important;animation-iteration-count:1 !important;} .soocool-delivery-day.is-available:hover .soocool-delivery-day__card,.soocool-delivery-time-slot.is-available:hover .soocool-delivery-time-slot__card{transform:none;}}
+.soocool-delivery-options {
+  --soocool-delivery-focus: #7a0010;
+  --soocool-delivery-focus-gap: #ffffff;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  margin: 0 0 20px;
+  padding: 14px;
+  border: 1px solid rgba(197, 22, 29, 0.13);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(20, 20, 20, 0.055);
+}
+
+.soocool-delivery-options *,
+.soocool-delivery-options *::before,
+.soocool-delivery-options *::after {
+  box-sizing: border-box;
+}
+
+.soocool-delivery-options__title {
+  margin: 0 0 7px !important;
+  color: #292929 !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: normal !important;
+}
+
+.soocool-delivery-options__intro {
+  margin: 0 0 12px;
+  color: #292929;
+  font-size: 14px;
+  line-height: 1.42;
+}
+
+.soocool-delivery-options__intro p {
+  margin: 0;
+}
+
+.soocool-delivery-options__intro p + p {
+  margin-top: 2px;
+}
+
+.soocool-delivery-options__notice,
+.soocool-delivery-time-empty {
+  margin: 0 0 12px;
+  padding: 10px 11px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  background: #fafafa;
+  color: #555;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.soocool-delivery-options__alert[hidden],
+.soocool-delivery-time-group[hidden] {
+  display: none;
+}
+
+.soocool-delivery-options__alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 9px 10px;
+  border: 1px solid rgba(197, 22, 29, 0.18);
+  border-radius: 10px;
+  background: rgba(197, 22, 29, 0.055);
+  color: #681015;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.soocool-delivery-options__alert-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.soocool-delivery-options__change {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #a5121a;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+
+.soocool-delivery-options__change:focus-visible,
+.soocool-delivery-time-more:focus-visible {
+  outline: 2px solid var(--soocool-delivery-focus);
+  box-shadow: 0 0 0 2px var(--soocool-delivery-focus-gap);
+  outline-offset: 3px;
+}
+
+.soocool-delivery-options__section-label {
+  margin: 14px 0 7px;
+  color: #292929;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.soocool-delivery-options__month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 4px;
+  border: 1px solid #f0dadd;
+  border-radius: 12px;
+  background: #fffafa;
+}
+
+.soocool-delivery-options__month-nav[hidden] {
+  display: none;
+}
+
+.soocool-delivery-options__month-label {
+  min-width: 0;
+  color: #292929;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+
+.soocool-delivery-options__month-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 32px;
+  block-size: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(20, 20, 20, 0.04);
+  color: #292929;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.soocool-delivery-options__month-button:hover,
+.soocool-delivery-options__month-button:focus {
+  border-color: rgba(197, 22, 29, 0.42);
+  background: rgba(197, 22, 29, 0.045);
+  color: #a5121a;
+  text-decoration: none;
+}
+
+.soocool-delivery-options__month-button:disabled {
+  border-color: #eeeeee;
+  background: #f8f8f8;
+  color: #9a9a9a;
+  cursor: not-allowed;
+}
+
+.soocool-delivery-options__month-button:focus-visible {
+  outline: 2px solid var(--soocool-delivery-focus);
+  box-shadow: 0 0 0 2px var(--soocool-delivery-focus-gap);
+  outline-offset: 2px;
+}
+
+.soocool-delivery-options__picker {
+  display: grid;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  overflow: visible;
+  padding: 0;
+}
+
+.soocool-delivery-day {
+  display: block;
+  min-width: 0;
+}
+
+.soocool-delivery-day input,
+.soocool-delivery-time-slot input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.soocool-delivery-day__card {
+  display: grid;
+  place-items: center;
+  min-height: 46px;
+  padding: 5px 4px;
+  border: 1px solid #dedede;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #fdfdfd 100%);
+  color: #191919;
+  text-align: center;
+  inline-size: 100%;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.soocool-delivery-day.is-available,
+.soocool-delivery-time-slot.is-available {
+  cursor: pointer;
+}
+
+.soocool-delivery-day.is-available:hover .soocool-delivery-day__card {
+  border-color: rgba(197, 22, 29, 0.42);
+  box-shadow: 0 5px 14px rgba(20, 20, 20, 0.07);
+  transform: translateY(-1px);
+}
+
+.soocool-delivery-day input:checked + .soocool-delivery-day__card {
+  position: relative;
+  border-color: #c5161d;
+  background: #fff7f8;
+  box-shadow: 0 0 0 1px rgba(197, 22, 29, 0.11), 0 8px 18px rgba(197, 22, 29, 0.1);
+}
+
+.soocool-delivery-day input:checked + .soocool-delivery-day__card::after {
+  content: "✓";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 17px;
+  block-size: 17px;
+  border-radius: 999px;
+  background: #c5161d;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.soocool-delivery-day input:focus-visible + .soocool-delivery-day__card,
+.soocool-delivery-time-slot input:focus-visible + .soocool-delivery-time-slot__card {
+  outline: 2px solid var(--soocool-delivery-focus);
+  box-shadow: 0 0 0 2px var(--soocool-delivery-focus-gap);
+  outline-offset: 2px;
+}
+
+.soocool-delivery-day.is-disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.soocool-delivery-day.is-disabled .soocool-delivery-day__card {
+  border-color: #d6d6d6;
+  border-style: dashed;
+  background: #f1f1f1;
+  color: #9a9a9a;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.78;
+}
+
+.soocool-delivery-day.is-disabled .soocool-delivery-day__day {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.soocool-delivery-day__weekday,
+.soocool-delivery-day__month {
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.soocool-delivery-day__day {
+  margin: 1px 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.soocool-delivery-options__screen-reader-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+.soocool-delivery-options__time {
+  margin-top: 2px;
+}
+
+.soocool-delivery-options.is-time-collapsed .soocool-delivery-options__time {
+  display: none;
+}
+
+.soocool-delivery-options__time-help {
+  margin: -2px 0 8px;
+  color: #292929;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.soocool-delivery-time-list {
+  display: grid;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.soocool-delivery-time-slot {
+  display: block;
+}
+
+.soocool-delivery-time-slot.is-available {
+  cursor: pointer;
+}
+
+.soocool-delivery-time-slot.is-extra {
+  display: none;
+}
+
+.soocool-delivery-time-group.is-expanded .soocool-delivery-time-slot.is-extra {
+  display: block;
+}
+
+.soocool-delivery-time-slot__card {
+  display: flex;
+  max-width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid #dedede;
+  border-radius: 10px;
+  background: #fff;
+  color: #1d1d1d;
+  box-shadow: 0 1px 2px rgba(20, 20, 20, 0.03);
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.soocool-delivery-time-slot.is-available:hover .soocool-delivery-time-slot__card {
+  border-color: rgba(197, 22, 29, 0.42);
+  background: #fffafa;
+  box-shadow: 0 2px 8px rgba(20, 20, 20, 0.05);
+}
+
+.soocool-delivery-time-slot input:checked + .soocool-delivery-time-slot__card {
+  border-color: #c5161d;
+  background: #fff7f8;
+  box-shadow: 0 0 0 1px rgba(197, 22, 29, 0.08);
+}
+
+.soocool-delivery-time-slot__main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.soocool-delivery-time-slot__name {
+  color: #191919;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.soocool-delivery-time-slot__range {
+  color: #666;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.soocool-delivery-time-slot__status {
+  color: #777;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.soocool-delivery-time-slot__check {
+  position: relative;
+  inline-size: 16px;
+  block-size: 16px;
+  border: 1.5px solid #bdbdbd;
+  border-radius: 999px;
+  background: #fff;
+  flex: 0 0 auto;
+}
+
+.soocool-delivery-time-slot__check::after {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: 999px;
+  background: #c5161d;
+  content: "";
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.soocool-delivery-time-slot input:checked + .soocool-delivery-time-slot__card .soocool-delivery-time-slot__check {
+  border-color: #c5161d;
+}
+
+.soocool-delivery-time-slot input:checked + .soocool-delivery-time-slot__card .soocool-delivery-time-slot__check::after {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__card {
+  border-color: #eeeeee;
+  background: #f8f8f8;
+  color: #6c6c6c;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__name,
+.soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__range,
+.soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__status {
+  color: #6c6c6c;
+}
+
+.soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__check {
+  border-color: #d6d6d6;
+  background: #f1f1f1;
+}
+
+button.soocool-delivery-time-more,
+.soocool-delivery-options .soocool-delivery-time-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  padding: 13px 18px;
+  border: 0;
+  border-radius: 6px;
+  background: #c5161d;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+button.soocool-delivery-time-more:hover,
+button.soocool-delivery-time-more:focus,
+.soocool-delivery-options .soocool-delivery-time-more:hover,
+.soocool-delivery-options .soocool-delivery-time-more:focus {
+  background: #b61219;
+  color: #fff;
+  text-decoration: none;
+}
+
+.soocool-order-delivery-detail {
+  margin: 0 0 32px;
+}
+
+/* Limit checkout layout rules to the SooCool delivery block when a theme stretches the WooCommerce review/payment area. */
+.woocommerce-checkout .soocool-delivery-options,
+.woocommerce-checkout-review-order .soocool-delivery-options,
+#order_review .soocool-delivery-options,
+#payment .soocool-delivery-options {
+  inline-size: min(100%, calc(100vw - 64px));
+  max-inline-size: 100%;
+  margin-inline: 0;
+  overflow: hidden;
+}
+
+.soocool-delivery-options__picker,
+.soocool-delivery-options__time,
+.soocool-delivery-time-group,
+.soocool-delivery-time-list,
+.soocool-delivery-time-slot,
+.soocool-delivery-time-slot__card,
+.soocool-delivery-options__alert {
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.soocool-delivery-options__time,
+.soocool-delivery-time-group,
+.soocool-delivery-time-list {
+  overflow: hidden;
+}
+
+@media (max-width: 680px) {
+  .soocool-delivery-options__picker {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .soocool-delivery-options {
+    padding: 14px;
+  }
+
+  .soocool-delivery-options__picker {
+    gap: 6px;
+  }
+
+  .soocool-delivery-day__card {
+    min-height: 48px;
+  }
+
+  .soocool-delivery-time-slot__card {
+    min-height: 50px;
+    padding: 9px 11px;
+  }
+
+  .woocommerce-checkout .soocool-delivery-options,
+  .woocommerce-checkout-review-order .soocool-delivery-options,
+  #order_review .soocool-delivery-options,
+  #payment .soocool-delivery-options {
+    inline-size: min(100%, calc(100vw - 28px));
+  }
+}
+
+@media (max-width: 560px) {
+  .soocool-delivery-options__picker,
+  .soocool-delivery-time-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 380px) {
+  .soocool-delivery-options__picker,
+  .soocool-delivery-time-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Responsive checkout containment based on the actual checkout block width. */
+@supports (container-type: inline-size) {
+  .soocool-delivery-options {
+    container-type: inline-size;
+  }
+
+  @container (max-width: 520px) {
+    .soocool-delivery-options__picker {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .soocool-delivery-time-list {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @container (max-width: 420px) {
+    .soocool-delivery-options {
+      padding: 14px;
+    }
+
+    .soocool-delivery-options__picker {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .soocool-delivery-options__month-nav {
+      gap: 6px;
+    }
+
+    .soocool-delivery-options__month-button {
+      inline-size: 32px;
+      block-size: 32px;
+    }
+  }
+
+  @container (max-width: 300px) {
+    .soocool-delivery-options__picker,
+    .soocool-delivery-time-list {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.soocool-delivery-options__step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 13px 0 8px;
+}
+
+.soocool-delivery-options__step-number {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 22px;
+  block-size: 22px;
+  border-radius: 999px;
+  background: #c5161d;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+@media (max-width: 480px) {
+  .soocool-delivery-options {
+    padding: 12px;
+  }
+
+  .soocool-delivery-options__title {
+    font-size: 16px !important;
+  }
+
+  .soocool-delivery-options__intro,
+  .soocool-delivery-options__time-help {
+    font-size: 13px;
+  }
+
+  .soocool-delivery-options__alert {
+    display: grid;
+  }
+
+  .soocool-delivery-options__change {
+    width: 100%;
+    min-height: 36px;
+    border-radius: 6px;
+    background: #c5161d;
+    color: #ffffff;
+  }
+
+  .soocool-delivery-options__picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .soocool-delivery-time-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@supports (container-type: inline-size) {
+  @container (max-width: 440px) {
+    .soocool-delivery-options__alert {
+      display: grid;
+    }
+
+    .soocool-delivery-options__change {
+      width: 100%;
+      min-height: 36px;
+      border-radius: 6px;
+      background: #c5161d;
+      color: #ffffff;
+    }
+  }
+}
+
+@media (max-width: 390px) {
+  .soocool-delivery-options {
+    inline-size: 100%;
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  .woocommerce-checkout .soocool-delivery-options,
+  .woocommerce-checkout-review-order .soocool-delivery-options,
+  #order_review .soocool-delivery-options,
+  #payment .soocool-delivery-options {
+    inline-size: 100%;
+    max-inline-size: 100%;
+  }
+
+  .soocool-delivery-options__picker,
+  .soocool-delivery-time-list {
+    grid-template-columns: 1fr;
+  }
+
+  .soocool-delivery-options__alert,
+  .soocool-delivery-time-slot__card {
+    gap: 6px;
+  }
+
+  .soocool-delivery-day__card,
+  .soocool-delivery-time-slot__card,
+  .soocool-delivery-options__notice,
+  .soocool-delivery-time-empty {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Delivery date states: unavailable dates remain visually disabled without extra label text. */
+.soocool-delivery-options .soocool-delivery-day.is-available .soocool-delivery-day__card {
+  border-color: #dddddd;
+  background: #ffffff;
+  color: #111111;
+}
+
+.soocool-delivery-options .soocool-delivery-day.is-available:hover .soocool-delivery-day__card {
+  border-color: rgba(197, 22, 29, 0.42);
+  background: #fff7f8;
+}
+
+.soocool-delivery-options .soocool-delivery-day.is-disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.soocool-delivery-options .soocool-delivery-day.is-disabled .soocool-delivery-day__card {
+  border: 1px dashed #d6d6d6;
+  background: #f1f1f1;
+  color: #9a9a9a;
+  cursor: not-allowed;
+  opacity: 0.78;
+  box-shadow: none;
+  transform: none;
+}
+
+.soocool-delivery-options .soocool-delivery-day input:checked + .soocool-delivery-day__card {
+  border-color: #c5161d;
+  background: #fff2f3;
+}
+
+.soocool-order-delivery-detail__title {
+  margin-top: 1rem;
+  margin-bottom: 14px;
+}
+
+.soocool-order-delivery-detail__card {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px;
+  border: 1px solid #e5e5e5;
+  border-left: 4px solid #c5161d;
+  border-radius: 8px;
+  background: #fff;
+  color: #191919;
+  box-shadow: 0 8px 24px rgba(20, 20, 20, 0.06);
+}
+
+.soocool-order-delivery-detail__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  color: #191919;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.soocool-order-delivery-detail__row span {
+  color: #555;
+}
+
+.soocool-order-delivery-detail__row strong {
+  color: #191919;
+  text-align: right;
+}
+
+.soocool-order-delivery-detail__trace {
+  margin: 8px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #eeeeee;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.soocool-order-delivery-detail__trace strong {
+  color: #191919;
+}
+
+@media (max-width: 600px) {
+  .soocool-order-delivery-detail__card {
+    padding: 16px;
+  }
+
+  .soocool-order-delivery-detail__row {
+    display: block;
+  }
+
+  .soocool-order-delivery-detail__row strong {
+    display: block;
+    margin-top: 2px;
+    text-align: left;
+  }
+}
+
+
+@media (forced-colors: active) {
+  .soocool-delivery-options,
+  .soocool-delivery-day__card,
+  .soocool-delivery-time-slot__card,
+  .soocool-delivery-options__notice,
+  .soocool-delivery-options__alert,
+  .soocool-delivery-time-empty {
+    border-color: CanvasText;
+    box-shadow: none;
+  }
+
+  .soocool-delivery-options__change:focus-visible,
+  .soocool-delivery-options__month-button:focus-visible,
+  .soocool-delivery-time-more:focus-visible,
+  .soocool-delivery-day input:focus-visible + .soocool-delivery-day__card,
+  .soocool-delivery-time-slot input:focus-visible + .soocool-delivery-time-slot__card {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+
+  .soocool-delivery-day input:checked + .soocool-delivery-day__card,
+  .soocool-delivery-time-slot input:checked + .soocool-delivery-time-slot__card {
+    border-color: Highlight;
+    outline: 2px solid Highlight;
+  }
+
+  .soocool-delivery-day.is-disabled .soocool-delivery-day__card,
+  .soocool-delivery-time-slot.is-disabled .soocool-delivery-time-slot__card {
+    color: GrayText;
+    border-color: GrayText;
+    border-style: dashed;
+  }
+
+  .soocool-delivery-time-slot__check {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soocool-delivery-options *,
+  .soocool-delivery-options *::before,
+  .soocool-delivery-options *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .soocool-delivery-day.is-available:hover .soocool-delivery-day__card,
+  .soocool-delivery-time-slot.is-available:hover .soocool-delivery-time-slot__card {
+    transform: none;
+  }
+}

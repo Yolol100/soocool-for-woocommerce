@@ -102,6 +102,10 @@ final class OrderActions {
 			return self::QUEUE_FAILED;
 		}
 
+		if ( self::SYNC_HOOK === $hook && $this->meta->is_synced( $order ) ) {
+			return self::QUEUE_DUPLICATE;
+		}
+
 		$result = $this->schedule_order_action( $hook, $order_id );
 		if ( in_array( $result, array( self::QUEUE_SCHEDULED, self::QUEUE_DUPLICATE ), true ) ) {
 			$this->meta->save_pending( $order );
@@ -209,8 +213,6 @@ final class OrderActions {
 				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay );
 				return self::QUEUE_DUPLICATE;
 			}
-
-			return self::QUEUE_FAILED;
 		}
 
 		if ( $action_scheduler_ready && 0 === $delay && function_exists( 'as_enqueue_async_action' ) ) {
@@ -224,8 +226,6 @@ final class OrderActions {
 				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, 0 );
 				return self::QUEUE_DUPLICATE;
 			}
-
-			return self::QUEUE_FAILED;
 		}
 
 		if ( false !== wp_next_scheduled( $hook, $args ) ) {
@@ -235,6 +235,11 @@ final class OrderActions {
 
 		$timestamp = time() + max( 10, $delay );
 		if ( ! wp_schedule_single_event( $timestamp, $hook, $args ) ) {
+			if ( false !== wp_next_scheduled( $hook, $args ) ) {
+				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay );
+				return self::QUEUE_DUPLICATE;
+			}
+
 			return self::QUEUE_FAILED;
 		}
 

@@ -47,10 +47,11 @@ $soocool_email_label_rows = $wpdb->get_results(
 );
 if ( '' !== $soocool_temp_root && is_array( $soocool_email_label_rows ) ) {
 	foreach ( $soocool_email_label_rows as $soocool_email_label_row ) {
-		$soocool_paths = is_array( $soocool_email_label_row ) ? maybe_unserialize( $soocool_email_label_row['option_value'] ?? null ) : null;
-		if ( ! is_array( $soocool_paths ) ) {
+		$soocool_cache = is_array( $soocool_email_label_row ) ? maybe_unserialize( $soocool_email_label_row['option_value'] ?? null ) : null;
+		if ( ! is_array( $soocool_cache ) ) {
 			continue;
 		}
+		$soocool_paths = isset( $soocool_cache['paths'] ) && is_array( $soocool_cache['paths'] ) ? $soocool_cache['paths'] : $soocool_cache;
 		foreach ( $soocool_paths as $soocool_path ) {
 			if ( ! is_string( $soocool_path ) || '' === $soocool_path || is_link( $soocool_path ) ) {
 				continue;

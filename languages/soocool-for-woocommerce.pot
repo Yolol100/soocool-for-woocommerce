@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: SooCool for WooCommerce 0.7.24\n"
+"Project-Id-Version: SooCool for WooCommerce 0.7.79\n"
 "Report-Msgid-Bugs-To: security@webactueel.nl\n"
-"POT-Creation-Date: 2026-08-04 10:15+0000\n"
-"PO-Revision-Date: 2026-08-04 10:15+0000\n"
+"POT-Creation-Date: 2026-08-10 18:42+0000\n"
+"PO-Revision-Date: 2026-08-10 18:42+0000\n"
 "Last-Translator: Webactueel\n"
 "Language-Team: Dutch\n"
 "Language: \n"
@@ -19,7 +19,7 @@ msgid "%1$d mislukte orders ingepland voor hersynchronisatie op de achtergrond. 
 msgstr ""
 
 #: src/Admin/BulkSyncActions.php:135
-msgid "%1$d nieuwe SooCool-synchronisaties ingepland. %2$d stonden al ingepland. %3$d konden niet worden ingepland."
+msgid "%1$d nieuwe SooCool-synchronisaties ingepland. %2$d waren al gesynchroniseerd of stonden al ingepland. %3$d konden niet worden ingepland."
 msgstr ""
 
 #: src/Checkout/DeliveryOptions.php:621
@@ -2856,4 +2856,20 @@ msgstr ""
 
 #: assets/build/admin.js:202
 msgid "Zondag"
+msgstr ""
+
+#: src/Admin/OrderStatusPresenter.php:71
+msgid "Deze fout komt uit een oudere productgewichtcontrole. Synchroniseer opnieuw; de huidige versie gebruikt het WooCommerce- of variatiegewicht, een eenduidig gewicht uit de productnaam (zoals 1kg) of het ingestelde fallbackgewicht."
+msgstr ""
+
+#: assets/build/admin.js:963
+msgid "Bezorginstellingen"
+msgstr ""
+
+#: assets/build/admin.js:761
+msgid "Algemeen"
+msgstr ""
+
+#: assets/build/admin.js:762
+msgid "Toeslagen"
 msgstr ""

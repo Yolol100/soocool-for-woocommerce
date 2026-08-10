@@ -192,15 +192,12 @@
   function selectedOrderAction(scope) {
     var root = scope && scope.querySelector ? scope : document;
     var select = root.querySelector('select[name="wc_order_action"]');
-    if (!select && root !== document) {
-      select = document.querySelector('select[name="wc_order_action"]');
-    }
     return select ? select.value : '';
   }
 
   function orderActionContext(event) {
     var button = eventButton(event);
-    if (!button) {
+    if (!button || !button.matches || !button.matches('#actions .wc-reload')) {
       return null;
     }
 
@@ -219,7 +216,11 @@
 
   function bulkActionContext(event) {
     var button = eventButton(event);
-    var form = button ? (button.form || closest(button, 'form')) : event && event.target;
+    if (!button || (button.id !== 'doaction' && button.id !== 'doaction2')) {
+      return null;
+    }
+
+    var form = button.form || closest(button, 'form');
     if (!form || !form.querySelector || !form.querySelector('select[name="action"], select[name="action2"]')) {
       return null;
     }
@@ -423,6 +424,14 @@
   function confirmSubmit(event) {
     var form = event && event.target;
     if (!form || !form.querySelector) {
+      return true;
+    }
+
+    var submitter = event && event.submitter ? event.submitter : null;
+    if (!submitter && document.activeElement && document.activeElement.form === form) {
+      submitter = document.activeElement;
+    }
+    if (submitter && submitter.hasAttribute && submitter.hasAttribute('formaction')) {
       return true;
     }
 

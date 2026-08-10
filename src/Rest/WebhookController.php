@@ -177,7 +177,7 @@ final class WebhookController extends AbstractRestController {
 					'event_id'  => $this->authenticator->event_id( $request ),
 				)
 			);
-			if ( $result['accepted'] ) {
+			if ( $result['accepted'] || 'duplicate_event' === $result['reason'] ) {
 				if ( array() !== $remote_order ) {
 					$this->orders->link_remote_order( $order, $remote_order, $resolved_reference );
 				} else {
