@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Rest;
 
+use SooCool\WooCommerce\Blocks\DeliveryOptionsIntegration;
 use SooCool\WooCommerce\Infrastructure\ConnectionStateRepository;
 use SooCool\WooCommerce\Infrastructure\Logger;
+use SooCool\WooCommerce\Infrastructure\OptionDefaults;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WP_REST_Response;
@@ -46,8 +48,11 @@ final class SystemStatusController extends AbstractRestController {
 		$webhook_ready    = '' !== $webhook_url && str_starts_with( $webhook_url, 'https://' );
 		$checkout_enabled = (bool) ( $settings['checkout_delivery_enabled'] ?? false );
 		$checkout_mode    = $this->checkout_mode();
+		$blocks_adapter_available = DeliveryOptionsIntegration::is_enabled_runtime();
+		$blocks_supported         = DeliveryOptionsIntegration::compatibility_declared();
 		$environment      = 'production' === (string) ( $settings['environment'] ?? 'test' ) ? 'production' : 'test';
-		$connection_test  = $this->connection_state->current( $environment );
+		$connection_fingerprint = $this->connection_state->configuration_fingerprint( $environment, $this->options->base_url(), $this->options->api_key() );
+		$connection_test        = $this->connection_state->current( $environment, $connection_fingerprint );
 		$connection_ready = null !== $connection_test && 'success' === $connection_test['result'] && ! $connection_test['stale'];
 
 		$checks = array(
@@ -72,7 +77,7 @@ final class SystemStatusController extends AbstractRestController {
 		);
 
 		if ( $checkout_enabled ) {
-			$checks[] = $this->delivery_check( $checkout_mode );
+			$checks[] = $this->delivery_check( $checkout_mode, $blocks_adapter_available, $blocks_supported );
 			$checks[] = array(
 				'id'       => 'schedule',
 				'label'    => __( 'Minimaal één bezorgdag en dagdeel actief', 'soocool-for-woocommerce' ),
@@ -124,13 +129,14 @@ final class SystemStatusController extends AbstractRestController {
 					'legacy_query_token'  => (bool) ( $settings['query_token_fallback_enabled'] ?? false ),
 				),
 				'automation'  => array(
-					'enabled' => (bool) ( $settings['auto_submit_enabled'] ?? false ),
-					'status'  => (string) ( $settings['auto_submit_status'] ?? 'pending' ),
+					'enabled' => OptionDefaults::AUTO_SUBMIT_ENABLED,
+					'status'  => OptionDefaults::AUTO_SUBMIT_STATUS,
 				),
 				'checkout'    => array(
 					'enabled'          => $checkout_enabled,
 					'mode'             => $checkout_mode,
-					'blocks_supported' => false,
+					'blocks_supported'         => $blocks_supported,
+					'blocks_adapter_available' => $blocks_adapter_available,
 					'days_ahead'       => absint( $settings['checkout_delivery_days_ahead'] ?? 0 ),
 				),
 				'labels'      => array(
@@ -149,7 +155,7 @@ final class SystemStatusController extends AbstractRestController {
 
 
 	/** @return array{id:string,label:string,complete:bool,required:bool} */
-	private function delivery_check( string $checkout_mode ): array {
+	private function delivery_check( string $checkout_mode, bool $blocks_adapter_available, bool $blocks_supported ): array {
 		return match ( $checkout_mode ) {
 			'classic' => array(
 				'id'       => 'delivery',
@@ -159,8 +165,12 @@ final class SystemStatusController extends AbstractRestController {
 			),
 			'blocks' => array(
 				'id'       => 'delivery',
-				'label'    => __( 'Checkout Blocks actief; bezorgkeuze is nog niet volledig ondersteund', 'soocool-for-woocommerce' ),
-				'complete' => false,
+				'label'    => $blocks_supported
+					? __( 'Checkout Blocks actief; SooCool-bezorgkeuze ondersteund', 'soocool-for-woocommerce' )
+					: ( $blocks_adapter_available
+						? __( 'Checkout Blocks actief; bezorgkeuze is nog niet volledig ondersteund', 'soocool-for-woocommerce' )
+						: __( 'Checkout Blocks actief; SooCool-bezorgkeuze is in deze WooCommerce-runtime niet beschikbaar', 'soocool-for-woocommerce' ) ),
+				'complete' => $blocks_supported,
 				'required' => true,
 			),
 			default => array(

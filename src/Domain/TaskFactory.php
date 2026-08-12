@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SooCool\WooCommerce\Domain;
 
 use SooCool\WooCommerce\Checkout\DeliverySchedule;
+use SooCool\WooCommerce\Infrastructure\OptionDefaults;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use SooCool\WooCommerce\Infrastructure\NumericIdentifier;
 use SooCool\WooCommerce\Infrastructure\StrictLocalDateTime;
@@ -18,52 +19,35 @@ defined( 'ABSPATH' ) || exit;
  */
 final class TaskFactory {
 
-	private const DELIVERY_TIME_FROM = '08:00';
-	private const DELIVERY_TIME_TO   = '18:00';
 
 	public function __construct( private readonly OptionRepository $options, private readonly TaskAddressFactory $addresses, private readonly TaskContactFactory $contacts, private readonly ?DeliverySchedule $delivery_schedule = null ) {}
 
 	/** @param array<int, int|string> $good_ids Requested good IDs to attach to every task. @return array<int, array<string, mixed>> */
 	public function create_tasks( WC_Order $order, array $good_ids = array() ): array {
-		$settings      = $this->options->all();
-		$good_ids      = $this->normalize_good_ids( $good_ids );
-		$pickup_offset = (int) $settings['pickup_days_offset'];
-		if ( (bool) $settings['enable_pickup'] ) {
-			$pickup_offset = $this->effective_offset_for_window(
-				$pickup_offset,
-				(string) ( $settings['pickup_time_to'] ?? self::DELIVERY_TIME_TO )
-			);
-		}
-		$pickup_date     = $this->date_for_offset( $pickup_offset );
+		$settings        = $this->options->all();
+		$good_ids        = $this->normalize_good_ids( $good_ids );
 		$delivery_offset = (int) $settings['delivery_days_offset'];
+		[ $pickup_date, $delivery_date ] = $this->fallback_pickup_and_delivery_dates( $delivery_offset );
 
-		if ( (bool) $settings['enable_pickup'] && $delivery_offset <= $pickup_offset ) {
-			$delivery_offset = $pickup_offset + 1;
-		} elseif ( ! (bool) $settings['enable_pickup'] ) {
-			$delivery_offset = $this->effective_offset_for_window(
-				$delivery_offset,
-				(string) ( $settings['delivery_time_to'] ?? self::DELIVERY_TIME_TO )
-			);
-		}
-
-		$delivery_date = $this->date_for_offset( $delivery_offset );
-		$requested_delivery_date      = $this->requested_delivery_date( $order, (bool) $settings['enable_pickup'], $pickup_date );
-		$use_requested_delivery_window = '' !== $requested_delivery_date && $this->requested_delivery_window_is_usable( $order, $requested_delivery_date, $settings );
+		$requested_delivery_date       = $this->requested_delivery_date( $order );
+		$use_requested_delivery_window = '' !== $requested_delivery_date && $this->requested_delivery_window_is_usable( $order, $requested_delivery_date );
 		if ( $use_requested_delivery_window ) {
-			$delivery_date = $requested_delivery_date;
+			$delivery_date          = $requested_delivery_date;
+			$scheduled_pickup_date = $this->pickup_date_for_delivery( $delivery_date );
+			if ( '' === $scheduled_pickup_date || ! $this->pickup_window_is_future( $scheduled_pickup_date ) ) {
+				throw new PayloadValidationException( __( 'Het SooCool-ophaalvenster voor de gekozen bezorgdatum is verstreken. Kies een nieuwe bezorgdatum voordat de order opnieuw wordt gesynchroniseerd.', 'soocool-for-woocommerce' ) );
+			}
+			$pickup_date = $scheduled_pickup_date;
 		}
-		$tasks = array();
 
-		if ( (bool) $settings['enable_pickup'] ) {
-			$tasks[] = $this->pickup_task( $settings, $pickup_date, $good_ids );
-		}
-
+		$tasks   = array();
+		$tasks[] = $this->pickup_task( $settings, $pickup_date, $good_ids );
 		$tasks[] = $this->delivery_task( $order, $settings, $delivery_date, $good_ids, $use_requested_delivery_window );
 
 		return $tasks;
 	}
 
-	private function requested_delivery_date( WC_Order $order, bool $pickup_enabled, string $pickup_date ): string {
+	private function requested_delivery_date( WC_Order $order ): string {
 		$value = $order->get_meta( OrderMeta::REQUESTED_DELIVERY_DATE, true );
 		if ( is_array( $value ) || is_object( $value ) ) {
 			return '';
@@ -71,7 +55,7 @@ final class TaskFactory {
 
 		$date = sanitize_text_field( (string) $value );
 		if ( null !== $this->delivery_schedule ) {
-			return $this->delivery_schedule->is_usable_order_date( $date, $pickup_enabled ? $pickup_date : '' ) ? $date : '';
+			return $this->delivery_schedule->is_usable_order_date( $date ) ? $date : '';
 		}
 
 		if ( 1 !== preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $date, $matches )
@@ -83,7 +67,43 @@ final class TaskFactory {
 			return '';
 		}
 
-		return $pickup_enabled && $date <= $pickup_date ? '' : $date;
+		return $date;
+	}
+
+	private function pickup_date_for_delivery( string $delivery_date ): string {
+		if ( null !== $this->delivery_schedule ) {
+			$scheduled = $this->delivery_schedule->pickup_date_for_delivery( $delivery_date );
+			if ( '' !== $scheduled ) {
+				return $scheduled;
+			}
+		}
+
+		try {
+			return ( new \DateTimeImmutable( $delivery_date . ' 00:00:00', $this->soocool_timezone() ) )->modify( '-1 day' )->format( 'Y-m-d' );
+		} catch ( \Exception ) {
+			return '';
+		}
+	}
+
+	/** @return array{0:string,1:string} Pickup date followed by delivery date. */
+	private function fallback_pickup_and_delivery_dates( int $delivery_offset ): array {
+		$delivery_offset = max( 1, min( 30, $delivery_offset ) );
+		for ( $offset = $delivery_offset; $offset <= $delivery_offset + 7; $offset++ ) {
+			$delivery_date = $this->date_for_offset( $offset );
+			$pickup_date   = $this->pickup_date_for_delivery( $delivery_date );
+			if ( '' !== $pickup_date && $pickup_date < $delivery_date && $this->pickup_window_is_future( $pickup_date ) ) {
+				return array( $pickup_date, $delivery_date );
+			}
+		}
+
+		throw new PayloadValidationException( __( 'Er kon geen geldige toekomstige SooCool-ophaaldatum vóór de fallback-bezorgdatum worden bepaald.', 'soocool-for-woocommerce' ) );
+	}
+
+	private function pickup_window_is_future( string $pickup_date ): bool {
+		$timezone   = $this->soocool_timezone();
+		$pickup_end = StrictLocalDateTime::from_date_and_time( $pickup_date, OptionDefaults::PICKUP_TIME_TO, $timezone );
+
+		return null !== $pickup_end && new \DateTimeImmutable( 'now', $timezone ) < $pickup_end;
 	}
 
 	/** @param array<string, mixed> $settings @param array<int, int> $good_ids @return array<string, mixed> */
@@ -108,9 +128,9 @@ final class TaskFactory {
 			throw new PayloadValidationException( __( 'Ophaalcontact is onvolledig. Voeg in de SooCool-instellingen een geldig e-mailadres of telefoonnummer toe.', 'soocool-for-woocommerce' ) );
 		}
 
-		$pickup_window = $this->normalized_time_window(
-			(string) ( $settings['pickup_time_from'] ?? self::DELIVERY_TIME_FROM ),
-			(string) ( $settings['pickup_time_to'] ?? self::DELIVERY_TIME_TO )
+		$pickup_window = array(
+			'time_from' => OptionDefaults::PICKUP_TIME_FROM,
+			'time_to'   => OptionDefaults::PICKUP_TIME_TO,
 		);
 
 		$task = array(
@@ -150,11 +170,8 @@ final class TaskFactory {
 		}
 
 		$time_slot    = $use_requested_delivery_window
-			? $this->requested_delivery_time_slot( $order, $settings )
-			: $this->normalized_time_window(
-				(string) ( $settings['delivery_time_from'] ?? self::DELIVERY_TIME_FROM ),
-				(string) ( $settings['delivery_time_to'] ?? self::DELIVERY_TIME_TO )
-			);
+			? $this->requested_delivery_time_slot( $order )
+			: $this->normalized_time_window( OptionDefaults::DELIVERY_TIME_FROM, OptionDefaults::DELIVERY_TIME_TO );
 		$time_from    = $time_slot['time_from'];
 		$time_to      = $time_slot['time_to'];
 		$instructions = sanitize_text_field( wp_strip_all_tags( (string) $order->get_customer_note() ) );
@@ -181,8 +198,8 @@ final class TaskFactory {
 		return $this->compact( $task );
 	}
 
-	/** @param array<string, mixed> $settings @return array{time_from:string,time_to:string} */
-	private function requested_delivery_time_slot( WC_Order $order, array $settings ): array {
+	/** @return array{time_from:string,time_to:string} */
+	private function requested_delivery_time_slot( WC_Order $order ): array {
 		$requested_from = $this->requested_delivery_time( $order, OrderMeta::REQUESTED_DELIVERY_TIME_FROM );
 		$requested_to   = $this->requested_delivery_time( $order, OrderMeta::REQUESTED_DELIVERY_TIME_TO );
 		if ( '' !== $requested_from && '' !== $requested_to && $requested_to > $requested_from ) {
@@ -192,10 +209,7 @@ final class TaskFactory {
 			);
 		}
 
-		return $this->normalized_time_window(
-			(string) ( $settings['delivery_time_from'] ?? self::DELIVERY_TIME_FROM ),
-			(string) ( $settings['delivery_time_to'] ?? self::DELIVERY_TIME_TO )
-		);
+		return $this->normalized_time_window( OptionDefaults::DELIVERY_TIME_FROM, OptionDefaults::DELIVERY_TIME_TO );
 	}
 
 	private function requested_delivery_time( WC_Order $order, string $meta_key ): string {
@@ -208,9 +222,8 @@ final class TaskFactory {
 		return preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $time ) ? $time : '';
 	}
 
-	/** @param array<string, mixed> $settings */
-	private function requested_delivery_window_is_usable( WC_Order $order, string $date, array $settings ): bool {
-		$time_slot = $this->requested_delivery_time_slot( $order, $settings );
+	private function requested_delivery_window_is_usable( WC_Order $order, string $date ): bool {
+		$time_slot = $this->requested_delivery_time_slot( $order );
 		$end       = StrictLocalDateTime::from_date_and_time( $date, $time_slot['time_to'], $this->soocool_timezone() );
 		if ( null === $end ) {
 			return false;
@@ -237,35 +250,15 @@ final class TaskFactory {
 		return (string) preg_replace( '/\s+/', '', $postal_code );
 	}
 
-	private function effective_offset_for_window( int $days, string $time_to ): int {
-		$days = max( 0, $days );
-		if ( 0 !== $days ) {
-			return $days;
-		}
-
-		$timezone = $this->soocool_timezone();
-		$now      = new \DateTimeImmutable( 'now', $timezone );
-		$end      = StrictLocalDateTime::from_date_and_time(
-			$this->date_for_offset( 0 ),
-			$this->sanitize_time( $time_to, self::DELIVERY_TIME_TO ),
-			$timezone
-		);
-		if ( null === $end ) {
-			return $days;
-		}
-
-		return $end <= $now ? 1 : $days;
-	}
-
 	/** @return array{time_from:string,time_to:string} */
 	private function normalized_time_window( string $time_from, string $time_to ): array {
-		$time_from = $this->sanitize_time( $time_from, self::DELIVERY_TIME_FROM );
-		$time_to   = $this->sanitize_time( $time_to, self::DELIVERY_TIME_TO );
+		$time_from = $this->sanitize_time( $time_from, OptionDefaults::DELIVERY_TIME_FROM );
+		$time_to   = $this->sanitize_time( $time_to, OptionDefaults::DELIVERY_TIME_TO );
 
 		if ( $time_to <= $time_from ) {
 			return array(
-				'time_from' => self::DELIVERY_TIME_FROM,
-				'time_to'   => self::DELIVERY_TIME_TO,
+				'time_from' => OptionDefaults::DELIVERY_TIME_FROM,
+				'time_to'   => OptionDefaults::DELIVERY_TIME_TO,
 			);
 		}
 
@@ -280,7 +273,7 @@ final class TaskFactory {
 	}
 
 	private function date_time_for_api( string $date, string $time ): string {
-		$time = $this->sanitize_time( $time, self::DELIVERY_TIME_FROM );
+		$time = $this->sanitize_time( $time, OptionDefaults::DELIVERY_TIME_FROM );
 		$date_time = StrictLocalDateTime::from_date_and_time( $date, $time, $this->soocool_timezone() );
 		if ( null === $date_time ) {
 			throw new PayloadValidationException( __( 'SooCool taaktijd kon niet worden gegenereerd.', 'soocool-for-woocommerce' ) );

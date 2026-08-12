@@ -7,12 +7,17 @@ namespace SooCool\WooCommerce\WooCommerce;
 use SooCool\WooCommerce\Admin\OrderActionConfirmScript;
 use SooCool\WooCommerce\Admin\OrderMetaBox;
 use SooCool\WooCommerce\Domain\OrderSyncCoordinator;
+use SooCool\WooCommerce\Infrastructure\ActionSchedulerRuntime;
 use SooCool\WooCommerce\Infrastructure\NumericIdentifier;
+use SooCool\WooCommerce\Infrastructure\ProviderContext;
 use WC_Order;
 
 defined( 'ABSPATH' ) || exit;
 
 final class OrderActions {
+
+	private readonly OrderDeliveryEligibility $delivery_eligibility;
+	private readonly ProviderContext $provider_context;
 
 	public const SYNC_HOOK                = 'soocool_sync_order';
 	public const RESYNC_HOOK              = 'soocool_resync_order';
@@ -22,22 +27,29 @@ final class OrderActions {
 	public const QUEUE_SCHEDULED          = 'scheduled';
 	public const QUEUE_DUPLICATE          = 'duplicate';
 	public const QUEUE_FAILED             = 'failed';
+	public const QUEUE_MANUAL             = 'manual';
 	public const MANUAL_SYNC_AJAX_ACTION  = 'soocool_manual_sync_order';
 	public const MANUAL_SYNC_NONCE_ACTION = 'soocool_manual_sync_order_';
 
 	private const RETRY_DELAYS_SECONDS   = array( 60, 300, 900 );
 	private const WATCHDOG_DELAY_SECONDS = 120;
+	private const MAX_PROVIDER_RETRY_DELAY_SECONDS = 86400;
 	private const SCHEDULER_PRIORITY      = 1;
 
 	public function __construct(
 		private readonly OrderMeta $meta,
 		private readonly OrderMetaBox $meta_box,
 		private readonly OrderActionConfirmScript $confirm_script,
-		private readonly OrderSyncCoordinator $coordinator
-	) {}
+		private readonly OrderSyncCoordinator $coordinator,
+		?ProviderContext $provider_context = null,
+		?OrderDeliveryEligibility $delivery_eligibility = null
+	) {
+		$this->provider_context     = $provider_context ?? new ProviderContext();
+		$this->delivery_eligibility = $delivery_eligibility ?? new OrderDeliveryEligibility();
+	}
 
 	public static function unschedule_all(): void {
-		if ( function_exists( 'as_unschedule_all_actions' ) ) {
+		if ( ActionSchedulerRuntime::is_ready() && function_exists( 'as_unschedule_all_actions' ) ) {
 			as_unschedule_all_actions( '', array(), self::SCHEDULER_GROUP );
 		}
 
@@ -56,8 +68,7 @@ final class OrderActions {
 			wp_clear_scheduled_hook( self::LEGACY_CANCEL_HOOK );
 		}
 
-		$action_scheduler_ready = did_action( 'action_scheduler_init' ) > 0
-			|| ( class_exists( 'Action_Scheduler' ) && method_exists( 'Action_Scheduler', 'is_initialized' ) && \Action_Scheduler::is_initialized() );
+		$action_scheduler_ready = ActionSchedulerRuntime::is_ready();
 		if ( $action_scheduler_ready && function_exists( 'as_unschedule_all_actions' ) ) {
 			as_unschedule_all_actions( self::LEGACY_CANCEL_HOOK, array(), self::SCHEDULER_GROUP );
 		}
@@ -74,17 +85,17 @@ final class OrderActions {
 		add_action( 'admin_notices', array( $this->meta_box, 'render_delivery_date_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( $this->confirm_script, 'enqueue' ) );
 		add_action( 'wp_ajax_' . self::MANUAL_SYNC_AJAX_ACTION, array( $this, 'handle_manual_sync' ) );
-		add_action( self::SYNC_HOOK, array( $this, 'send_order_by_id' ), 10, 2 );
-		add_action( self::RESYNC_HOOK, array( $this, 'resync_order_by_id' ), 10, 2 );
-		add_action( self::WATCHDOG_HOOK, array( $this, 'run_sync_watchdog' ), 10, 3 );
+		add_action( self::SYNC_HOOK, array( $this, 'send_order_by_id' ), 10, 3 );
+		add_action( self::RESYNC_HOOK, array( $this, 'resync_order_by_id' ), 10, 3 );
+		add_action( self::WATCHDOG_HOOK, array( $this, 'run_sync_watchdog' ), 10, 4 );
 	}
 
-	public function send_order_by_id( int $order_id, int $attempt = 0 ): void {
-		$this->run_scheduled_sync( $order_id, false, $attempt, self::SYNC_HOOK );
+	public function send_order_by_id( int $order_id, int $attempt = 0, string $context_fingerprint = '' ): void {
+		$this->run_scheduled_sync( $order_id, false, $attempt, self::SYNC_HOOK, $context_fingerprint );
 	}
 
-	public function resync_order_by_id( int $order_id, int $attempt = 0 ): void {
-		$this->run_scheduled_sync( $order_id, true, $attempt, self::RESYNC_HOOK );
+	public function resync_order_by_id( int $order_id, int $attempt = 0, string $context_fingerprint = '' ): void {
+		$this->run_scheduled_sync( $order_id, true, $attempt, self::RESYNC_HOOK, $context_fingerprint );
 	}
 
 	public function schedule_send_to_soocool( int $order_id ): string {
@@ -102,11 +113,12 @@ final class OrderActions {
 			return self::QUEUE_FAILED;
 		}
 
-		if ( self::SYNC_HOOK === $hook && $this->meta->is_synced( $order ) ) {
-			return self::QUEUE_DUPLICATE;
+		if ( $this->is_synced_in_current_provider( $order ) ) {
+			$this->meta->restore_linked_status( $order );
+			return self::SYNC_HOOK === $hook ? self::QUEUE_DUPLICATE : self::QUEUE_MANUAL;
 		}
 
-		$result = $this->schedule_order_action( $hook, $order_id );
+		$result = $this->schedule_order_action( $hook, $order_id, 0, 0, $this->current_sync_context_fingerprint() );
 		if ( in_array( $result, array( self::QUEUE_SCHEDULED, self::QUEUE_DUPLICATE ), true ) ) {
 			$this->meta->save_pending( $order );
 			return $result;
@@ -119,16 +131,42 @@ final class OrderActions {
 		return $result;
 	}
 
-	private function run_scheduled_sync( int $order_id, bool $force, int $attempt, string $hook ): void {
+	private function run_scheduled_sync( int $order_id, bool $force, int $attempt, string $hook, string $context_fingerprint = '' ): void {
 		$order_id = NumericIdentifier::positive( $order_id ) ?? 0;
 		$order    = 0 < $order_id ? wc_get_order( $order_id ) : null;
 		if ( ! $order instanceof WC_Order ) {
 			return;
 		}
 
-		$attempt = max( 0, $attempt );
-		$this->clear_watchdog( $hook, $order_id, $attempt );
+		$attempt             = max( 0, $attempt );
+		$context_fingerprint = strtolower( trim( $context_fingerprint ) );
+		if ( '' !== $context_fingerprint && ! $this->sync_context_is_current( $context_fingerprint ) ) {
+			$this->clear_watchdog( $hook, $order_id, $attempt, $context_fingerprint );
+			if ( $this->is_synced_in_current_provider( $order ) ) {
+				return;
+			}
+
+			$message = __( 'SooCool-synchronisatie overgeslagen omdat de API-omgeving of API-inloggegevens zijn gewijzigd nadat de taak werd ingepland. Plan de synchronisatie opnieuw.', 'soocool-for-woocommerce' );
+			$this->meta->save_error( $order, $message );
+			$order->add_order_note( $message );
+			return;
+		}
+
+		if ( $this->is_synced_in_current_provider( $order ) ) {
+			$this->clear_watchdog( $hook, $order_id, $attempt, $context_fingerprint );
+			$this->meta->restore_linked_status( $order );
+			return;
+		}
+
+		if ( ! $this->delivery_eligibility->requires_delivery( $order ) ) {
+			$this->clear_watchdog( $hook, $order_id, $attempt, $context_fingerprint );
+			$this->meta->clear_pending( $order );
+			$order->add_order_note( __( 'SooCool-synchronisatie overgeslagen omdat deze order bij uitvoering geen transport meer vereist.', 'soocool-for-woocommerce' ) );
+			return;
+		}
+
 		$result = $this->sync_order_with_note( $order, $force, false );
+		$this->clear_watchdog( $hook, $order_id, $attempt, $context_fingerprint );
 		if ( (bool) ( $result['success'] ?? false ) ) {
 			return;
 		}
@@ -140,9 +178,9 @@ final class OrderActions {
 			return;
 		}
 
-		$delay        = $this->retry_delay( $attempt );
+		$delay        = max( $this->retry_delay( $attempt ), $this->provider_retry_delay( $result ) );
 		$next_attempt = $attempt + 1;
-		$queue_result = $this->schedule_order_action( $hook, $order_id, $next_attempt, $delay );
+		$queue_result = $this->schedule_order_action( $hook, $order_id, $next_attempt, $delay, $context_fingerprint );
 		if ( in_array( $queue_result, array( self::QUEUE_SCHEDULED, self::QUEUE_DUPLICATE ), true ) ) {
 			$this->meta->save_retry_pending( $order, $message );
 			if ( self::QUEUE_DUPLICATE === $queue_result ) {
@@ -186,31 +224,51 @@ final class OrderActions {
 		return $base_delay + wp_rand( 0, $jitter );
 	}
 
-	private function schedule_order_action( string $hook, int $order_id, int $attempt = 0, int $delay = 0 ): string {
+
+	/** @param array<string, mixed> $result */
+	private function provider_retry_delay( array $result ): int {
+		$retry_after = isset( $result['retry_after_seconds'] ) && is_numeric( $result['retry_after_seconds'] ) ? (int) $result['retry_after_seconds'] : 0;
+
+		return max( 0, min( self::MAX_PROVIDER_RETRY_DELAY_SECONDS, $retry_after ) );
+	}
+
+	private function schedule_order_action( string $hook, int $order_id, int $attempt = 0, int $delay = 0, string $context_fingerprint = '' ): string {
 		$order_id = NumericIdentifier::positive( $order_id ) ?? 0;
 		if ( 0 === $order_id ) {
 			return self::QUEUE_FAILED;
 		}
 
-		$attempt                = max( 0, $attempt );
-		$delay                  = max( 0, $delay );
-		$args                   = 0 < $attempt ? array( $order_id, $attempt ) : array( $order_id );
-		$action_scheduler_ready = $this->action_scheduler_ready();
+		$attempt             = max( 0, $attempt );
+		$delay               = max( 0, $delay );
+		$context_fingerprint = strtolower( trim( $context_fingerprint ) );
+		if ( '' === $context_fingerprint ) {
+			$context_fingerprint = $this->current_sync_context_fingerprint();
+		}
+		if ( 1 !== preg_match( '/^[a-f0-9]{64}$/', $context_fingerprint ) ) {
+			return self::QUEUE_FAILED;
+		}
+		$args = array( $order_id, $attempt, $context_fingerprint );
+		$action_scheduler_ready = ActionSchedulerRuntime::is_ready();
 
 		if ( $action_scheduler_ready && function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( $hook, $args, self::SCHEDULER_GROUP ) ) {
-			$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay );
+			$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay, $context_fingerprint );
+			return self::QUEUE_DUPLICATE;
+		}
+
+		if ( false !== wp_next_scheduled( $hook, $args ) ) {
+			$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay, $context_fingerprint );
 			return self::QUEUE_DUPLICATE;
 		}
 
 		if ( $action_scheduler_ready && 0 < $delay && function_exists( 'as_schedule_single_action' ) ) {
 			$action_id = as_schedule_single_action( time() + $delay, $hook, $args, self::SCHEDULER_GROUP, true, self::SCHEDULER_PRIORITY );
 			if ( $action_id ) {
-				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay );
+				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay, $context_fingerprint );
 				return self::QUEUE_SCHEDULED;
 			}
 
 			if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( $hook, $args, self::SCHEDULER_GROUP ) ) {
-				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay );
+				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay, $context_fingerprint );
 				return self::QUEUE_DUPLICATE;
 			}
 		}
@@ -218,83 +276,80 @@ final class OrderActions {
 		if ( $action_scheduler_ready && 0 === $delay && function_exists( 'as_enqueue_async_action' ) ) {
 			$action_id = as_enqueue_async_action( $hook, $args, self::SCHEDULER_GROUP, true, self::SCHEDULER_PRIORITY );
 			if ( $action_id ) {
-				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, 0 );
+				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, 0, $context_fingerprint );
 				return self::QUEUE_SCHEDULED;
 			}
 
 			if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( $hook, $args, self::SCHEDULER_GROUP ) ) {
-				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, 0 );
+				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, 0, $context_fingerprint );
 				return self::QUEUE_DUPLICATE;
 			}
 		}
 
 		if ( false !== wp_next_scheduled( $hook, $args ) ) {
-			$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay );
+			$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay, $context_fingerprint );
 			return self::QUEUE_DUPLICATE;
 		}
 
 		$timestamp = time() + max( 10, $delay );
 		if ( ! wp_schedule_single_event( $timestamp, $hook, $args ) ) {
 			if ( false !== wp_next_scheduled( $hook, $args ) ) {
-				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay );
+				$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay, $context_fingerprint );
 				return self::QUEUE_DUPLICATE;
 			}
 
 			return self::QUEUE_FAILED;
 		}
 
-		$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay );
+		$this->maybe_schedule_watchdog( $hook, $order_id, $attempt, $delay, $context_fingerprint );
 		return self::QUEUE_SCHEDULED;
 	}
 
-	public function run_sync_watchdog( int $order_id, string $hook = self::SYNC_HOOK, int $attempt = 0 ): void {
+	public function run_sync_watchdog( int $order_id, string $hook = self::SYNC_HOOK, int $attempt = 0, string $context_fingerprint = '' ): void {
 		$order_id = NumericIdentifier::positive( $order_id ) ?? 0;
 		$order    = 0 < $order_id ? wc_get_order( $order_id ) : null;
 		$hook     = self::RESYNC_HOOK === $hook ? self::RESYNC_HOOK : self::SYNC_HOOK;
-		if ( ! $order instanceof WC_Order || ( self::SYNC_HOOK === $hook && $this->meta->is_synced( $order ) ) ) {
+		if ( ! $order instanceof WC_Order ) {
+			return;
+		}
+		if ( self::SYNC_HOOK === $hook && $this->is_synced_in_current_provider( $order ) ) {
+			$this->meta->restore_linked_status( $order );
 			return;
 		}
 
-		$attempt = max( 0, $attempt );
-		$args    = 0 < $attempt ? array( $order_id, $attempt ) : array( $order_id );
+		$attempt             = max( 0, $attempt );
+		$context_fingerprint = strtolower( trim( $context_fingerprint ) );
+		$args                = '' !== $context_fingerprint ? array( $order_id, $attempt, $context_fingerprint ) : ( 0 < $attempt ? array( $order_id, $attempt ) : array( $order_id ) );
 
 		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
 			wp_clear_scheduled_hook( $hook, $args );
 		}
 
-		if ( $this->action_scheduler_ready() && function_exists( 'as_unschedule_action' ) ) {
+		if ( ActionSchedulerRuntime::is_ready() && function_exists( 'as_unschedule_action' ) ) {
 			as_unschedule_action( $hook, $args, self::SCHEDULER_GROUP );
 		}
 
-		$this->run_scheduled_sync( $order_id, self::RESYNC_HOOK === $hook, $attempt, $hook );
+		$this->run_scheduled_sync( $order_id, self::RESYNC_HOOK === $hook, $attempt, $hook, $context_fingerprint );
 	}
 
-	private function action_scheduler_ready(): bool {
-		if ( ! function_exists( 'as_enqueue_async_action' ) && ! function_exists( 'as_schedule_single_action' ) ) {
-			return false;
-		}
-
-		if ( class_exists( '\Action_Scheduler' ) && method_exists( '\Action_Scheduler', 'is_initialized' ) ) {
-			return (bool) \Action_Scheduler::is_initialized();
-		}
-
-		return ! function_exists( 'did_action' ) || 0 < did_action( 'action_scheduler_init' );
-	}
-
-	private function maybe_schedule_watchdog( string $hook, int $order_id, int $attempt, int $delay ): void {
+	private function maybe_schedule_watchdog( string $hook, int $order_id, int $attempt, int $delay, string $context_fingerprint = '' ): void {
 		if ( ! in_array( $hook, array( self::SYNC_HOOK, self::RESYNC_HOOK ), true ) ) {
 			return;
 		}
 
-		$this->schedule_watchdog( $hook, $order_id, $attempt, $delay );
+		$this->schedule_watchdog( $hook, $order_id, $attempt, $delay, $context_fingerprint );
 	}
 
-	private function schedule_watchdog( string $hook, int $order_id, int $attempt, int $delay ): void {
+	private function schedule_watchdog( string $hook, int $order_id, int $attempt, int $delay, string $context_fingerprint = '' ): void {
 		if ( ! function_exists( 'wp_schedule_single_event' ) || ! function_exists( 'wp_next_scheduled' ) ) {
 			return;
 		}
 
-		$args = array( $order_id, $hook, max( 0, $attempt ) );
+		$context_fingerprint = strtolower( trim( $context_fingerprint ) );
+		$args                = array( $order_id, $hook, max( 0, $attempt ) );
+		if ( '' !== $context_fingerprint ) {
+			$args[] = $context_fingerprint;
+		}
 		if ( false !== wp_next_scheduled( self::WATCHDOG_HOOK, $args ) ) {
 			return;
 		}
@@ -303,10 +358,34 @@ final class OrderActions {
 		wp_schedule_single_event( $timestamp, self::WATCHDOG_HOOK, $args );
 	}
 
-	private function clear_watchdog( string $hook, int $order_id, int $attempt ): void {
-		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
-			wp_clear_scheduled_hook( self::WATCHDOG_HOOK, array( $order_id, $hook, max( 0, $attempt ) ) );
+	private function clear_watchdog( string $hook, int $order_id, int $attempt, string $context_fingerprint = '' ): void {
+		if ( ! function_exists( 'wp_clear_scheduled_hook' ) ) {
+			return;
 		}
+
+		$args                = array( $order_id, $hook, max( 0, $attempt ) );
+		$context_fingerprint = strtolower( trim( $context_fingerprint ) );
+		if ( '' !== $context_fingerprint ) {
+			$args[] = $context_fingerprint;
+		}
+		wp_clear_scheduled_hook( self::WATCHDOG_HOOK, $args );
+	}
+
+	private function is_synced_in_current_provider( WC_Order $order ): bool {
+		if ( ! $this->meta->is_synced( $order ) ) {
+			return false;
+		}
+
+		$provider_context = $this->meta->get_provider_context( $order );
+		return '' !== $provider_context && $this->provider_context->matches_provider( $provider_context );
+	}
+
+	private function current_sync_context_fingerprint(): string {
+		return $this->provider_context->execution_fingerprint( 'order-sync' );
+	}
+
+	private function sync_context_is_current( string $context_fingerprint ): bool {
+		return $this->provider_context->matches_execution( $context_fingerprint, 'order-sync' );
 	}
 
 	/** @param array<string, string> $actions @return array<string, string> */

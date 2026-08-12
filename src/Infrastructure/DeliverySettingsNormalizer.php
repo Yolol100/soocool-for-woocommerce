@@ -77,14 +77,14 @@ final class DeliverySettingsNormalizer {
 			$index = $entry['index'];
 			$slot  = $entry['slot'];
 
-			$time_from   = $this->sanitize_time( sanitize_text_field( $this->scalar_string( $slot['time_from'] ?? null ) ), '' );
-			$time_to     = $this->sanitize_time( sanitize_text_field( $this->scalar_string( $slot['time_to'] ?? null ) ), '' );
-			$cutoff_time = $this->sanitize_time( sanitize_text_field( $this->scalar_string( $slot['cutoff_time'] ?? $time_from, $time_from ) ), $time_from );
-			if ( '' === $time_from || '' === $time_to || '' === $cutoff_time || $time_to <= $time_from || $cutoff_time > $time_to ) {
+			$sanitized = $this->sanitize_slot( $slot );
+			if ( null === $sanitized ) {
 				continue;
 			}
 
-			$enabled          = $this->to_bool( $slot['enabled'] ?? true );
+			$time_from       = $sanitized['time_from'];
+			$time_to         = $sanitized['time_to'];
+			$enabled          = (bool) $sanitized['enabled'];
 			$has_weekdays_key = array_key_exists( 'weekdays', $slot );
 			$raw_weekdays    = is_array( $slot['weekdays'] ?? null ) ? $slot['weekdays'] : ( $has_weekdays_key ? array() : $allowed_weekdays );
 			$weekdays        = array();
@@ -102,7 +102,6 @@ final class DeliverySettingsNormalizer {
 				$weekdays = $allowed_weekdays;
 			}
 
-			$label     = $this->slot_label( $slot['label'] ?? null, $time_from, $time_to );
 			$duplicate = false;
 			foreach ( $weekdays as $weekday ) {
 				$fingerprint = $time_from . '|' . $time_to . '|' . $weekday;
@@ -118,17 +117,9 @@ final class DeliverySettingsNormalizer {
 				$seen[ $time_from . '|' . $time_to . '|' . $weekday ] = true;
 			}
 
-			$clean[] = array(
-				'id'          => $this->slot_identity( $slot, $time_from, $time_to ),
-				'type'        => $this->slot_type( $slot, $time_from, $time_to ),
-				'enabled'     => $enabled,
-				'label'       => $label,
-				'time_from'   => $time_from,
-				'time_to'     => $time_to,
-				'cutoff_time' => $cutoff_time,
-				'weekdays'    => $weekdays,
-				'sort_order'  => is_numeric( $slot['sort_order'] ?? null ) ? (int) $slot['sort_order'] : (int) $index,
-			);
+			$sanitized['weekdays']   = $weekdays;
+			$sanitized['sort_order'] = is_numeric( $slot['sort_order'] ?? null ) ? (int) $slot['sort_order'] : (int) $index;
+			$clean[]                  = $sanitized;
 		}
 
 		$enabled = array_filter( $clean, static fn ( array $slot ): bool => (bool) $slot['enabled'] );
@@ -207,31 +198,22 @@ final class DeliverySettingsNormalizer {
 			$index = $entry['index'];
 			$slot  = $entry['slot'];
 
-			$time_from   = $this->sanitize_time( sanitize_text_field( $this->scalar_string( $slot['time_from'] ?? null ) ), '' );
-			$time_to     = $this->sanitize_time( sanitize_text_field( $this->scalar_string( $slot['time_to'] ?? null ) ), '' );
-			$cutoff_time = $this->sanitize_time( sanitize_text_field( $this->scalar_string( $slot['cutoff_time'] ?? $time_from, $time_from ) ), $time_from );
-			if ( '' === $time_from || '' === $time_to || '' === $cutoff_time || $time_to <= $time_from || $cutoff_time > $time_to ) {
+			$sanitized = $this->sanitize_slot( $slot );
+			if ( null === $sanitized ) {
 				continue;
 			}
 
-			$label       = $this->slot_label( $slot['label'] ?? null, $time_from, $time_to );
+			$time_from   = $sanitized['time_from'];
+			$time_to     = $sanitized['time_to'];
 			$fingerprint = $time_from . '|' . $time_to;
 			if ( isset( $seen[ $fingerprint ] ) ) {
 				continue;
 			}
 			$seen[ $fingerprint ] = true;
 
-			$clean[] = array(
-				'id'          => $this->slot_identity( $slot, $time_from, $time_to ),
-				'type'        => $this->slot_type( $slot, $time_from, $time_to ),
-				'enabled'     => $this->to_bool( $slot['enabled'] ?? true ),
-				'label'       => $label,
-				'time_from'   => $time_from,
-				'time_to'     => $time_to,
-				'cutoff_time' => $cutoff_time,
-				'weekdays'    => array( $delivery_weekday ),
-				'sort_order'  => is_numeric( $slot['sort_order'] ?? null ) ? (int) $slot['sort_order'] : ( (int) $index + 1 ) * 10,
-			);
+			$sanitized['weekdays']   = array( $delivery_weekday );
+			$sanitized['sort_order'] = is_numeric( $slot['sort_order'] ?? null ) ? (int) $slot['sort_order'] : ( (int) $index + 1 ) * 10;
+			$clean[]                  = $sanitized;
 		}
 
 		usort(
@@ -243,6 +225,27 @@ final class DeliverySettingsNormalizer {
 		);
 
 		return array_values( $clean );
+	}
+
+
+	private function sanitize_slot( array $slot ): ?array {
+		$time_from   = $this->sanitize_time( sanitize_text_field( $this->scalar_string( $slot['time_from'] ?? null ) ), '' );
+		$time_to     = $this->sanitize_time( sanitize_text_field( $this->scalar_string( $slot['time_to'] ?? null ) ), '' );
+		$cutoff_time = $this->sanitize_time( sanitize_text_field( $this->scalar_string( $slot['cutoff_time'] ?? $time_from, $time_from ) ), $time_from );
+
+		if ( '' === $time_from || '' === $time_to || '' === $cutoff_time || $time_to <= $time_from || $cutoff_time > $time_to ) {
+			return null;
+		}
+
+		return array(
+			'id'          => $this->slot_identity( $slot, $time_from, $time_to ),
+			'type'        => $this->slot_type( $slot, $time_from, $time_to ),
+			'enabled'     => $this->to_bool( $slot['enabled'] ?? true ),
+			'label'       => $this->slot_label( $slot['label'] ?? null, $time_from, $time_to ),
+			'time_from'   => $time_from,
+			'time_to'     => $time_to,
+			'cutoff_time' => $cutoff_time,
+		);
 	}
 
 	private function enabled_first_slot_entries( array $slots, int $limit ): array {

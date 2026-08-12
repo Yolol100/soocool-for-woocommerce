@@ -63,7 +63,7 @@ final class DeliveryOrderDetails {
 		}
 
 		echo '<section class="woocommerce-order-details soocool-order-delivery-detail">';
-		echo '<h2 class="woocommerce-order-details__title soocool-order-delivery-detail__title" style="margin-top:1rem;">' . esc_html__( 'Bezorging', 'soocool-for-woocommerce' ) . '</h2>';
+		echo '<h2 class="woocommerce-order-details__title soocool-order-delivery-detail__title">' . esc_html__( 'Bezorging', 'soocool-for-woocommerce' ) . '</h2>';
 		echo '<div class="soocool-order-delivery-detail__card">';
 		echo '<div class="soocool-order-delivery-detail__row"><span>' . esc_html__( 'Bezorgdatum', 'soocool-for-woocommerce' ) . '</span><strong>' . esc_html( $date_label ) . '</strong></div>';
 		if ( '' !== $time_label ) {

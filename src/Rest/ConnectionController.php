@@ -37,6 +37,7 @@ final class ConnectionController extends AbstractRestController {
 
 	public function test(): WP_REST_Response {
 		$environment = $this->environment();
+		$fingerprint = $this->connection_state->configuration_fingerprint( $environment, $this->options->base_url(), $this->options->api_key() );
 
 		try {
 			$response         = $this->client->ping();
@@ -44,7 +45,7 @@ final class ConnectionController extends AbstractRestController {
 			$matches_contract = $this->body_matches_ping_contract( $body );
 
 			if ( ! $matches_contract ) {
-				$this->connection_state->record( $environment, 'warning', $response->status_code() );
+				$this->connection_state->record( $environment, 'warning', $response->status_code(), $fingerprint );
 				return new WP_REST_Response(
 					array(
 						'success'          => true,
@@ -56,7 +57,7 @@ final class ConnectionController extends AbstractRestController {
 				);
 			}
 
-			$this->connection_state->record( $environment, 'success', $response->status_code() );
+			$this->connection_state->record( $environment, 'success', $response->status_code(), $fingerprint );
 			return new WP_REST_Response(
 				array(
 					'success'          => true,
@@ -70,7 +71,7 @@ final class ConnectionController extends AbstractRestController {
 			if ( $status < 400 || $status > 599 ) {
 				$status = 400;
 			}
-			$this->connection_state->record( $environment, 'failure', $exception->status_code() );
+			$this->connection_state->record( $environment, 'failure', $exception->status_code(), $fingerprint );
 
 			return new WP_REST_Response(
 				array(
@@ -81,7 +82,7 @@ final class ConnectionController extends AbstractRestController {
 				$status
 			);
 		} catch ( \Throwable $exception ) {
-			$this->connection_state->record( $environment, 'failure', 500 );
+			$this->connection_state->record( $environment, 'failure', 500, $fingerprint );
 			$this->logger->error(
 				'Unexpected SooCool connection test error.',
 				array(

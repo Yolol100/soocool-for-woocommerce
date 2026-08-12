@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace SooCool\WooCommerce\Admin;
 
 use SooCool\WooCommerce\Infrastructure\NumericIdentifier;
+use SooCool\WooCommerce\Infrastructure\OptionDefaults;
+use SooCool\WooCommerce\Infrastructure\ProviderContext;
 use SooCool\WooCommerce\Checkout\DeliverySchedule;
 use SooCool\WooCommerce\Domain\OrderSyncCoordinator;
 use SooCool\WooCommerce\WooCommerce\OrderActions;
@@ -15,12 +17,17 @@ defined( 'ABSPATH' ) || exit;
 
 final class OrderMetaBox {
 
+	private readonly ProviderContext $provider_context;
+
 	public function __construct(
 		private readonly OrderMeta $meta,
 		private readonly OrderStatusPresenter $presenter,
 		private readonly DeliverySchedule $schedule,
-		private readonly OrderSyncCoordinator $coordinator
-	) {}
+		private readonly OrderSyncCoordinator $coordinator,
+		?ProviderContext $provider_context = null
+	) {
+		$this->provider_context = $provider_context ?? new ProviderContext();
+	}
 
 	public function register(): void {
 		add_meta_box(
@@ -39,12 +46,13 @@ final class OrderMetaBox {
 			return;
 		}
 
-		$soocool_order_id = $this->meta->get_soocool_order_id( $order );
-		$status           = $this->meta->get_sync_status( $order );
-		$display_status   = $this->presenter->display_status( $status, '' !== $soocool_order_id );
-		$error            = $this->presenter->display_error( $this->meta->get_last_error( $order ) );
-		$tracking_code    = $this->meta->get_tracking_code( $order );
-		$good_ids         = $this->meta->get_good_ids( $order );
+		$soocool_order_id      = $this->meta->get_soocool_order_id( $order );
+		$current_provider_link = $this->is_synced_in_current_provider( $order );
+		$status                = $this->meta->get_sync_status( $order );
+		$display_status        = $this->presenter->display_status( $status, $current_provider_link );
+		$error                 = $this->presenter->display_error( $this->meta->get_last_error( $order ) );
+		$tracking_code         = $current_provider_link ? $this->meta->get_tracking_code( $order ) : '';
+		$good_ids              = $current_provider_link ? $this->meta->get_good_ids( $order ) : array();
 		$delivery_label  = $this->meta->get_requested_delivery_label( $order );
 		$delivery_date   = $this->meta->get_requested_delivery_date( $order );
 		$time_label      = $this->meta->get_requested_delivery_time_label( $order );
@@ -61,6 +69,10 @@ final class OrderMetaBox {
 			}
 			$this->render_meta_row( __( 'Gekozen bezorgmoment', 'soocool-for-woocommerce' ), $delivery_moment );
 		}
+		$pickup_moment = $this->pickup_moment_label( $delivery_date );
+		if ( '' !== $pickup_moment ) {
+			$this->render_meta_row( __( 'Gewenste ophaaltijdsvenster', 'soocool-for-woocommerce' ), $pickup_moment );
+		}
 		if ( '' !== $tracking_code ) {
 			$this->render_meta_row( __( 'Track & trace-code', 'soocool-for-woocommerce' ), $tracking_code );
 		}
@@ -68,6 +80,9 @@ final class OrderMetaBox {
 			$this->render_meta_row( __( 'SooCool-goederen-ID’s', 'soocool-for-woocommerce' ), implode( ', ', $good_ids ) );
 		}
 		echo '</dl>';
+		if ( '' !== $soocool_order_id && ! $current_provider_link ) {
+			echo '<div class="soocool-order-alert is-warning"><strong>' . esc_html__( 'API-context gewijzigd', 'soocool-for-woocommerce' ) . '</strong><br />' . esc_html__( 'Deze opgeslagen SooCool-koppeling hoort niet aantoonbaar bij de actieve API-context. Synchroniseer de order opnieuw voordat je update-, annuleer- of labelacties uitvoert.', 'soocool-for-woocommerce' ) . '</div>';
+		}
 
 		if ( current_user_can( 'manage_woocommerce' ) ) {
 			$this->render_sync_action( $order, $status );
@@ -87,8 +102,17 @@ final class OrderMetaBox {
 		echo '</div>';
 	}
 
+	private function is_synced_in_current_provider( WC_Order $order ): bool {
+		if ( ! $this->meta->is_synced( $order ) ) {
+			return false;
+		}
+
+		$provider_context = $this->meta->get_provider_context( $order );
+		return '' !== $provider_context && $this->provider_context->matches_provider( $provider_context );
+	}
+
 	private function render_sync_action( WC_Order $order, string $status ): void {
-		if ( $this->meta->is_synced( $order ) ) {
+		if ( $this->is_synced_in_current_provider( $order ) ) {
 			return;
 		}
 
@@ -117,7 +141,7 @@ final class OrderMetaBox {
 
 	/** @param array<int, int> $good_ids */
 	private function render_label_actions( WC_Order $order, array $good_ids ): void {
-		if ( ! $this->meta->is_synced( $order ) ) {
+		if ( ! $this->is_synced_in_current_provider( $order ) ) {
 			return;
 		}
 
@@ -314,6 +338,29 @@ final class OrderMetaBox {
 
 		wp_safe_redirect( add_query_arg( 'soocool_notice', sanitize_key( $notice ), $redirect ) );
 		exit;
+	}
+
+	private function pickup_moment_label( string $delivery_date ): string {
+		$pickup_date = $this->schedule->pickup_date_for_delivery( $delivery_date );
+		if ( 1 !== preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $pickup_date, $matches ) ) {
+			return '';
+		}
+
+		$year  = (int) $matches[1];
+		$month = (int) $matches[2];
+		$day   = (int) $matches[3];
+		if ( ! checkdate( $month, $day, $year ) ) {
+			return '';
+		}
+
+		return sprintf(
+			'%02d-%02d-%04d, %s - %su',
+			$day,
+			$month,
+			$year,
+			OptionDefaults::PICKUP_TIME_FROM,
+			OptionDefaults::PICKUP_TIME_TO
+		);
 	}
 
 	private function render_meta_row( string $label, string $value ): void {

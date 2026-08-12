@@ -26,6 +26,15 @@ final class WebhookAuthenticator {
 	private const CLEANUP_HOOK                 = 'soocool_cleanup_webhook_events';
 	private const CLEANUP_BATCH_HOOK           = 'soocool_cleanup_webhook_events_batch';
 	private const CLEANUP_BATCH_SIZE           = 500;
+	private const CLEANUP_OPTION_PREFIXES      = array(
+		self::PROCESSED_PREFIX,
+		self::RESERVATION_PREFIX,
+		'soocool_webhook_order_lock_',
+		'soocool_sync_lock_',
+		'soocool_bulk_label_lock_',
+		'soocool_settings_write_lock',
+		'soocool_logs_write_lock',
+	);
 
 	/** @var \WeakMap<WP_REST_Request, array{key: string, value: string}> */
 	private \WeakMap $reservations;
@@ -61,37 +70,46 @@ final class WebhookAuthenticator {
 			return 0;
 		}
 
-		$like = $wpdb->esc_like( self::PROCESSED_PREFIX ) . '%';
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded cleanup of plugin-owned dynamic options requires a prefix query.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s AND CAST(SUBSTRING_INDEX(option_value, '|', 1) AS UNSIGNED) <= %d ORDER BY option_id ASC LIMIT %d",
-				$like,
-				time(),
-				self::CLEANUP_BATCH_SIZE
-			),
-			ARRAY_A
-		);
-		if ( ! is_array( $rows ) ) {
-			return 0;
-		}
+		$deleted  = 0;
+		$has_more = false;
+		$now      = time();
 
-		$deleted = 0;
-		foreach ( $rows as $row ) {
-			$key   = is_array( $row ) && is_scalar( $row['option_name'] ?? null ) ? (string) $row['option_name'] : '';
-			$value = is_array( $row ) && is_scalar( $row['option_value'] ?? null ) ? (string) $row['option_value'] : '';
-			if ( ! str_starts_with( $key, self::PROCESSED_PREFIX ) || '' === $value ) {
+		foreach ( self::CLEANUP_OPTION_PREFIXES as $prefix ) {
+			$like = $wpdb->esc_like( $prefix ) . '%';
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded cleanup of plugin-owned mutex/replay options requires a prefix query.
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s AND CAST(SUBSTRING_INDEX(option_value, '|', 1) AS UNSIGNED) <= %d ORDER BY option_id ASC LIMIT %d",
+					$like,
+					$now,
+					self::CLEANUP_BATCH_SIZE
+				),
+				ARRAY_A
+			);
+			if ( ! is_array( $rows ) ) {
 				continue;
 			}
 
-			$parts      = explode( '|', $value, 2 );
-			$expires_at = NumericIdentifier::positive( $parts[0] ?? null ) ?? 0;
-			if ( $expires_at <= time() && OptionMutex::release( $key, $value ) ) {
-				++$deleted;
+			if ( self::CLEANUP_BATCH_SIZE === count( $rows ) ) {
+				$has_more = true;
+			}
+
+			foreach ( $rows as $row ) {
+				$key   = is_array( $row ) && is_scalar( $row['option_name'] ?? null ) ? (string) $row['option_name'] : '';
+				$value = is_array( $row ) && is_scalar( $row['option_value'] ?? null ) ? (string) $row['option_value'] : '';
+				if ( ! str_starts_with( $key, $prefix ) || '' === $value ) {
+					continue;
+				}
+
+				$parts      = explode( '|', $value, 2 );
+				$expires_at = NumericIdentifier::positive( $parts[0] ?? null ) ?? 0;
+				if ( $expires_at <= $now && OptionMutex::release( $key, $value ) ) {
+					++$deleted;
+				}
 			}
 		}
 
-		if ( self::CLEANUP_BATCH_SIZE === count( $rows ) && false === wp_next_scheduled( self::CLEANUP_BATCH_HOOK ) ) {
+		if ( $has_more && false === wp_next_scheduled( self::CLEANUP_BATCH_HOOK ) ) {
 			wp_schedule_single_event( time() + 60, self::CLEANUP_BATCH_HOOK );
 		}
 

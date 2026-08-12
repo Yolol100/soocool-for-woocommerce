@@ -125,10 +125,10 @@ final class DeliveryOptionsRenderer {
 	}
 
 	private function checkout_cutoff_time_label( array $settings ): string {
-		$rules = is_array( $settings['checkout_delivery_rules'] ?? null ) ? $settings['checkout_delivery_rules'] : array();
-		$times = array();
+		$schedule = is_array( $settings['checkout_delivery_schedule'] ?? null ) ? $settings['checkout_delivery_schedule'] : array();
+		$times    = array();
 
-		foreach ( $rules as $rule ) {
+		foreach ( $schedule as $rule ) {
 			if ( ! is_array( $rule ) || empty( $rule['enabled'] ) ) {
 				continue;
 			}

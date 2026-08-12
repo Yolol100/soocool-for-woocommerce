@@ -16,6 +16,7 @@ final class OrderMeta {
 	public const ORDER_ID       = '_soocool_soocool_order_id';
 	public const OUR_REFERENCE  = '_soocool_soocool_our_reference';
 	public const ORDER_REFERENCE = '_soocool_order_reference';
+	public const PROVIDER_CONTEXT = '_soocool_provider_context';
 	public const SYNC_STATUS    = '_soocool_sync_status';
 	public const LAST_ERROR     = '_soocool_last_error';
 	public const LAST_SYNCED_AT  = '_soocool_last_synced_at';
@@ -130,7 +131,7 @@ final class OrderMeta {
 	 * @param bool $preserve_existing_failure Keep an existing failure while a lookup/refresh
 	 *                                        is still waiting for an authoritative remote status.
 	 */
-	public function save_success( WC_Order $order, array $body, string $order_reference = '', bool $preserve_existing_failure = false ): void {
+	public function save_success( WC_Order $order, array $body, string $order_reference = '', bool $preserve_existing_failure = false, string $provider_context = '' ): void {
 		if ( method_exists( $order, 'read_meta_data' ) ) {
 			$order->read_meta_data( true );
 		}
@@ -141,16 +142,27 @@ final class OrderMeta {
 			throw new \InvalidArgumentException( 'Missing valid SooCool order ID.' );
 		}
 
-		$same_remote_order        = '' !== $previous_order_id && hash_equals( $previous_order_id, $soocool_order_id );
-		$remote_order_changed     = '' !== $previous_order_id && ! $same_remote_order;
-		$current_sync_status      = $this->get_sync_status( $order );
-		$preserve_failure_status  = $preserve_existing_failure && ! $remote_order_changed && in_array( $current_sync_status, array( 'soocool_failed', 'soocool_rejected' ), true );
-		$preserve_workflow_status = ! $remote_order_changed && ( $preserve_failure_status || $this->has_nonfailure_authoritative_workflow_status( $order ) );
+		$previous_provider_context = $this->get_provider_context( $order );
+		$provider_context          = strtolower( trim( $provider_context ) );
+		$provider_context          = 1 === preg_match( '/^[a-f0-9]{64}$/', $provider_context ) ? $provider_context : '';
+		$same_remote_order         = '' !== $previous_order_id && hash_equals( $previous_order_id, $soocool_order_id );
+		$remote_order_changed      = '' !== $previous_order_id && ! $same_remote_order;
+		$provider_context_changed  = '' !== $provider_context && ( '' === $previous_provider_context || ! hash_equals( $previous_provider_context, $provider_context ) );
+		$remote_identity_changed   = $remote_order_changed || $provider_context_changed;
+		$current_sync_status       = $this->get_sync_status( $order );
+		$preserve_failure_status   = $preserve_existing_failure && ! $remote_identity_changed && in_array( $current_sync_status, array( 'soocool_failed', 'soocool_rejected' ), true );
+		$preserve_workflow_status  = ! $remote_identity_changed && ( $preserve_failure_status || $this->has_nonfailure_authoritative_workflow_status( $order ) );
 
-		if ( $remote_order_changed ) {
+		if ( $remote_identity_changed ) {
 			foreach ( array( self::TRACKING_CODE, self::TRACKING_URL, self::GOOD_IDS, self::LAST_WEBHOOK_AT, self::LAST_WEBHOOK_EVENT_AT, self::LAST_WEBHOOK_EVENT_ID, self::LAST_WEBHOOK_SEQUENCE, self::WEBHOOK_EVENT_IDS ) as $remote_meta_key ) {
 				$order->delete_meta_data( $remote_meta_key );
 			}
+		}
+
+		if ( '' !== $provider_context ) {
+			$order->update_meta_data( self::PROVIDER_CONTEXT, $provider_context );
+		} elseif ( $remote_order_changed ) {
+			$order->delete_meta_data( self::PROVIDER_CONTEXT );
 		}
 
 		$order->update_meta_data( self::ORDER_ID, $soocool_order_id );
@@ -195,6 +207,20 @@ final class OrderMeta {
 		if ( ! $this->has_authoritative_workflow_status( $order, true ) ) {
 			$order->update_meta_data( self::SYNC_STATUS, 'pending' );
 		}
+		$order->save();
+	}
+
+	public function clear_pending( WC_Order $order ): void {
+		if ( method_exists( $order, 'read_meta_data' ) ) {
+			$order->read_meta_data( true );
+		}
+
+		if ( 'pending' !== $this->get_sync_status( $order ) ) {
+			return;
+		}
+
+		$order->delete_meta_data( self::SYNC_STATUS );
+		$order->delete_meta_data( self::LAST_ERROR );
 		$order->save();
 	}
 
@@ -318,6 +344,24 @@ final class OrderMeta {
 			$order->update_meta_data( self::SYNC_STATUS, 'failed' );
 		}
 		$order->update_meta_data( self::LAST_ERROR, sanitize_text_field( $message ) );
+		$order->save();
+	}
+
+	public function save_action_error( WC_Order $order, string $message ): void {
+		$order->update_meta_data( self::LAST_ERROR, sanitize_text_field( $message ) );
+		$order->save();
+	}
+
+	public function restore_linked_status( WC_Order $order ): void {
+		if ( method_exists( $order, 'read_meta_data' ) ) {
+			$order->read_meta_data( true );
+		}
+
+		if ( ! in_array( $this->get_sync_status( $order ), array( 'failed', 'pending' ), true ) ) {
+			return;
+		}
+
+		$order->update_meta_data( self::SYNC_STATUS, 'synced' );
 		$order->save();
 	}
 
@@ -481,6 +525,17 @@ final class OrderMeta {
 
 		$order_id = $this->normalize_positive_id( $value );
 		return null !== $order_id ? (string) $order_id : '';
+	}
+
+
+	public function get_provider_context( WC_Order $order ): string {
+		$value = $order->get_meta( self::PROVIDER_CONTEXT, true );
+		if ( ! is_scalar( $value ) ) {
+			return '';
+		}
+
+		$fingerprint = strtolower( trim( (string) $value ) );
+		return 1 === preg_match( '/^[a-f0-9]{64}$/', $fingerprint ) ? $fingerprint : '';
 	}
 
 	public function is_synced( WC_Order $order ): bool {

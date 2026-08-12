@@ -26,8 +26,12 @@ final class OptionRepository {
 	public const OPTION_NAME                       = 'soocool_settings';
 	private const DAYPART_LABEL_MIGRATION_OPTION   = 'soocool_daypart_label_migration_20260707_ochtend_middag';
 	private const PACKAGE_WEIGHT_MIGRATION_OPTION = 'soocool_package_weight_migration_20260729_10kg';
+	private const AUTO_SUBMIT_MIGRATION_OPTION    = 'soocool_auto_submit_migration_20260811';
 	private const MIGRATION_VERSION_OPTION        = 'soocool_migration_version';
-	private const MIGRATION_VERSION_FALLBACK      = '0.5.63';
+	private const MIGRATION_VERSION_FALLBACK      = '0.7.147';
+	private const WRITE_LOCK_KEY                  = 'soocool_settings_write_lock';
+	private const WRITE_LOCK_TTL                  = 10;
+	private const WRITE_LOCK_RETRIES              = 5;
 
 	/** @return array<string, mixed> */
 	public function defaults(): array {
@@ -56,72 +60,93 @@ final class OptionRepository {
 			return;
 		}
 
-		$stored = get_option( self::OPTION_NAME, array() );
-		if ( ! is_array( $stored ) ) {
-			$stored = array();
-		}
-
-		$settings = wp_parse_args( $stored, $this->defaults() );
-
-		if ( 'https://api-test.soocool.nl' === untrailingslashit( $this->scalar_string( $settings['test_base_url'] ?? null ) ) ) {
-			$settings['test_base_url'] = 'https://api.staging.soocool.nl';
-		}
-
-		// Keep the legacy fallback delivery window predictable for orders without a selected checkout daypart.
-		if ( '08:00' !== $this->scalar_string( $settings['delivery_time_from'] ?? null ) || '18:00' !== $this->scalar_string( $settings['delivery_time_to'] ?? null ) ) {
-			$settings['delivery_time_from'] = '08:00';
-			$settings['delivery_time_to']   = '18:00';
-		}
-
-		if ( (bool) ( $settings['enable_pickup'] ?? false ) && 0 === absint( $settings['pickup_days_offset'] ?? 0 ) ) {
-			$settings['pickup_days_offset'] = 1;
-			if ( absint( $settings['delivery_days_offset'] ?? 0 ) <= 1 ) {
-				$settings['delivery_days_offset'] = 2;
-			}
-		}
-
-		if ( empty( $settings['webhook_secret'] ) ) {
-			$settings['webhook_secret'] = $this->credentials->generate_webhook_secret();
-		}
-
-		$mark_daypart_migration = ! get_option( self::DAYPART_LABEL_MIGRATION_OPTION, false );
-		if ( $mark_daypart_migration ) {
-			$settings = $this->delivery_settings->rename_legacy_daypart_labels( $settings );
-		}
-
-		$mark_weight_migration = ! get_option( self::PACKAGE_WEIGHT_MIGRATION_OPTION, false );
-		if ( $mark_weight_migration ) {
-			$stored_package_weight = $stored['package_weight'] ?? null;
-			if ( null === $stored_package_weight || 1600 === absint( $stored_package_weight ) ) {
-				$settings['package_weight'] = 10000;
-			}
-		}
-
-		$settings = $this->delivery_settings->migrate_slot_identities( $settings );
-
-		if ( ! is_array( $settings['checkout_delivery_schedule'] ?? null ) || array() === $settings['checkout_delivery_schedule'] ) {
-			$settings['checkout_delivery_schedule'] = $this->delivery_settings->schedule_from_legacy(
-				is_array( $settings['checkout_delivery_rules'] ?? null ) ? $settings['checkout_delivery_rules'] : $this->default_delivery_rules(),
-				is_array( $settings['checkout_delivery_time_slots'] ?? null ) ? $settings['checkout_delivery_time_slots'] : $this->default_delivery_time_slots()
-			);
-		}
-
-		$settings       = $this->sanitize_settings( $settings, $this->defaults() );
-		$settings_saved = $settings === $stored || update_option( self::OPTION_NAME, $settings, false );
-		if ( ! $settings_saved ) {
+		$lock = $this->acquire_write_lock();
+		if ( null === $lock ) {
 			return;
 		}
 
+		try {
+			$stored_version = get_option( self::MIGRATION_VERSION_OPTION, '' );
+			if ( is_scalar( $stored_version ) && version_compare( trim( (string) $stored_version ), $migration_version, '>=' ) ) {
+				return;
+			}
+
+			$stored = get_option( self::OPTION_NAME, array() );
+			if ( ! is_array( $stored ) ) {
+				$stored = array();
+			}
+
+			$settings = wp_parse_args( $stored, $this->defaults() );
+
+			if ( 'https://api-test.soocool.nl' === untrailingslashit( $this->scalar_string( $settings['test_base_url'] ?? null ) ) ) {
+				$settings['test_base_url'] = 'https://api.staging.soocool.nl';
+			}
+
+			$settings['pickup_time_from'] = OptionDefaults::PICKUP_TIME_FROM;
+			$settings['pickup_time_to']   = OptionDefaults::PICKUP_TIME_TO;
+
+			// Keep the legacy fallback delivery window predictable for orders without a selected checkout daypart.
+			if ( OptionDefaults::DELIVERY_TIME_FROM !== $this->scalar_string( $settings['delivery_time_from'] ?? null ) || OptionDefaults::DELIVERY_TIME_TO !== $this->scalar_string( $settings['delivery_time_to'] ?? null ) ) {
+				$settings['delivery_time_from'] = OptionDefaults::DELIVERY_TIME_FROM;
+				$settings['delivery_time_to']   = OptionDefaults::DELIVERY_TIME_TO;
+			}
+
+			if ( empty( $settings['webhook_secret'] ) ) {
+				$settings['webhook_secret'] = $this->credentials->generate_webhook_secret();
+			}
+
+			$mark_daypart_migration = ! get_option( self::DAYPART_LABEL_MIGRATION_OPTION, false );
+			if ( $mark_daypart_migration ) {
+				$settings = $this->delivery_settings->rename_legacy_daypart_labels( $settings );
+			}
+
+			$mark_weight_migration = ! get_option( self::PACKAGE_WEIGHT_MIGRATION_OPTION, false );
+			if ( $mark_weight_migration ) {
+				$stored_package_weight = $stored['package_weight'] ?? null;
+				if ( null === $stored_package_weight || 1600 === absint( $stored_package_weight ) ) {
+					$settings['package_weight'] = 10000;
+				}
+			}
+
+			$mark_auto_submit_migration = ! get_option( self::AUTO_SUBMIT_MIGRATION_OPTION, false );
+			if ( $mark_auto_submit_migration ) {
+				$settings['auto_submit_enabled'] = OptionDefaults::AUTO_SUBMIT_ENABLED;
+				$settings['auto_submit_status']  = OptionDefaults::AUTO_SUBMIT_STATUS;
+			}
+
+			$settings = $this->delivery_settings->migrate_slot_identities( $settings );
+
+			if ( ! is_array( $settings['checkout_delivery_schedule'] ?? null ) || array() === $settings['checkout_delivery_schedule'] ) {
+				$settings['checkout_delivery_schedule'] = $this->delivery_settings->schedule_from_legacy(
+					is_array( $settings['checkout_delivery_rules'] ?? null ) ? $settings['checkout_delivery_rules'] : $this->default_delivery_rules(),
+					is_array( $settings['checkout_delivery_time_slots'] ?? null ) ? $settings['checkout_delivery_time_slots'] : $this->default_delivery_time_slots()
+				);
+			}
+
+			$settings       = $this->sanitize_settings( $settings, $this->defaults() );
+			$settings_saved = $settings === $stored || update_option( self::OPTION_NAME, $settings, false );
+			if ( ! $settings_saved ) {
+				return;
+			}
+
+			$this->cache = null;
+			if ( $settings !== $this->all() ) {
+				return;
+			}
+
+			$daypart_marker_saved    = ! $mark_daypart_migration || update_option( self::DAYPART_LABEL_MIGRATION_OPTION, '1', false ) || '1' === get_option( self::DAYPART_LABEL_MIGRATION_OPTION, '' );
+			$weight_marker_saved     = ! $mark_weight_migration || update_option( self::PACKAGE_WEIGHT_MIGRATION_OPTION, '1', false ) || '1' === get_option( self::PACKAGE_WEIGHT_MIGRATION_OPTION, '' );
+			$auto_submit_marker_saved = ! $mark_auto_submit_migration || update_option( self::AUTO_SUBMIT_MIGRATION_OPTION, '1', false ) || '1' === get_option( self::AUTO_SUBMIT_MIGRATION_OPTION, '' );
+			if ( $daypart_marker_saved && $weight_marker_saved && $auto_submit_marker_saved ) {
+				update_option( self::MIGRATION_VERSION_OPTION, $migration_version, false );
+			}
+		} finally {
+			OptionMutex::release( self::WRITE_LOCK_KEY, $lock );
+		}
+	}
+
+	public function refresh_cache(): void {
 		$this->cache = null;
-		if ( $settings !== $this->all() ) {
-			return;
-		}
-
-		$daypart_marker_saved = ! $mark_daypart_migration || update_option( self::DAYPART_LABEL_MIGRATION_OPTION, '1', false ) || '1' === get_option( self::DAYPART_LABEL_MIGRATION_OPTION, '' );
-		$weight_marker_saved  = ! $mark_weight_migration || update_option( self::PACKAGE_WEIGHT_MIGRATION_OPTION, '1', false ) || '1' === get_option( self::PACKAGE_WEIGHT_MIGRATION_OPTION, '' );
-		if ( $daypart_marker_saved && $weight_marker_saved ) {
-			update_option( self::MIGRATION_VERSION_OPTION, $migration_version, false );
-		}
 	}
 
 	/** @return array<string, mixed> */
@@ -137,8 +162,8 @@ final class OptionRepository {
 			$settings['test_base_url'] = 'https://api.staging.soocool.nl';
 		}
 
-		$settings['delivery_time_from'] = '08:00';
-		$settings['delivery_time_to']   = '18:00';
+		$settings['delivery_time_from'] = OptionDefaults::DELIVERY_TIME_FROM;
+		$settings['delivery_time_to']   = OptionDefaults::DELIVERY_TIME_TO;
 
 		if ( ! is_array( $settings['checkout_delivery_schedule'] ?? null ) || array() === $settings['checkout_delivery_schedule'] ) {
 			$settings['checkout_delivery_schedule'] = $this->delivery_settings->schedule_from_legacy(
@@ -155,21 +180,33 @@ final class OptionRepository {
 
 	/** @param array<string, mixed> $settings */
 	public function update( array $settings ): bool {
-		$current = $this->all();
-		$clean   = $this->sanitize_settings( $settings, $current );
-
-		if ( $clean === $current ) {
-			return true;
-		}
-
-		$updated     = update_option( self::OPTION_NAME, $clean, false );
-		$this->cache = null;
-
-		if ( ! $updated && $clean !== $this->all() ) {
+		$lock = $this->acquire_write_lock();
+		if ( null === $lock ) {
 			return false;
 		}
 
-		return $clean === $this->all();
+		try {
+			// Another request can update the same option after this repository has cached it.
+			// Re-read under the write lock so a partial update never restores stale fields.
+			$this->cache = null;
+			$current     = $this->all();
+			$clean       = $this->sanitize_settings( $settings, $current );
+
+			if ( $clean === $current ) {
+				return true;
+			}
+
+			$updated     = update_option( self::OPTION_NAME, $clean, false );
+			$this->cache = null;
+
+			if ( ! $updated && $clean !== $this->all() ) {
+				return false;
+			}
+
+			return $clean === $this->all();
+		} finally {
+			OptionMutex::release( self::WRITE_LOCK_KEY, $lock );
+		}
 	}
 
 	/** @param array<string, mixed> $settings @return array<string, mixed> */
@@ -245,8 +282,8 @@ final class OptionRepository {
 	/** @param array<string, mixed> $settings @param array<string, mixed> $current @return array<string, mixed> */
 	private function sanitize_pickup_settings( array $settings, array $current ): array {
 		$clean = array(
-			'enable_pickup'          => $this->to_bool( $this->setting_value( $settings, $current, 'enable_pickup' ) ),
-			'order_reference_prefix' => $this->delivery_settings->truncate( sanitize_key( (string) $this->setting_value( $settings, $current, 'order_reference_prefix' ) ), 32 ),
+			'enable_pickup'          => OptionDefaults::PICKUP_ENABLED,
+			'order_reference_prefix' => $this->delivery_settings->truncate( trim( sanitize_key( (string) $this->setting_value( $settings, $current, 'order_reference_prefix' ) ), '-' ), 32 ),
 			'pickup_company'         => $this->delivery_settings->truncate( sanitize_text_field( (string) $this->setting_value( $settings, $current, 'pickup_company' ) ), 200 ),
 			'pickup_contact_name'    => $this->delivery_settings->truncate( sanitize_text_field( (string) $this->setting_value( $settings, $current, 'pickup_contact_name' ) ), 200 ),
 			'pickup_email'           => $this->delivery_settings->truncate( sanitize_email( (string) $this->setting_value( $settings, $current, 'pickup_email' ) ), 254 ),
@@ -256,24 +293,16 @@ final class OptionRepository {
 			'pickup_postal_code'     => $this->delivery_settings->truncate( strtoupper( (string) preg_replace( '/\s+/', '', sanitize_text_field( (string) $this->setting_value( $settings, $current, 'pickup_postal_code' ) ) ) ), 32 ),
 			'pickup_city'            => $this->delivery_settings->truncate( sanitize_text_field( (string) $this->setting_value( $settings, $current, 'pickup_city' ) ), 100 ),
 			'pickup_country'         => $this->sanitize_country( (string) $this->setting_value( $settings, $current, 'pickup_country' ) ),
-			'pickup_days_offset'     => max( 0, min( 29, absint( $this->setting_value( $settings, $current, 'pickup_days_offset' ) ) ) ),
-			'pickup_time_from'       => $this->sanitize_time( (string) $this->setting_value( $settings, $current, 'pickup_time_from' ), '08:00' ),
-			'pickup_time_to'         => $this->sanitize_time( (string) $this->setting_value( $settings, $current, 'pickup_time_to' ), '18:00' ),
+			'pickup_time_from'       => OptionDefaults::PICKUP_TIME_FROM,
+			'pickup_time_to'         => OptionDefaults::PICKUP_TIME_TO,
 			// Fallback only; selected checkout dayparts override this in the SooCool payload.
-			'delivery_time_from'     => '08:00',
-			'delivery_time_to'       => '18:00',
+			'delivery_time_from'     => OptionDefaults::DELIVERY_TIME_FROM,
+			'delivery_time_to'       => OptionDefaults::DELIVERY_TIME_TO,
 		);
 
-		if ( $clean['pickup_time_to'] <= $clean['pickup_time_from'] ) {
-			$clean['pickup_time_from'] = '08:00';
-			$clean['pickup_time_to']   = '18:00';
-		}
 
-		$delivery_days_offset = max( 0, min( 30, absint( $this->setting_value( $settings, $current, 'delivery_days_offset' ) ) ) );
-		if ( (bool) $clean['enable_pickup'] && $delivery_days_offset <= (int) $clean['pickup_days_offset'] ) {
-			$delivery_days_offset = (int) $clean['pickup_days_offset'] + 1;
-		}
-		$clean['delivery_days_offset'] = min( 30, $delivery_days_offset );
+		$delivery_days_offset          = max( 1, min( 30, absint( $this->setting_value( $settings, $current, 'delivery_days_offset' ) ) ) );
+		$clean['delivery_days_offset'] = $delivery_days_offset;
 		return $clean;
 	}
 
@@ -314,8 +343,8 @@ final class OptionRepository {
 	/** @param array<string, mixed> $settings @param array<string, mixed> $current @param array<string, mixed> $defaults @return array<string, mixed> */
 	private function sanitize_operational_settings( array $settings, array $current, array $defaults ): array {
 		return array(
-			'auto_submit_enabled'        => $this->to_bool( $this->setting_value( $settings, $current, 'auto_submit_enabled' ) ),
-			'auto_submit_status'         => $this->one_of( $this->setting_value( $settings, $current, 'auto_submit_status' ), array( 'pending', 'processing', 'completed', 'on-hold' ), 'pending' ),
+			'auto_submit_enabled'        => OptionDefaults::AUTO_SUBMIT_ENABLED,
+			'auto_submit_status'         => OptionDefaults::AUTO_SUBMIT_STATUS,
 			'allow_resubmit'             => $this->to_bool( $this->setting_value( $settings, $current, 'allow_resubmit' ) ),
 			'label_output'               => $this->one_of( $this->setting_value( $settings, $current, 'label_output' ), array( 'a6', 'collated_a4' ), 'a6' ),
 			'webhook_url'                => $this->credentials->sanitize_url_or_empty( (string) $this->setting_value( $settings, $current, 'webhook_url' ) ),
@@ -524,12 +553,21 @@ final class OptionRepository {
 		return $this->credentials->normalize_secret( (string) $this->all()['api_key'] );
 	}
 
-	private function scalar_string( mixed $value, string $fallback = '' ): string {
-		return is_scalar( $value ) ? (string) $value : $fallback;
+	private function acquire_write_lock(): ?string {
+		for ( $attempt = 0; $attempt < self::WRITE_LOCK_RETRIES; ++$attempt ) {
+			$lock = OptionMutex::acquire( self::WRITE_LOCK_KEY, self::WRITE_LOCK_TTL );
+			if ( null !== $lock ) {
+				return $lock;
+			}
+
+			usleep( 20000 );
+		}
+
+		return null;
 	}
 
-	private function sanitize_time( string $value, string $fallback ): string {
-		return preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $value ) ? $value : $fallback;
+	private function scalar_string( mixed $value, string $fallback = '' ): string {
+		return is_scalar( $value ) ? (string) $value : $fallback;
 	}
 
 	private function sanitize_country( string $value ): string {

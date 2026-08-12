@@ -8,6 +8,7 @@ use SooCool\WooCommerce\Api\ApiClient;
 use SooCool\WooCommerce\Api\ApiException;
 use SooCool\WooCommerce\Infrastructure\Logger;
 use SooCool\WooCommerce\Infrastructure\NumericIdentifier;
+use SooCool\WooCommerce\Infrastructure\ProviderContext;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 use WP_Error;
@@ -16,12 +17,17 @@ defined( 'ABSPATH' ) || exit;
 
 final class WebhookOrderResolver {
 
+	private readonly ProviderContext $provider_context;
+
 	public function __construct(
 		private readonly OrderMeta $meta,
 		private readonly Logger $logger,
 		private readonly WebhookPayloadExtractor $payloads,
-		private readonly ApiClient $client
-	) {}
+		private readonly ApiClient $client,
+		?ProviderContext $provider_context = null
+	) {
+		$this->provider_context = $provider_context ?? new ProviderContext();
+	}
 
 	public function find_order( string $soocool_order_id, string $order_reference, int $wc_order_id ): array|WP_Error|null {
 		$candidates = array();
@@ -62,6 +68,36 @@ final class WebhookOrderResolver {
 				return $this->identifier_conflict( $soocool_order_id, $order_reference, $wc_order_id );
 			}
 
+			$provider_context = $this->meta->get_provider_context( $order );
+			if ( '' !== $provider_context && ! $this->provider_context->matches_provider( $provider_context ) ) {
+				return $this->provider_context_conflict( $order );
+			}
+
+			if ( '' === $provider_context ) {
+				if ( '' === $soocool_order_id ) {
+					return $this->provider_context_conflict( $order );
+				}
+
+				$remote_order = $this->remote_order( $soocool_order_id );
+				if ( is_wp_error( $remote_order ) ) {
+					return $remote_order;
+				}
+				if ( array() === $remote_order ) {
+					return $this->provider_context_conflict( $order );
+				}
+
+				$remote_reference = $this->payloads->order_reference( $remote_order );
+				if ( '' === $remote_reference || ( '' !== $order_reference && ! hash_equals( $order_reference, $remote_reference ) ) || ! $this->order_matches_reference( $order, $remote_reference ) ) {
+					return $this->identifier_conflict( $soocool_order_id, '' !== $order_reference ? $order_reference : $remote_reference, $wc_order_id );
+				}
+
+				return array(
+					'order'        => $order,
+					'remote_order' => $remote_order,
+					'reference'    => $remote_reference,
+				);
+			}
+
 			return array(
 				'order'        => $order,
 				'remote_order' => array(),
@@ -92,6 +128,10 @@ final class WebhookOrderResolver {
 					$current_remote_id = $this->meta->get_soocool_order_id( $order );
 					if ( '' !== $current_remote_id && $current_remote_id !== $soocool_order_id ) {
 						return $this->identifier_conflict( $soocool_order_id, $remote_reference, $wc_order_id );
+					}
+					$provider_context = $this->meta->get_provider_context( $order );
+					if ( '' !== $provider_context && ! $this->provider_context->matches_provider( $provider_context ) ) {
+						return $this->provider_context_conflict( $order );
 					}
 
 					return array(
@@ -136,6 +176,19 @@ final class WebhookOrderResolver {
 		}
 
 		return 1 === preg_match( '/(?:^|-)(' . preg_quote( (string) $order->get_order_number(), '/' ) . ')$/', $reference );
+	}
+
+	private function provider_context_conflict( WC_Order $order ): WP_Error {
+		$this->logger->info(
+			'SooCool webhook geweigerd: orderkoppeling hoort niet aantoonbaar bij de actieve API-context.',
+			array( 'wcOrderId' => (string) $order->get_id() )
+		);
+
+		return new WP_Error(
+			'soocool_webhook_provider_context_conflict',
+			__( 'De WooCommerce-order is aan een andere of onbekende SooCool API-context gekoppeld. Synchroniseer de order eerst opnieuw met de actieve SooCool-omgeving.', 'soocool-for-woocommerce' ),
+			array( 'status' => 409 )
+		);
 	}
 
 	public function identifier_conflict( string $soocool_order_id, string $order_reference, int $wc_order_id ): WP_Error {
@@ -201,17 +254,27 @@ final class WebhookOrderResolver {
 	}
 
 	private function find_order_by_meta( string $meta_key, string $meta_value ): WC_Order|WP_Error|null {
+		$meta_query = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Exact lookup for plugin-owned SooCool identifiers.
+			array(
+				'key'     => $meta_key,
+				'value'   => $meta_value,
+				'compare' => '=',
+			),
+		);
+		if ( OrderMeta::ORDER_ID === $meta_key ) {
+			$meta_query['relation'] = 'AND';
+			$meta_query[] = array(
+				'key'     => OrderMeta::PROVIDER_CONTEXT,
+				'value'   => $this->provider_context->provider_fingerprint(),
+				'compare' => '=',
+			);
+		}
+
 		$orders = wc_get_orders(
 			array(
 				'limit'      => 2,
 				'return'     => 'objects',
-				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Exact lookup for plugin-owned SooCool identifiers.
-					array(
-						'key'     => $meta_key,
-						'value'   => $meta_value,
-						'compare' => '=',
-					),
-				),
+				'meta_query' => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Exact plugin-owned identifiers and provider context.
 			)
 		);
 
@@ -353,7 +416,7 @@ final class WebhookOrderResolver {
 
 	public function link_remote_order( WC_Order $order, array $remote_order, string $order_reference ): void {
 		try {
-			$this->meta->save_success( $order, $remote_order, $order_reference, true );
+			$this->meta->save_success( $order, $remote_order, $order_reference, true, $this->provider_context->provider_fingerprint() );
 		} catch ( \InvalidArgumentException ) {
 			// Keep the webhook update working even when the remote lookup response omits a stable orderId.
 			return;

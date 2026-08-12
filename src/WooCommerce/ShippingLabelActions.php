@@ -164,7 +164,7 @@ final class ShippingLabelActions {
 
 		try {
 			$pdf = count( $requested_good_ids ) > 1
-				? $this->labels->download_bulk_good_labels( $requested_good_ids, $output )
+				? $this->labels->download_bulk_good_labels_for_orders( array( $order ), $requested_good_ids, $output )
 				: $this->labels->download_good_label( $order, $requested_good_ids[0], $output );
 		} catch ( \Throwable ) {
 			wp_die( esc_html__( 'SooCool goederenlabeldownload mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
@@ -206,7 +206,7 @@ final class ShippingLabelActions {
 		try {
 			$pdf = 1 === count( $orders ) && 1 === count( $good_ids )
 				? $this->labels->download_good_label( $orders[0], $good_ids[0], $output )
-				: $this->labels->download_bulk_good_labels( $good_ids, $output );
+				: $this->labels->download_bulk_good_labels_for_orders( $orders, $good_ids, $output );
 		} catch ( \Throwable ) {
 			wp_die( esc_html__( 'SooCool bulkdownload van goederenlabels mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) );
 		}

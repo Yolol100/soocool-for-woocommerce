@@ -55,17 +55,10 @@ final class DeliverySettingsValidator {
 				}
 			}
 
-			$clean[] = array(
-				'id'          => sanitize_key( $this->scalar_string( $slot['id'] ?? null ) ),
-				'type'        => $this->slot_type_for_rest( $slot ),
-				'enabled'     => $this->bool_value( $slot['enabled'] ?? true, true ),
-				'label'       => sanitize_text_field( $this->scalar_string( $slot['label'] ?? null ) ),
-				'time_from'   => sanitize_text_field( $this->scalar_string( $slot['time_from'] ?? null ) ),
-				'time_to'     => sanitize_text_field( $this->scalar_string( $slot['time_to'] ?? null ) ),
-				'cutoff_time' => sanitize_text_field( $this->scalar_string( $slot['cutoff_time'] ?? $slot['time_from'] ?? null ) ),
-				'weekdays'    => array_values( array_unique( $weekdays ) ),
-				'sort_order'  => is_numeric( $slot['sort_order'] ?? null ) ? (int) $slot['sort_order'] : (int) $index,
-			);
+			$sanitized               = $this->sanitize_slot_for_rest( $slot );
+			$sanitized['weekdays']   = array_values( array_unique( $weekdays ) );
+			$sanitized['sort_order'] = is_numeric( $slot['sort_order'] ?? null ) ? (int) $slot['sort_order'] : (int) $index;
+			$clean[]                  = $sanitized;
 		}
 
 		return $clean;
@@ -84,25 +77,17 @@ final class DeliverySettingsValidator {
 
 			$slots = array();
 			foreach ( is_array( $rule['slots'] ?? null ) ? $rule['slots'] : array() as $slot_index => $slot ) {
-				if ( ! is_array( $slot ) ) {
-					continue;
+				if ( is_array( $slot ) ) {
+					$sanitized               = $this->sanitize_slot_for_rest( $slot );
+					$sanitized['sort_order'] = is_numeric( $slot['sort_order'] ?? null ) ? (int) $slot['sort_order'] : ( (int) $slot_index + 1 ) * 10;
+					$slots[]                  = $sanitized;
 				}
-				$slots[] = array(
-					'id'          => sanitize_key( $this->scalar_string( $slot['id'] ?? null ) ),
-					'type'        => $this->slot_type_for_rest( $slot ),
-					'enabled'     => $this->bool_value( $slot['enabled'] ?? true, true ),
-					'label'       => sanitize_text_field( $this->scalar_string( $slot['label'] ?? null ) ),
-					'time_from'   => sanitize_text_field( $this->scalar_string( $slot['time_from'] ?? null ) ),
-					'time_to'     => sanitize_text_field( $this->scalar_string( $slot['time_to'] ?? null ) ),
-					'cutoff_time' => sanitize_text_field( $this->scalar_string( $slot['cutoff_time'] ?? $slot['time_from'] ?? null ) ),
-					'sort_order'  => is_numeric( $slot['sort_order'] ?? null ) ? (int) $slot['sort_order'] : ( (int) $slot_index + 1 ) * 10,
-				);
 			}
 
 			$clean[] = array(
 				'enabled'          => $this->bool_value( $rule['enabled'] ?? true, true ),
-				'delivery_weekday' => sanitize_key( $this->scalar_string( $rule['delivery_weekday'] ?? $rule['delivery_day'] ?? null ) ),
-				'cutoff_weekday'   => sanitize_key( $this->scalar_string( $rule['cutoff_weekday'] ?? $rule['cutoff_day'] ?? null ) ),
+				'delivery_weekday' => sanitize_key( $this->scalar_string( $rule['delivery_weekday'] ?? null ) ),
+				'cutoff_weekday'   => sanitize_key( $this->scalar_string( $rule['cutoff_weekday'] ?? null ) ),
 				'cutoff_time'      => sanitize_text_field( $this->scalar_string( $rule['cutoff_time'] ?? null ) ),
 				'sort_order'       => is_numeric( $rule['sort_order'] ?? null ) ? (int) $rule['sort_order'] : ( (int) $rule_index + 1 ) * 10,
 				'slots'            => $slots,
@@ -124,16 +109,11 @@ final class DeliverySettingsValidator {
 				return false;
 			}
 
-			$delivery_weekday = sanitize_key( $this->scalar_string( $rule['delivery_weekday'] ?? $rule['delivery_day'] ?? null ) );
-			$cutoff_weekday   = sanitize_key( $this->scalar_string( $rule['cutoff_weekday'] ?? $rule['cutoff_day'] ?? null ) );
-			$cutoff_time      = sanitize_text_field( $this->scalar_string( $rule['cutoff_time'] ?? null ) );
-			if ( ! in_array( $delivery_weekday, $this->allowed_delivery_weekdays(), true ) || ! in_array( $cutoff_weekday, $this->allowed_delivery_weekdays(), true ) || ! $this->is_time( $cutoff_time ) ) {
+			$validated_rule = $this->validated_rule( $rule );
+			if ( null === $validated_rule || isset( $seen_weekdays[ $validated_rule['delivery_weekday'] ] ) ) {
 				return false;
 			}
-			if ( isset( $seen_weekdays[ $delivery_weekday ] ) ) {
-				return false;
-			}
-			$seen_weekdays[ $delivery_weekday ] = true;
+			$seen_weekdays[ $validated_rule['delivery_weekday'] ] = true;
 
 			$slots = is_array( $rule['slots'] ?? null ) ? $rule['slots'] : array();
 			if ( array() === $slots || count( $slots ) > self::MAX_SLOTS_PER_RULE ) {
@@ -147,15 +127,12 @@ final class DeliverySettingsValidator {
 					return false;
 				}
 
-				$label       = trim( sanitize_text_field( $this->scalar_string( $slot['label'] ?? null ) ) );
-				$time_from   = sanitize_text_field( $this->scalar_string( $slot['time_from'] ?? null ) );
-				$time_to     = sanitize_text_field( $this->scalar_string( $slot['time_to'] ?? null ) );
-				$cutoff_slot = sanitize_text_field( $this->scalar_string( $slot['cutoff_time'] ?? $time_from, $time_from ) );
-				if ( '' === $label || $this->text_length( $label ) > self::MAX_SLOT_LABEL_CHARS || ! $this->is_time( $time_from ) || ! $this->is_time( $time_to ) || ! $this->is_time( $cutoff_slot ) || $time_to <= $time_from || $cutoff_slot > $time_to ) {
+				$validated_slot = $this->validated_slot( $slot );
+				if ( null === $validated_slot ) {
 					return false;
 				}
 
-				$fingerprint = $time_from . '|' . $time_to;
+				$fingerprint = $validated_slot['time_from'] . '|' . $validated_slot['time_to'];
 				if ( isset( $seen_slots[ $fingerprint ] ) ) {
 					return false;
 				}
@@ -189,11 +166,8 @@ final class DeliverySettingsValidator {
 				return false;
 			}
 
-			$label       = trim( sanitize_text_field( $this->scalar_string( $slot['label'] ?? null ) ) );
-			$time_from   = sanitize_text_field( $this->scalar_string( $slot['time_from'] ?? null ) );
-			$time_to     = sanitize_text_field( $this->scalar_string( $slot['time_to'] ?? null ) );
-			$cutoff_time = sanitize_text_field( $this->scalar_string( $slot['cutoff_time'] ?? $time_from, $time_from ) );
-			if ( '' === $label || $this->text_length( $label ) > self::MAX_SLOT_LABEL_CHARS || ! $this->is_time( $time_from ) || ! $this->is_time( $time_to ) || ! $this->is_time( $cutoff_time ) || $time_to <= $time_from || $cutoff_time > $time_to ) {
+			$validated_slot = $this->validated_slot( $slot );
+			if ( null === $validated_slot ) {
 				return false;
 			}
 
@@ -213,7 +187,7 @@ final class DeliverySettingsValidator {
 			}
 
 			foreach ( $weekdays as $weekday ) {
-				$fingerprint = $time_from . '|' . $time_to . '|' . $weekday;
+				$fingerprint = $validated_slot['time_from'] . '|' . $validated_slot['time_to'] . '|' . $weekday;
 				if ( isset( $seen[ $fingerprint ] ) ) {
 					return false;
 				}
@@ -264,13 +238,11 @@ final class DeliverySettingsValidator {
 				return false;
 			}
 
-			$delivery_weekday = sanitize_key( $this->scalar_string( $rule['delivery_weekday'] ?? null ) );
-			$cutoff_weekday   = sanitize_key( $this->scalar_string( $rule['cutoff_weekday'] ?? null ) );
-			$cutoff_time      = sanitize_text_field( $this->scalar_string( $rule['cutoff_time'] ?? null ) );
-			if ( ! in_array( $delivery_weekday, $this->allowed_delivery_weekdays(), true ) || ! in_array( $cutoff_weekday, $this->allowed_delivery_weekdays(), true ) || ! $this->is_time( $cutoff_time ) || isset( $seen[ $delivery_weekday ] ) ) {
+			$validated_rule = $this->validated_rule( $rule );
+			if ( null === $validated_rule || isset( $seen[ $validated_rule['delivery_weekday'] ] ) ) {
 				return false;
 			}
-			$seen[ $delivery_weekday ] = true;
+			$seen[ $validated_rule['delivery_weekday'] ] = true;
 
 			if ( $this->bool_value( $rule['enabled'] ?? true, true ) ) {
 				$has_enabled = true;
@@ -292,6 +264,56 @@ final class DeliverySettingsValidator {
 		return null;
 	}
 
+	public function allowed_delivery_weekdays(): array {
+		return array( 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday' );
+	}
+
+	private function sanitize_slot_for_rest( array $slot ): array {
+		return array(
+			'id'          => sanitize_key( $this->scalar_string( $slot['id'] ?? null ) ),
+			'type'        => $this->slot_type_for_rest( $slot ),
+			'enabled'     => $this->bool_value( $slot['enabled'] ?? true, true ),
+			'label'       => sanitize_text_field( $this->scalar_string( $slot['label'] ?? null ) ),
+			'time_from'   => sanitize_text_field( $this->scalar_string( $slot['time_from'] ?? null ) ),
+			'time_to'     => sanitize_text_field( $this->scalar_string( $slot['time_to'] ?? null ) ),
+			'cutoff_time' => sanitize_text_field( $this->scalar_string( $slot['cutoff_time'] ?? $slot['time_from'] ?? null ) ),
+		);
+	}
+
+	private function validated_rule( array $rule ): ?array {
+		$delivery_weekday = sanitize_key( $this->scalar_string( $rule['delivery_weekday'] ?? null ) );
+		$cutoff_weekday   = sanitize_key( $this->scalar_string( $rule['cutoff_weekday'] ?? null ) );
+		$cutoff_time      = sanitize_text_field( $this->scalar_string( $rule['cutoff_time'] ?? null ) );
+		$allowed_weekdays = $this->allowed_delivery_weekdays();
+
+		if ( ! in_array( $delivery_weekday, $allowed_weekdays, true ) || ! in_array( $cutoff_weekday, $allowed_weekdays, true ) || ! $this->is_time( $cutoff_time ) ) {
+			return null;
+		}
+
+		return array(
+			'delivery_weekday' => $delivery_weekday,
+			'cutoff_weekday'   => $cutoff_weekday,
+			'cutoff_time'      => $cutoff_time,
+		);
+	}
+
+	private function validated_slot( array $slot ): ?array {
+		$label       = trim( sanitize_text_field( $this->scalar_string( $slot['label'] ?? null ) ) );
+		$time_from   = sanitize_text_field( $this->scalar_string( $slot['time_from'] ?? null ) );
+		$time_to     = sanitize_text_field( $this->scalar_string( $slot['time_to'] ?? null ) );
+		$cutoff_time = sanitize_text_field( $this->scalar_string( $slot['cutoff_time'] ?? $time_from, $time_from ) );
+
+		if ( '' === $label || $this->text_length( $label ) > self::MAX_SLOT_LABEL_CHARS || ! $this->is_time( $time_from ) || ! $this->is_time( $time_to ) || ! $this->is_time( $cutoff_time ) || $time_to <= $time_from || $cutoff_time > $time_to ) {
+			return null;
+		}
+
+		return array(
+			'time_from'   => $time_from,
+			'time_to'     => $time_to,
+			'cutoff_time' => $cutoff_time,
+		);
+	}
+
 	private function slot_type_for_rest( array $slot ): string {
 		$type = sanitize_key( $this->scalar_string( $slot['type'] ?? $slot['id'] ?? null ) );
 		if ( in_array( $type, array( 'daytime', 'evening' ), true ) ) {
@@ -302,11 +324,6 @@ final class DeliverySettingsValidator {
 		$to   = $this->scalar_string( $slot['time_to'] ?? null );
 		return '17:00' === $from && '22:00' === $to ? 'evening' : 'daytime';
 	}
-
-	public function allowed_delivery_weekdays(): array {
-		return array( 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday' );
-	}
-
 
 	private function text_length( string $value ): int {
 		return function_exists( 'mb_strlen' ) ? mb_strlen( $value ) : strlen( $value );

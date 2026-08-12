@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Rest;
 
+use SooCool\WooCommerce\Domain\TaskContactFactory;
+use SooCool\WooCommerce\Infrastructure\ApiCredentialResolver;
+use SooCool\WooCommerce\Infrastructure\OptionDefaults;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use WP_Error;
 
@@ -34,8 +37,29 @@ final class SettingsValidator {
 			return $length_error;
 		}
 
+		$api_key_resolver = new ApiCredentialResolver();
+		foreach ( array( 'api_key', 'test_api_key', 'production_api_key' ) as $api_key_field ) {
+			if ( ! array_key_exists( $api_key_field, $payload ) ) {
+				continue;
+			}
+
+			$raw_api_key = trim( sanitize_text_field( $this->scalar_string( $payload[ $api_key_field ] ) ) );
+			if ( '' !== $raw_api_key && ! $api_key_resolver->is_masked_or_invalid_secret( $raw_api_key ) && '' === $api_key_resolver->normalize_secret( $raw_api_key ) ) {
+				return new WP_Error( 'soocool_invalid_api_key', __( 'De opgeslagen API-key is ongeldig of bevat nog een gemaskeerde waarde. Plak de echte SooCool API-key en sla opnieuw op.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+			}
+		}
+
 		if ( array_key_exists( 'pickup_email', $payload ) && ! $this->validate_email_or_empty( $payload['pickup_email'] ) ) {
 			return new WP_Error( 'soocool_invalid_pickup_email', __( 'Vul een geldig ophaal-e-mailadres in of laat het veld leeg.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+		}
+
+		if ( array_key_exists( 'pickup_phone', $payload ) && ! $this->validate_phone_or_empty( $payload['pickup_phone'] ) ) {
+			return new WP_Error( 'soocool_invalid_pickup_phone', __( 'Vul een geldig ophaaltelefoonnummer in of laat het veld leeg.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+		}
+
+		$pickup_error = $this->validate_effective_pickup_settings( $payload );
+		if ( $pickup_error instanceof WP_Error ) {
+			return $pickup_error;
 		}
 
 		if ( array_key_exists( 'checkout_delivery_holidays', $payload ) && ! $this->validate_holiday_dates( $payload['checkout_delivery_holidays'] ) ) {
@@ -46,19 +70,9 @@ final class SettingsValidator {
 			return new WP_Error( 'soocool_invalid_packaging_type', __( 'Het verpakkingstype mag alleen kleine letters, cijfers, streepjes en underscores bevatten en maximaal 32 tekens lang zijn.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
 		}
 
-		$raw_window_error = $this->validate_requested_time_windows( $payload );
-		if ( $raw_window_error instanceof WP_Error ) {
-			return $raw_window_error;
-		}
-
-		$pickup_offset_error = $this->validate_requested_pickup_offsets( $payload );
-		if ( $pickup_offset_error instanceof WP_Error ) {
-			return $pickup_offset_error;
-		}
-
-		$delivery_window_error = $this->validate_fixed_delivery_window( $payload );
-		if ( $delivery_window_error instanceof WP_Error ) {
-			return $delivery_window_error;
+		$fixed_rule_error = $this->validate_fixed_integration_settings( $payload );
+		if ( $fixed_rule_error instanceof WP_Error ) {
+			return $fixed_rule_error;
 		}
 
 		$delivery_rules_error = $this->delivery_validator->validate_requested_delivery_rules_payload( $payload );
@@ -76,97 +90,122 @@ final class SettingsValidator {
 			return $time_slots_error;
 		}
 
-		$settings = $this->options->preview_update( $payload );
-		if ( (bool) $settings['enable_pickup'] && (int) $settings['pickup_days_offset'] > 29 ) {
-			return new WP_Error( 'soocool_invalid_pickup_offset', __( 'Ophaaldatum-offset mag maximaal 29 dagen zijn, zodat de bezorgdatum altijd later kan vallen.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
-		}
-		if ( (bool) $settings['enable_pickup'] && (int) $settings['delivery_days_offset'] < 1 ) {
-			return new WP_Error( 'soocool_invalid_delivery_offset', __( 'Bezorgdagen-offset moet minimaal 1 zijn wanneer ophaaltaken zijn ingeschakeld.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
-		}
-		if ( (bool) $settings['enable_pickup'] && (int) $settings['delivery_days_offset'] <= (int) $settings['pickup_days_offset'] ) {
-			return new WP_Error( 'soocool_invalid_delivery_date', __( 'Bezorgdatum-offset moet later zijn dan de ophaaldatum-offset wanneer ophaaltaken zijn ingeschakeld.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
-		}
-		if ( (bool) $settings['enable_pickup'] && (string) $settings['pickup_time_to'] <= (string) $settings['pickup_time_from'] ) {
-			return new WP_Error( 'soocool_invalid_pickup_window', __( 'Eindtijd van het ophaalvenster moet later zijn dan de starttijd van het ophaalvenster.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
-		}
-		if ( (string) $settings['delivery_time_to'] <= (string) $settings['delivery_time_from'] ) {
-			return new WP_Error( 'soocool_invalid_delivery_window', __( 'Eindtijd van het bezorgvenster moet later zijn dan de starttijd van het bezorgvenster.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+		$representation_error = $this->validate_delivery_schedule_representations( $payload );
+		if ( $representation_error instanceof WP_Error ) {
+			return $representation_error;
 		}
 
 		return null;
 	}
 
 	/** @param array<string, mixed> $payload */
-	private function validate_requested_pickup_offsets( array $payload ): ?WP_Error {
-		$current = $this->options->all();
-		$enabled = $this->bool_value( $payload['enable_pickup'] ?? $current['enable_pickup'] ?? false, false );
-		if ( ! $enabled ) {
-			return null;
-		}
+	private function validate_fixed_integration_settings( array $payload ): ?WP_Error {
+		$fixed = array(
+			'enable_pickup'       => OptionDefaults::PICKUP_ENABLED,
+			'pickup_time_from'    => OptionDefaults::PICKUP_TIME_FROM,
+			'pickup_time_to'      => OptionDefaults::PICKUP_TIME_TO,
+			'delivery_time_from'  => OptionDefaults::DELIVERY_TIME_FROM,
+			'delivery_time_to'    => OptionDefaults::DELIVERY_TIME_TO,
+			'auto_submit_enabled' => OptionDefaults::AUTO_SUBMIT_ENABLED,
+			'auto_submit_status'  => OptionDefaults::AUTO_SUBMIT_STATUS,
+		);
 
-		$pickup_offset   = absint( $payload['pickup_days_offset'] ?? $current['pickup_days_offset'] ?? 0 );
-		$delivery_offset = absint( $payload['delivery_days_offset'] ?? $current['delivery_days_offset'] ?? 0 );
-		if ( $pickup_offset > 29 ) {
-			return new WP_Error( 'soocool_invalid_pickup_offset', __( 'Ophaaldatum-offset mag maximaal 29 dagen zijn, zodat de bezorgdatum altijd later kan vallen.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
-		}
-		if ( $delivery_offset < 1 ) {
-			return new WP_Error( 'soocool_invalid_delivery_offset', __( 'Bezorgdagen-offset moet minimaal 1 zijn wanneer ophaaltaken zijn ingeschakeld.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
-		}
-		if ( $delivery_offset <= $pickup_offset ) {
-			return new WP_Error( 'soocool_invalid_delivery_date', __( 'Bezorgdatum-offset moet later zijn dan de ophaaldatum-offset wanneer ophaaltaken zijn ingeschakeld.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
-		}
+		foreach ( $fixed as $key => $expected ) {
+			if ( ! array_key_exists( $key, $payload ) ) {
+				continue;
+			}
 
-		return null;
-	}
+			$actual = $payload[ $key ];
+			if ( is_bool( $expected ) ) {
+				$actual = is_scalar( $actual ) ? filter_var( $actual, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE ) : null;
+			} else {
+				$actual = sanitize_text_field( $this->scalar_string( $actual ) );
+			}
 
-	/** @param array<string, mixed> $payload */
-	private function validate_requested_time_windows( array $payload ): ?WP_Error {
-		$current = $this->options->all();
-
-		$pickup_from = $this->normalized_requested_time( $payload, $current, 'pickup_time_from' );
-		$pickup_to   = $this->normalized_requested_time( $payload, $current, 'pickup_time_to' );
-		if ( $this->payload_touches_any( $payload, array( 'pickup_time_from', 'pickup_time_to' ) ) && '' !== $pickup_from && '' !== $pickup_to && $pickup_to <= $pickup_from ) {
-			return new WP_Error( 'soocool_invalid_pickup_window', __( 'Eindtijd van het ophaalvenster moet later zijn dan de starttijd van het ophaalvenster.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
-		}
-
-		$delivery_from = $this->normalized_requested_time( $payload, $current, 'delivery_time_from' );
-		$delivery_to   = $this->normalized_requested_time( $payload, $current, 'delivery_time_to' );
-		if ( $this->payload_touches_any( $payload, array( 'delivery_time_from', 'delivery_time_to' ) ) && '' !== $delivery_from && '' !== $delivery_to && $delivery_to <= $delivery_from ) {
-			return new WP_Error( 'soocool_invalid_delivery_window', __( 'Eindtijd van het bezorgvenster moet later zijn dan de starttijd van het bezorgvenster.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
-		}
-
-		return null;
-	}
-
-	/** @param array<string, mixed> $payload @param array<string, mixed> $current */
-	private function normalized_requested_time( array $payload, array $current, string $key ): string {
-		$value = array_key_exists( $key, $payload ) ? $payload[ $key ] : ( $current[ $key ] ?? '' );
-		$value = sanitize_text_field( $this->scalar_string( $value ) );
-
-		return preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $value ) ? $value : '';
-	}
-
-	/** @param array<string, mixed> $payload @param array<int, string> $keys */
-	private function payload_touches_any( array $payload, array $keys ): bool {
-		foreach ( $keys as $key ) {
-			if ( array_key_exists( $key, $payload ) ) {
-				return true;
+			if ( $actual !== $expected ) {
+				return new WP_Error( 'soocool_fixed_integration_setting', __( 'Ophalen, de vaste tijdvensters en automatische inzending zijn vaste SooCool-integratieregels en kunnen niet via de instellingen-API worden gewijzigd.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
 			}
 		}
 
-		return false;
+		return null;
 	}
 
 	/** @param array<string, mixed> $payload */
-	private function validate_fixed_delivery_window( array $payload ): ?WP_Error {
-		$from = array_key_exists( 'delivery_time_from', $payload ) ? sanitize_text_field( $this->scalar_string( $payload['delivery_time_from'] ) ) : '08:00';
-		$to   = array_key_exists( 'delivery_time_to', $payload ) ? sanitize_text_field( $this->scalar_string( $payload['delivery_time_to'] ) ) : '18:00';
+	private function validate_delivery_schedule_representations( array $payload ): ?WP_Error {
+		if ( ! array_key_exists( 'checkout_delivery_schedule', $payload ) ) {
+			return null;
+		}
+		if ( ! array_key_exists( 'checkout_delivery_rules', $payload ) && ! array_key_exists( 'checkout_delivery_time_slots', $payload ) ) {
+			return null;
+		}
 
-		if ( $this->payload_touches_any( $payload, array( 'delivery_time_from', 'delivery_time_to' ) ) && ( '08:00' !== $from || '18:00' !== $to ) ) {
-			return new WP_Error( 'soocool_invalid_delivery_window_fixed', __( 'Het fallback-bezorgvenster blijft 08:00-18:00. Het gekozen dagdeel uit Bezorgschema is leidend voor nieuwe checkout-orders.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+		$canonical = $this->options->preview_update(
+			array( 'checkout_delivery_schedule' => $payload['checkout_delivery_schedule'] )
+		);
+
+		if ( array_key_exists( 'checkout_delivery_rules', $payload ) ) {
+			$requested_rules = $this->normalized_rules_for_compare( $payload['checkout_delivery_rules'] );
+			$canonical_rules = $this->normalized_rules_for_compare( $canonical['checkout_delivery_rules'] ?? array() );
+			if ( $requested_rules !== $canonical_rules ) {
+				return $this->conflicting_delivery_schedule_error();
+			}
+		}
+
+		if ( array_key_exists( 'checkout_delivery_time_slots', $payload ) ) {
+			$rule_weekdays   = array_column( $this->normalized_rules_for_compare( $canonical['checkout_delivery_rules'] ?? array() ), 'delivery_weekday' );
+			$requested_slots = $this->normalized_slots_for_compare( $payload['checkout_delivery_time_slots'], $rule_weekdays );
+			$canonical_slots = $this->normalized_slots_for_compare( $canonical['checkout_delivery_time_slots'] ?? array(), $rule_weekdays );
+			if ( $requested_slots !== $canonical_slots ) {
+				return $this->conflicting_delivery_schedule_error();
+			}
 		}
 
 		return null;
+	}
+
+	/** @return array<int, array<string, mixed>> */
+	private function normalized_rules_for_compare( mixed $value ): array {
+		$rules = $this->sanitize_delivery_rules_for_rest( $value );
+		usort( $rules, static fn ( array $a, array $b ): int => strcmp( (string) $a['delivery_weekday'], (string) $b['delivery_weekday'] ) );
+
+		return array_values( $rules );
+	}
+
+	/** @param array<int, string> $allowed_weekdays @return array<int, array<string, mixed>> */
+	private function normalized_slots_for_compare( mixed $value, array $allowed_weekdays ): array {
+		$slots = $this->sanitize_delivery_time_slots_for_rest( $value );
+		$rows  = array();
+		foreach ( $slots as $slot ) {
+			$weekdays = is_array( $slot['weekdays'] ?? null ) ? $slot['weekdays'] : array();
+			foreach ( $weekdays as $weekday ) {
+				$weekday = sanitize_key( $this->scalar_string( $weekday ) );
+				if ( ! in_array( $weekday, $allowed_weekdays, true ) ) {
+					continue;
+				}
+				$rows[] = array(
+					'weekday'    => $weekday,
+					'id'         => (string) ( $slot['id'] ?? '' ),
+					'type'       => (string) ( $slot['type'] ?? '' ),
+					'enabled'    => (bool) ( $slot['enabled'] ?? true ),
+					'label'      => (string) ( $slot['label'] ?? '' ),
+					'time_from'  => (string) ( $slot['time_from'] ?? '' ),
+					'time_to'    => (string) ( $slot['time_to'] ?? '' ),
+					'cutoff_time' => (string) ( $slot['cutoff_time'] ?? '' ),
+					'sort_order' => (int) ( $slot['sort_order'] ?? 0 ),
+				);
+			}
+		}
+
+		usort(
+			$rows,
+			static fn ( array $a, array $b ): int => strcmp( implode( '|', array_map( 'strval', $a ) ), implode( '|', array_map( 'strval', $b ) ) )
+		);
+
+		return array_values( $rows );
+	}
+
+	private function conflicting_delivery_schedule_error(): WP_Error {
+		return new WP_Error( 'soocool_conflicting_delivery_schedule', __( 'Het nieuwe bezorgschema en de meegestuurde legacy bezorgregels of dagdelen spreken elkaar tegen. Stuur één representatie of gelijkwaardige waarden.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
 	}
 
 	/** @param mixed $value @return array<int, array<string, mixed>> */
@@ -246,6 +285,50 @@ final class SettingsValidator {
 		return '' === $value || ( strlen( $value ) <= 254 && false !== is_email( $value ) );
 	}
 
+	public function validate_phone_or_empty( mixed $value ): bool {
+		if ( ! is_scalar( $value ) ) {
+			return false;
+		}
+
+		$phone = trim( (string) $value );
+		if ( '' === $phone ) {
+			return true;
+		}
+
+		$contact = ( new TaskContactFactory() )->from_email_phone( '', $phone, 'NL' );
+		return isset( $contact['phone'] ) && '' !== (string) $contact['phone'];
+	}
+
+	/** @param array<string, mixed> $payload */
+	private function validate_effective_pickup_settings( array $payload ): ?WP_Error {
+		$pickup_fields = array( 'pickup_company', 'pickup_contact_name', 'pickup_email', 'pickup_phone', 'pickup_street', 'pickup_house_number', 'pickup_postal_code', 'pickup_city', 'pickup_country' );
+		if ( array() === array_intersect( $pickup_fields, array_keys( $payload ) ) ) {
+			return null;
+		}
+
+		$current = $this->options->all();
+		$effective = static function ( string $key ) use ( $payload, $current ): string {
+			$value = array_key_exists( $key, $payload ) ? $payload[ $key ] : ( $current[ $key ] ?? '' );
+			return is_scalar( $value ) ? trim( (string) $value ) : '';
+		};
+
+		foreach ( array( 'pickup_company', 'pickup_street', 'pickup_house_number', 'pickup_postal_code', 'pickup_city', 'pickup_country' ) as $required ) {
+			if ( '' === $effective( $required ) ) {
+				return new WP_Error( 'soocool_incomplete_pickup_address', __( 'Vul het volledige ophaaladres in voordat je de ophaalinstellingen opslaat.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+			}
+		}
+
+		$email   = $effective( 'pickup_email' );
+		$phone   = $effective( 'pickup_phone' );
+		$country = $effective( 'pickup_country' );
+		$contact = ( new TaskContactFactory() )->from_email_phone( $email, $phone, $country );
+		if ( array() === $contact ) {
+			return new WP_Error( 'soocool_incomplete_pickup_contact', __( 'Vul voor de ophaallocatie een geldig e-mailadres of telefoonnummer in.', 'soocool-for-woocommerce' ), array( 'status' => 400 ) );
+		}
+
+		return null;
+	}
+
 	public function validate_holiday_dates( mixed $value ): bool {
 		if ( ! is_scalar( $value ) ) {
 			return false;
@@ -283,20 +366,12 @@ final class SettingsValidator {
 		return is_scalar( $value ) ? (string) $value : $fallback;
 	}
 
-	private function bool_value( mixed $value, bool $fallback ): bool {
-		if ( ! is_scalar( $value ) && ! is_bool( $value ) ) {
-			return $fallback;
-		}
-
-		return filter_var( $value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE ) ?? $fallback;
-	}
-
 	public function validate_environment( mixed $value ): bool {
 		return in_array( $this->scalar_string( $value ), array( 'test', 'production' ), true );
 	}
 
 	public function validate_auto_submit_status( mixed $value ): bool {
-		return in_array( $this->scalar_string( $value ), array( 'pending', 'processing', 'completed', 'on-hold' ), true );
+		return OptionDefaults::AUTO_SUBMIT_STATUS === $this->scalar_string( $value );
 	}
 
 	public function validate_label_output( mixed $value ): bool {

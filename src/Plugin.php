@@ -57,8 +57,11 @@ final class Plugin {
 		$admin_menu = $provider->get( AdminMenu::class );
 		add_action( 'admin_menu', array( $admin_menu, 'register' ) );
 		add_action( 'admin_enqueue_scripts', array( $provider->get( Assets::class ), 'enqueue' ) );
-		add_action( 'admin_init', array( $provider->get( PrivacyPolicy::class ), 'register' ) );
-		add_action( 'admin_notices', array( $provider->get( Notices::class ), 'render_runtime_notices' ) );
+
+		$privacy = $provider->get( PrivacyPolicy::class );
+		add_action( 'admin_init', array( $privacy, 'register' ) );
+		add_filter( 'woocommerce_privacy_export_order_personal_data_meta', array( $privacy, 'add_order_export_meta' ) );
+		add_filter( 'woocommerce_privacy_remove_order_personal_data_meta', array( $privacy, 'add_order_erasure_meta' ) );
 		add_action( 'rest_api_init', array( $provider->get( SettingsController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( SystemStatusController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( ConnectionController::class ), 'register_routes' ) );

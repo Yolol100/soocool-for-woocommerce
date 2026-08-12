@@ -14,6 +14,9 @@ final class ApiTransport {
 	public const RETRYABLE_STATUS_CODES = array( 429, 502, 503, 504 );
 	public const REQUEST_TIMEOUT_SECONDS = 10;
 	public const MAX_RETRY_ATTEMPTS = 2;
+	public const MAX_INLINE_RETRY_DELAY_MILLISECONDS = 2000;
+	private const MAX_RETRY_AFTER_SECONDS = 86400;
+	private const COOLDOWN_TRANSIENT_PREFIX = 'soocool_api_cooldown_';
 	public const MAX_JSON_RESPONSE_BYTES = 2097152;
 	public const MAX_PDF_RESPONSE_BYTES = 26214400;
 
@@ -32,6 +35,17 @@ final class ApiTransport {
 				$this->api_key_debug_context( $api_key, $url, $path )
 			);
 			throw new ApiException( __( 'SooCool API-key ontbreekt of is ongeldig. Plak en bewaar de API-key opnieuw.', 'soocool-for-woocommerce' ), 401 );
+		}
+
+		$cooldown_remaining = $this->cooldown_remaining_seconds( $api_key );
+		if ( 0 < $cooldown_remaining ) {
+			throw new ApiException(
+				__( 'De SooCool API heeft tijdelijk een snelheidslimiet ingesteld. De actie wordt pas na de opgegeven wachttijd opnieuw geprobeerd.', 'soocool-for-woocommerce' ),
+				429,
+				array(),
+				true,
+				$cooldown_remaining
+			);
 		}
 
 		$headers = array_merge(
@@ -112,6 +126,11 @@ final class ApiTransport {
 		}
 
 		if ( $status < 200 || $status >= 300 ) {
+			$retry_after_seconds = $this->retry_after_seconds( $response );
+			if ( in_array( $status, self::RETRYABLE_STATUS_CODES, true ) && 0 < $retry_after_seconds ) {
+				$this->store_cooldown( $api_key, $retry_after_seconds );
+			}
+
 			$errors  = $this->errors->redacted_errors( $body );
 			$trace_id = $this->errors->trace_id( $body );
 			$message = $this->errors->public_message( $status );
@@ -128,7 +147,7 @@ final class ApiTransport {
 				$context['traceId'] = $trace_id;
 			}
 			$this->logger->error( 'SooCool API error.', $context );
-			throw new ApiException( $message, absint( $status ), $errors );
+			throw new ApiException( $message, absint( $status ), $errors, null, $retry_after_seconds );
 		}
 
 		if ( $json_invalid ) {
@@ -232,6 +251,19 @@ final class ApiTransport {
 			}
 
 			$delay_ms = $this->retry_delay_milliseconds( $response, $attempts );
+			if ( $delay_ms > self::MAX_INLINE_RETRY_DELAY_MILLISECONDS ) {
+				$this->logger->info(
+					'Deferring SooCool API retry because the provider requested a longer Retry-After delay.',
+					array(
+						'method'   => $method,
+						'status'   => $status,
+						'attempt'  => $attempts,
+						'delay_ms' => $delay_ms,
+					)
+				);
+				break;
+			}
+
 			$this->logger->info(
 				'Retrying temporary SooCool API error.',
 				array(
@@ -251,21 +283,70 @@ final class ApiTransport {
 	}
 
 	public function retry_delay_milliseconds( mixed $response, int $attempt ): int {
-		$retry_after = is_wp_error( $response ) ? '' : trim( (string) wp_remote_retrieve_header( $response, 'retry-after' ) );
-		$seconds     = 0;
-		if ( '' !== $retry_after && ctype_digit( $retry_after ) ) {
-			$seconds = (int) $retry_after;
-		} elseif ( '' !== $retry_after ) {
-			$timestamp = strtotime( $retry_after );
-			if ( false !== $timestamp ) {
-				$seconds = max( 0, $timestamp - time() );
-			}
+		$retry_after_seconds = $this->retry_after_seconds( $response );
+		$base_ms             = 250 * ( 2 ** max( 0, $attempt - 1 ) );
+		$jitter              = function_exists( 'wp_rand' ) ? wp_rand( 0, 250 ) : random_int( 0, 250 );
+		$delay               = 0 < $retry_after_seconds ? $retry_after_seconds * 1000 : $base_ms + $jitter;
+		$delay               = (int) apply_filters( 'soocool_api_retry_delay_milliseconds', $delay, $attempt, $response );
+
+		return max( 0, min( self::MAX_RETRY_AFTER_SECONDS * 1000, $delay ) );
+	}
+
+	public function retry_after_seconds( mixed $response ): int {
+		if ( is_wp_error( $response ) ) {
+			return 0;
 		}
 
-		$base_ms = 250 * ( 2 ** max( 0, $attempt - 1 ) );
-		$jitter  = function_exists( 'wp_rand' ) ? wp_rand( 0, 250 ) : random_int( 0, 250 );
-		$delay   = 0 < $seconds ? $seconds * 1000 : $base_ms + $jitter;
-		return max( 0, min( 2000, (int) apply_filters( 'soocool_api_retry_delay_milliseconds', $delay, $attempt, $response ) ) );
+		$retry_after = trim( (string) wp_remote_retrieve_header( $response, 'retry-after' ) );
+		if ( '' === $retry_after ) {
+			return 0;
+		}
+
+		if ( ctype_digit( $retry_after ) ) {
+			$seconds = (int) $retry_after;
+		} else {
+			$timestamp = strtotime( $retry_after );
+			$seconds   = false === $timestamp ? 0 : max( 0, $timestamp - time() );
+		}
+
+		return max( 0, min( self::MAX_RETRY_AFTER_SECONDS, $seconds ) );
+	}
+
+	public function cooldown_remaining_seconds( string $api_key ): int {
+		if ( ! function_exists( 'get_transient' ) ) {
+			return 0;
+		}
+
+		$until = get_transient( $this->cooldown_key( $api_key ) );
+		if ( ! is_numeric( $until ) ) {
+			return 0;
+		}
+
+		$remaining = (int) $until - time();
+		if ( 0 >= $remaining ) {
+			if ( function_exists( 'delete_transient' ) ) {
+				delete_transient( $this->cooldown_key( $api_key ) );
+			}
+			return 0;
+		}
+
+		return min( self::MAX_RETRY_AFTER_SECONDS, $remaining );
+	}
+
+	public function store_cooldown( string $api_key, int $seconds ): void {
+		$seconds = max( 0, min( self::MAX_RETRY_AFTER_SECONDS, $seconds ) );
+		if ( 0 === $seconds || ! function_exists( 'set_transient' ) ) {
+			return;
+		}
+
+		set_transient( $this->cooldown_key( $api_key ), time() + $seconds, $seconds );
+	}
+
+	private function cooldown_key( string $api_key ): string {
+		$context = untrailingslashit( $this->options->base_url() ) . "\0" . trim( $api_key );
+		$digest  = hash_hmac( 'sha256', $context, wp_salt( 'auth' ) );
+
+		return self::COOLDOWN_TRANSIENT_PREFIX . substr( $digest, 0, 32 );
 	}
 
 }

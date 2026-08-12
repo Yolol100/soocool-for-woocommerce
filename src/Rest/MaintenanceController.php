@@ -18,6 +18,7 @@ defined( 'ABSPATH' ) || exit;
 final class MaintenanceController extends AbstractRestController {
 
 	private const MAX_ORDERS = 200;
+	private const RETRYABLE_SYNC_STATUSES = array( 'failed' );
 
 	public function __construct( private readonly OrderActions $actions ) {}
 
@@ -50,14 +51,15 @@ final class MaintenanceController extends AbstractRestController {
 					'remaining'   => 0,
 					'truncated'   => false,
 					'mode'        => 'none',
-					'message'     => __( 'Geen mislukte SooCool-orders om opnieuw te synchroniseren.', 'soocool-for-woocommerce' ),
+					'message'     => __( 'Geen lokaal mislukte SooCool-synchronisaties om opnieuw in te plannen.', 'soocool-for-woocommerce' ),
 				)
 			);
 		}
 
-		$queued     = 0;
-		$duplicates = 0;
-		$failed     = 0;
+		$queued      = 0;
+		$duplicates  = 0;
+		$manual      = 0;
+		$failed      = 0;
 		foreach ( $order_ids as $order_id ) {
 			$result = $this->actions->schedule_resync_order( (int) $order_id );
 			if ( OrderActions::QUEUE_SCHEDULED === $result ) {
@@ -70,6 +72,11 @@ final class MaintenanceController extends AbstractRestController {
 				continue;
 			}
 
+			if ( OrderActions::QUEUE_MANUAL === $result ) {
+				++$manual;
+				continue;
+			}
+
 			++$failed;
 		}
 
@@ -77,16 +84,17 @@ final class MaintenanceController extends AbstractRestController {
 		$truncated = $remaining > 0;
 
 		$message = sprintf(
-			/* translators: 1: queued orders, 2: duplicate orders, 3: failed schedules, 4: remaining failed orders. */
-			__( '%1$d mislukte orders ingepland voor hersynchronisatie op de achtergrond. %2$d orders stonden al ingepland, %3$d orders konden niet worden ingepland. Nog resterend na deze batch: %4$d.', 'soocool-for-woocommerce' ),
+			/* translators: 1: queued orders, 2: duplicate orders, 3: linked orders requiring manual action, 4: failed schedules, 5: remaining failed orders. */
+			__( '%1$d lokaal mislukte orders ingepland voor hersynchronisatie op de achtergrond. %2$d orders stonden al ingepland, %3$d al gekoppelde orders zijn teruggezet naar gekoppelde status en vereisen handmatige controle van de laatste actie, %4$d orders konden niet worden ingepland. Nog resterend na deze batch: %5$d.', 'soocool-for-woocommerce' ),
 			$queued,
 			$duplicates,
+			$manual,
 			$failed,
 			$remaining
 		);
 
 		if ( $truncated ) {
-			$message .= ' ' . __( 'Voer deze actie opnieuw uit om de volgende batch mislukte orders in te plannen.', 'soocool-for-woocommerce' );
+			$message .= ' ' . __( 'Voer deze actie opnieuw uit om de volgende batch lokaal mislukte orders in te plannen.', 'soocool-for-woocommerce' );
 		}
 
 		return new WP_REST_Response(
@@ -94,6 +102,7 @@ final class MaintenanceController extends AbstractRestController {
 				'success'     => 0 === $failed,
 				'queued'      => $queued,
 				'duplicates'  => $duplicates,
+				'manual'      => $manual,
 				'failed'      => $failed,
 				'limit'       => self::MAX_ORDERS,
 				'total_found' => $total_found,
@@ -115,8 +124,8 @@ final class MaintenanceController extends AbstractRestController {
 				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Bounded maintenance query.
 					array(
 						'key'     => OrderMeta::SYNC_STATUS,
-						'value'   => 'failed',
-						'compare' => '=',
+						'value'   => self::RETRYABLE_SYNC_STATUSES,
+						'compare' => 'IN',
 					),
 				),
 			)

@@ -7,6 +7,7 @@ namespace SooCool\WooCommerce\Rest;
 use SooCool\WooCommerce\Infrastructure\OptionMutex;
 use SooCool\WooCommerce\Api\ApiClient;
 use SooCool\WooCommerce\Infrastructure\Logger;
+use SooCool\WooCommerce\Infrastructure\ProviderContext;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
 use WP_Error;
@@ -17,6 +18,8 @@ use WP_REST_Server;
 defined( 'ABSPATH' ) || exit;
 
 final class WebhookController extends AbstractRestController {
+
+	private readonly ProviderContext $provider_context;
 
 	private const ORDER_LOCK_PREFIX         = 'soocool_webhook_order_lock_';
 	private const ORDER_LOCK_TTL_SECONDS    = 120;
@@ -32,9 +35,11 @@ final class WebhookController extends AbstractRestController {
 		private readonly Logger $logger,
 		private readonly WebhookAuthenticator $authenticator,
 		private readonly WebhookPayloadExtractor $payloads,
-		private readonly ApiClient $client
+		private readonly ApiClient $client,
+		?ProviderContext $provider_context = null
 	) {
-		$this->orders      = new WebhookOrderResolver( $this->meta, $this->logger, $this->payloads, $this->client );
+		$this->provider_context = $provider_context ?? new ProviderContext();
+		$this->orders      = new WebhookOrderResolver( $this->meta, $this->logger, $this->payloads, $this->client, $this->provider_context );
 		$this->identifiers = new WebhookIdentifiers();
 	}
 
@@ -102,7 +107,8 @@ final class WebhookController extends AbstractRestController {
 		if ( ! $this->authenticator->refresh_reservation( $request ) ) {
 			return new WP_Error( 'soocool_webhook_reservation_lost', __( 'De webhookverwerkingslease is verlopen. Probeer opnieuw.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
 		}
-		$resolved = $this->orders->find_order( $soocool_order_id, $order_reference, $wc_order_id );
+		$provider_fingerprint = $this->provider_context->provider_fingerprint();
+		$resolved             = $this->orders->find_order( $soocool_order_id, $order_reference, $wc_order_id );
 		if ( is_wp_error( $resolved ) ) {
 			return $resolved;
 		}
@@ -154,6 +160,10 @@ final class WebhookController extends AbstractRestController {
 			$remote_order       = is_array( $resolved['remote_order'] ?? null ) ? $resolved['remote_order'] : array();
 			if ( method_exists( $order, 'read_meta_data' ) ) {
 				$order->read_meta_data( true );
+			}
+
+			if ( ! hash_equals( $provider_fingerprint, $this->provider_context->fresh_provider_fingerprint() ) ) {
+				return new WP_Error( 'soocool_webhook_provider_context_changed', __( 'De actieve SooCool API-context wijzigde tijdens webhookverwerking. Probeer de webhook opnieuw.', 'soocool-for-woocommerce' ), array( 'status' => 409 ) );
 			}
 
 			$delivery_timestamp = $this->authenticator->delivery_timestamp( $request );

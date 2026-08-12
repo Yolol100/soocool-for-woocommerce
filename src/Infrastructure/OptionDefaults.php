@@ -8,6 +8,14 @@ defined( 'ABSPATH' ) || exit;
 
 final class OptionDefaults {
 
+	public const PICKUP_ENABLED      = true;
+	public const PICKUP_TIME_FROM    = '15:00';
+	public const PICKUP_TIME_TO      = '17:00';
+	public const DELIVERY_TIME_FROM  = '08:00';
+	public const DELIVERY_TIME_TO    = '18:00';
+	public const AUTO_SUBMIT_ENABLED = true;
+	public const AUTO_SUBMIT_STATUS  = 'pending';
+
 	/** @return array<string, mixed> */
 	public function settings(): array {
 		return array(
@@ -17,7 +25,7 @@ final class OptionDefaults {
 			'api_key'                    => '',
 			'test_api_key'               => '',
 			'production_api_key'         => '',
-			'enable_pickup'              => false,
+			'enable_pickup'              => self::PICKUP_ENABLED,
 			'order_reference_prefix'     => '',
 			'pickup_company'             => get_bloginfo( 'name' ),
 			'pickup_contact_name'        => '',
@@ -28,11 +36,10 @@ final class OptionDefaults {
 			'pickup_postal_code'         => '',
 			'pickup_city'                => '',
 			'pickup_country'             => 'NL',
-			'pickup_days_offset'         => 1,
-			'pickup_time_from'           => '08:00',
-			'pickup_time_to'             => '18:00',
-			'delivery_time_from'         => '08:00',
-			'delivery_time_to'           => '18:00',
+			'pickup_time_from'           => self::PICKUP_TIME_FROM,
+			'pickup_time_to'             => self::PICKUP_TIME_TO,
+			'delivery_time_from'         => self::DELIVERY_TIME_FROM,
+			'delivery_time_to'           => self::DELIVERY_TIME_TO,
 			'delivery_days_offset'       => 1,
 			'checkout_delivery_enabled'  => true,
 			'checkout_delivery_days_ahead' => 92,
@@ -47,8 +54,8 @@ final class OptionDefaults {
 			'checkout_delivery_belgium_evening_surcharge_amount' => 1.50,
 			'checkout_delivery_fee_taxable' => false,
 			'checkout_delivery_fee_tax_class' => '',
-			'auto_submit_enabled'        => false,
-			'auto_submit_status'         => 'pending',
+			'auto_submit_enabled'        => self::AUTO_SUBMIT_ENABLED,
+			'auto_submit_status'         => self::AUTO_SUBMIT_STATUS,
 			'allow_resubmit'             => false,
 			'label_output'               => 'a6',
 			'webhook_url'                => '',

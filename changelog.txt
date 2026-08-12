@@ -1,3 +1,150 @@
+= 0.7.147 =
+* Verhoogt de releaseversie naar 0.7.147; functionele pluginlogica blijft gelijk aan de gecontroleerde 0.7.108-release.
+
+= 0.7.108 =
+* Scheidt echte ordersynchronisatiefouten van fouten tijdens bijwerken, status vernieuwen en annuleren, zodat een gekoppelde order na zo’n actieprobleem gekoppeld blijft terwijl de laatste fout zichtbaar blijft.
+* Voorkomt dat de onderhoudsactie gekoppelde legacy-fouten als nieuwe synchronisatie inplant; gekoppelde `failed`/`pending` state wordt veilig naar gekoppeld hersteld zonder de laatste fout te wissen en wordt als handmatige controle gerapporteerd.
+* Laat een verouderde queuejob uit een eerdere API-context geen nieuwere geldige orderstate of ordernotities meer overschrijven nadat de order inmiddels in de actieve providercontext is gekoppeld.
+
+= 0.7.107 =
+* Bindt geplande ordersynchronisatie, e-maillabelprefetch, bulklabeltokens, webhookwrites en opgeslagen SooCool-orderkoppelingen aan de actieve API-/accountcontext, zodat stale taken of koppelingen na een omgeving-, URL- of API-keywissel fail-closed stoppen in plaats van tegen de verkeerde providercontext te werken.
+* Respecteert provider `Retry-After` en gedeelde cooldownstate ook voor PDF-labeldownloads en achtergrond-labelretries, zonder een webrequest minutenlang te blokkeren.
+* Hercontroleert vlak vóór achtergrondverwerking of de order nog transport vereist en behandelt een reeds extern geannuleerde order idempotent als lokaal geannuleerd.
+* Toont in de WooCommerce-orderkaart het gewenste ophaaltijdsvenster met de concrete berekende ophaaldatum; levering op 20-08-2026 toont bijvoorbeeld 19-08-2026, 15:00 - 17:00u.
+
+= 0.7.106 =
+* Bindt de opgeslagen verbindingstest aan een niet-reversibele configuratiefingerprint van omgeving, effectieve API-basis-URL, actieve API-key en pluginversie, zodat een eerder groene teststatus na een relevante configuratiewijziging niet meer als actueel wordt getoond.
+* Breidt de begrensde onderhoudsopruiming uit naar verlopen pluginlocks die na een harde workerstop kunnen achterblijven, inclusief webhook-, ordersync-, bulklabel-, settings- en loglocks.
+* Verwijdert verlopen locks alleen via exact-value compare-and-delete, zodat een lock die tussen selectie en cleanup door een andere worker is vernieuwd niet kan worden verwijderd.
+
+= 0.7.105 =
+* Beperkt de onderhoudsactie voor mislukte orders tot retrybare lokale synchronisatiefouten; definitieve SooCool-fouten en afwijzingen blijven zichtbaar maar worden niet meer als herstelbare queue-items behandeld.
+* Hercontroleert gekoppelde orderstate vlak vóór iedere achtergrond-hersynchronisatie en stopt veilig wanneer een order intussen al aan SooCool is gekoppeld, zodat een stale recoverytaak geen handmatige resubmit-policy kan omzeilen.
+* Verduidelijkt in wp-admin dat handmatig opnieuw synchroniseren de duplicate-check op orderreferentie behoudt en dus niet bedoeld is als stil mechanisme voor een tweede SooCool-order.
+
+= 0.7.104 =
+* Herstelt de ontbrekende webhook-eventnormalizers, zodat eventvolgorde- en eventtijdvalidatie niet meer kan fatallen; positieve sequencewaarden en Unix-/strikte ISO-8601-tijden worden gecontroleerd en conflicterende of ongeldige metadata blijft fail-closed.
+* Herstelt de ontbrekende PDF-cachevalidatie voor asynchrone admin-e-maillabels en accepteert alleen leesbare PDF-bestanden binnen de tijdelijke map met begrensde grootte, zonder symlinks; afgekeurde tijdelijke bestanden en lege/stale cache worden veilig opgeruimd.
+* Behoudt bestaande publieke hooks, REST-routes, WooCommerce-ordercontracten, HPOS-declaratie en de fail-closed Checkout Blocks-status; de fixes zijn gecontroleerd met gerichte rood-groenruntimetests en volledige registratie-/servicecontainercontroles.
+
+= 0.7.103 =
+* Beveiligt ook de groepsbrede Action Scheduler-opruiming met dezelfde initialisatiecontrole als planning en retries; WP-Cron-opruiming blijft altijd uitgevoerd worden.
+* Laadt de interne Action Scheduler-readinesshelper expliciet tijdens uninstall voordat OrderActions wordt aangeroepen, zodat directe uninstall-cleanup geen ontbrekende class kan raken.
+* Brengt `readme.txt` terug onder de WordPress.org-risicogrens van circa 10 KB en houdt de volledige oudere releasehistorie in `changelog.txt`.
+* Draait de onbedoelde 16px-afstand in het raster van algemene bezorginstellingen terug naar de bestaande 14px zonder instellingen- of checkoutgedrag te wijzigen.
+* Verduidelijkt releasebewijs: interne helpers mogen uitbreiden zolang geen publiek breaking contract wordt geïntroduceerd; compatibiliteitsclaims blijven gebonden aan echte runtimevalidatie.
+
+= 0.7.102 =
+* Serialiseert writes naar `soocool_settings` met een korte option-lock en herlaadt de actuele optionstate binnen de lock, zodat overlappende partial saves geen recente velden van een andere request kunnen terugzetten. Dezelfde lock beschermt version migrations tegen een gelijktijdige settings-save.
+* Centraliseert de Action Scheduler load-ordercheck in `ActionSchedulerRuntime` en laat order- en e-maillabelplanning de scheduler alleen gebruiken nadat de datastore is geïnitialiseerd; WP-Cron blijft de fallback.
+* Verwijdert de bevestigde ongebruikte admin-CSS classes `soocool-compact-row` en `soocool-automation-field`, consolideert de dubbele automation-grid-gap en genereert de productie-CSS opnieuw uit de canonieke bron zonder selectorsemantiek te wijzigen.
+* Corrigeert de foutieve dubbele 0.7.101-heading in `readme.txt`; de oudere presentatiebullets zijn weer correct als 0.7.100 gelabeld.
+* Voert na de wijzigingen opnieuw de volledige bug-, security-, REST-, HPOS-, dependency-, lifecycle-, package- en architectuurcontrole uit. Grote bestanden zijn alleen beoordeeld op eigenaarschap en cohesie; er is geen risicovolle split uitgevoerd op basis van regel- of byteaantal alleen.
+
+= 0.7.101 =
+* Herbouwt de wp-admin statusblokken voor ophalen en automatisering als één compact, herbruikbaar statuscomponent met een rustige neutrale kaart en consistente groene statusbadge.
+* Zet de orderreferentieprefix los van de statuskaart zodat lange hulptekst geen lege ruimte meer forceert in de ophalen-samenvatting.
+* Herstelt productie-CSS-pariteit: descendant-selectors met `:where()` blijven in `admin-settings.min.css` semantisch gelijk aan de bron, waardoor labelgewicht, hoofd-/kleine-lettergebruik en compacte veldafstand ook buiten `SCRIPT_DEBUG` werkelijk worden toegepast.
+* Verfijnt `SooCool-omgeving` naar een vet, sentence-case label met 4px afstand tot de dropdown, zonder instellingen- of synchronisatielogica te wijzigen.
+
+= 0.7.100 =
+* Verfijnt de wp-admin interface: `SooCool-omgeving` gebruikt een duidelijk vet label met compactere afstand tot de dropdown.
+* Maakt de `SooCool-ophalen`-samenvatting compacter door de dubbele kaartlaag en onnodige verticale stretch te verwijderen en toont `Actief` als rustige statusbadge.
+* Behoudt dezelfde instellingen-, REST- en ordersynclogica; deze release wijzigt alleen de bestaande adminpresentatie en assetversie.
+
+= 0.7.99 =
+* Integreert SooCool ordermeta met de bestaande WooCommerce privacy-export en -verwijdering: verzend-/bezorggegevens worden geëxporteerd en gekozen bezorgmomenten plus trackinggegevens worden bij WooCommerce-erasure verwijderd, terwijl operationele koppelingsdata behouden blijft voor duplicate-preventie en auditcontinuïteit.
+* Documenteert de officiële SooCool dienst-, voorwaarden- en privacybronnen expliciet voor de externe-service disclosure.
+* Markeert WordPress Multisite network activation expliciet als niet formeel gevalideerd in plaats van impliciet ondersteuning te claimen.
+* Controleert aanvullende release-, privacy-, lifecycle-, bestandspad-, e-mail-, dependency- en supply-chain-grenzen zonder onbewezen cleanup uit te voeren.
+
+= 0.7.98 =
+* Houdt de sync-watchdog actief totdat een achtergrondpoging werkelijk terugkeert, zodat een afgebroken worker of fatale onderbreking de herstelroute niet vooraf wist.
+* Behandelt een verouderde normale sync-taak als veilige no-op zodra dezelfde WooCommerce-order intussen al via een andere geldige route aan SooCool is gekoppeld.
+* Dedupliceert order-sync- en e-maillabeltaken over Action Scheduler en WP-Cron heen, zodat een bestaande fallbacktaak niet later als tweede taak via de andere scheduler wordt ingepland.
+* Controleert de volledige orderketen van checkout en queue via SooCool-response en webhook tot labels en logs op status-, retry-, idempotency- en timingconflicten.
+
+= 0.7.97 =
+* Lijnt de onderhoudsactie voor mislukte orders uit met het dashboard en de centrale foutstatusdefinitie: lokale syncfouten, SooCool-fouten en SooCool-afwijzingen worden nu door dezelfde hersynchronisatiebatch gevonden.
+* Voert opnieuw een niet-instellingen-audit uit op security/privacy, API-foutpaden, queue/retries, webhooks, labels, logs, HPOS, performance, toegankelijkheid, dependencies, uninstall en releasepakket zonder onbewezen cleanup uit te voeren.
+
+= 0.7.96 =
+* Controleert alle instellingen opnieuw als één keten van wp-admin naar REST, normalisatie en runtime; ongeldige API-keys, webhook-URL-fragmenten en verpakkingstypes worden niet meer eerst door de interface geaccepteerd en daarna door de backend afgewezen of stil genegeerd.
+* Normaliseert de orderreferentieprefix zodat het automatisch toegevoegde scheidingsteken nooit een dubbele streep oplevert en trekt zichtbare invoerlimieten gelijk met de bestaande backendgrenzen.
+* Maakt de bezorgkeuze de echte hoofdschakelaar in wp-admin: onderliggende schema-, dagdeel- en toeslagvelden blijven bewaard maar zijn uitgeschakeld wanneer de checkoutkeuze uitstaat; de belastingklasse is alleen bewerkbaar wanneer toeslagen belastbaar zijn.
+* Behoudt vaste en legacy instellingen, migraties en compatibilityvelden wanneer zij nog een aantoonbare upgrade-, API- of runtimefunctie hebben; er zijn geen bestanden of publieke contracten verwijderd.
+
+= 0.7.95 =
+* Slaat instellingen per beheertab alleen voor die tab op, zodat API-, ophaal-, bezorg-, automatiserings- en labelinstellingen elkaar niet meer onbedoeld kunnen herschrijven of opnieuw valideren.
+* Lijnt de API-keystatus in wp-admin uit met de bestaande legacy fallback, zodat een nog geldige gemigreerde key correct kan worden getest en verwijderd zonder de runtime anders te behandelen dan de interface.
+* Lijnt ophaalcontactvalidatie uit tussen wp-admin, REST en de SooCool-payload: ongeldige telefoonnummers en onvolledige ophaalgegevens worden vóór opslag afgewezen; de orderreferentiehulp beschrijft het automatisch toegevoegde scheidingsteken correct.
+* Herstelt verborgen WordPress Components-labels in Bezorgdagen zodat de eigen zichtbare veldlabels niet dubbel worden getoond, en documenteert dat gekozen WooCommerce gratis verzending SooCool-bezorgtoeslagen onderdrukt.
+* Behoudt alle legacy instellingen, migraties, publieke hooks/routes, label-, log-, webhook- en WooCommerce-compatibiliteitslagen waarvoor nog een actieve of achterwaarts-compatibele rol bestaat.
+
+= 0.7.94 =
+* Maakt de Checkout Blocks-adapter fail-closed: de experimentele adapter blijft volledig aanwezig maar staat standaard uit totdat hij expliciet op staging wordt ingeschakeld; de formele WooCommerce-compatibiliteitsverklaring blijft daarmee consistent.
+* Trekt alle releaseversies gelijk naar 0.7.94, inclusief pluginheader, runtimeconstante, migratiefallback, admin-assetmetadata en PO/POT-metadata.
+* Herstelt het losse changelog zodat de eerder uitgebrachte 0.7.93-vereenvoudigingsrelease niet meer ontbreekt.
+
+= 0.7.93 =
+* Vereenvoudigt de bezorginstellingen intern zonder publieke hooks, routes, option keys of payloadvormen te wijzigen: gedeelde slotvalidatie en -normalisatie hebben nu per class één canonieke implementatie.
+* Vermindert duplicatie in het REST-instellingenschema door de gedeelde dagdeel- en bezorgregelstructuur één keer op te bouwen en voor de legacy/canonieke varianten gecontroleerd uit te breiden.
+* Behoudt expliciete hookregistratie, compatibilitylagen, migraties en kleine domeinklassen wanneer samenvoegen alleen meer abstractie of koppelingsrisico zou opleveren.
+
+= 0.7.92 =
+* Lijnt de REST-instellingen, backendnormalisatie en runtime uit voor vaste SooCool-regels: ophalen, vaste tijdvensters en automatische synchronisatie kunnen niet meer als afwijkende waarden worden aangeleverd en daarna stil worden overschreven.
+* Maakt integer-, boolean- en bedragvalidatie strikt, trekt wp-admin-grenzen gelijk met de REST-API en zet de fallback-bezorgdatum-offset overal op minimaal 1 dag, zodat ongeldige waarden niet meer door casting of sanitization veranderen.
+* Detecteert conflicten wanneer het canonieke Bezorgschema tegelijk met legacy bezorgregels of dagdelen wordt aangeleverd; gelijkwaardige legacy-data blijft backend-only voor lees- en migratiecompatibiliteit werken, terwijl wp-admin en checkout uitsluitend het canonieke schema gebruiken.
+* Verwijdert verouderde beheer- en vertaalteksten rond optioneel ophalen en oude automatische-synckeuzes en bouwt de Nederlandse vertaalcatalogus opnieuw op, inclusief ontbrekende meervoudsvormen.
+* Vereenvoudigt de automatische statusmatching naar de vaste pending-policy met bestaande catch-upstatussen, verwijdert onbereikbare of ongebruikte validatiepaden en actualiseert de interne migratiefallback zonder publieke compatibility-methodes te verwijderen.
+
+= 0.7.91 =
+* Centraliseert de vaste fallback-bezorgtijden en automatische synchronisatiestatus zodat backendvalidatie en SooCool-payload niet uit elkaar kunnen lopen.
+* Scheidt Checkout Blocks-adapterbeschikbaarheid van de formele WooCommerce-compatibiliteitsverklaring; Blocks blijft staging-first totdat echte browser-/checkoutpariteit is gevalideerd.
+* Maakt SooCool-ophalen een vaste integratieregel: geschikte bezorgorders krijgen altijd een ophaaltaak met het afgesproken venster 15:00-17:00; de oude uitschakeloptie wordt alleen nog als compatibiliteitsveld genormaliseerd.
+* Maakt automatische ordersynchronisatie een vaste integratieregel en voorkomt dat oude opgeslagen instellingen de directe synchronisatie kunnen uitschakelen of uitstellen.
+* Gebruikt in wp-admin alleen het canonieke Bezorgschema als write-bron; legacy bezorgregels en dagdelen blijven alleen voor achterwaartse lees-/migratiecompatibiliteit beschikbaar.
+* Activeert de bestaande Checkout Blocks-adapter standaard op ondersteunde WooCommerce-versies en verwijdert de verouderde waarschuwing dat alleen Classic Checkout wordt ondersteund.
+* Vereenvoudigt de fallbackplanning naar één bezorgdatum-offset; de SooCool-ophaaldatum wordt altijd automatisch uit de bezorgdatum afgeleid en kan niet meer als los conflicterend offsetveld worden ingesteld.
+* Voorkomt dat een fallback-ophaaldatum in het verleden of na het vaste ophaalvenster 15:00-17:00 valt door de fallback-bezorgdatum zo nodig veilig vooruit te schuiven.
+* Voert een volledige bron-, structuur-, security-, frontend-, backend-, HTML-, PHP-, JavaScript- en CSS-cleanupaudit uit zonder publieke hooks, routes of WooCommerce-ordercontracten te wijzigen.
+* Verwijdert vier bevestigde ongebruikte private helpers en een overbodige same-namespace import; publieke compatibility- en deprecated-methodes blijven bewust behouden.
+* Verwijdert de dubbele inline marge op de klantorderdetailtitel omdat dezelfde regel al canoniek in de frontend-CSS staat.
+* Genereert de drie productie-*.min.css-bestanden opnieuw als echte compacte varianten en verifieert hun CSS-structuur tegen de leesbare bronbestanden.
+
+= 0.7.90 =
+* Herstelt het zichtbare veld Volgorde per bezorgregel en houdt de bestaande interne sorteerlogica intact.
+* Lijnt Bezorgdag, Cut-off dag, Cut-off tijd en Volgorde met één consistente labelafstand en veldhoogte uit.
+* Lijnt Type dagdeel exact uit met Label, Van, Tot en Cut-off zonder extra helptekst of afwijkende verticale positie.
+* Zet Opslaan en Verbinding testen weer links en houdt de API-keyactie rechts; verwijdert de dubbele inline verbindingsstatus zodat feedback via toast loopt.
+
+= 0.7.89 =
+* Ontkoppelt de SooCool-ophaaldatum van de bewerkbare checkout-cut-off. De provider-ophaaldagen blijven vast woensdag, vrijdag en zaterdag en de plugin kiest automatisch de laatste geldige ophaaldag vóór de gekozen bezorgdatum.
+* Behoudt daarmee maandag -> zaterdag, donderdag -> woensdag en zaterdag -> vrijdag, ook wanneer een beheerder de cut-offdag of cut-offtijd voor klantbestellingen wijzigt.
+* Houdt het afgesproken SooCool-ophaalvenster vast op 15:00-17:00 en laat automatische ordersynchronisatie direct na orderaanmaak via de bestaande achtergrondqueue verlopen.
+* Verduidelijkt in de beheerinterface dat de ophaaldatum-offset alleen een fallback is voor orders zonder gekozen bezorgdatum en niet de vaste SooCool-ophaaldagen configureert.
+
+= 0.7.88 =
+* Maakt het Bezorgschema rustiger: verwijdert de zichtbare Volgorde-velden, houdt de interne sorteervolgorde intact en zet Bezorgdag, Cut-off dag en Cut-off tijd in drie gelijk uitgelijnde velden.
+* Verwijdert de uitleg onder Type dagdeel en maakt de dagdeel-labels visueel consistent en vetgedrukt.
+* Verduidelijkt in Planning dat 08:00-18:00 alleen het fallback-bezorgvenster voor levering is en losstaat van het vaste SooCool-ophaalvenster 15:00-17:00.
+* Verduidelijkt dat de ophaaldatum-offset alleen fallback is; bij een gekozen leverdatum volgt de SooCool-ophaaldatum de ingestelde cut-offdag van het Bezorgschema.
+
+= 0.7.87 =
+* Berekent de SooCool-ophaaldatum voor checkout-orders vanuit de gekozen leverdag en de ingestelde cut-offdag: zaterdag voor maandag, woensdag voor donderdag en vrijdag voor zaterdag bij de standaardplanning.
+* Zet het afgesproken SooCool-ophaalvenster vast op 15:00-17:00 terwijl de order direct automatisch naar SooCool blijft synchroniseren.
+* Lijnt Bezorgdag, Cut-off dag, Cut-off tijd en Volgorde visueel exact uit en verkleint de ruimte onder de twee selectlabels.
+* Maakt de API-verbindingsstatus compacter en groepeert status en acties in één rustig statuspaneel.
+
+= 0.7.84 =
+* Ruimt de eenmalige automatische-syncmigratiemarkering ook bij uninstall op, zodat geen plugin-eigen optie achterblijft.
+* Synchroniseert readme en installatie-instructies met het actuele gedrag: automatische SooCool-synchronisatie staat standaard aan vanaf status pending.
+* Bouwt de Nederlandse MO-catalogus opnieuw op en trekt release-, asset- en vertaalmetadata gelijk met 0.7.84.
+
+= 0.7.83 =
+* Verwijdert de recent toegevoegde koppeling tussen SooCool-ophaaldagen en klantbezorgdagen volledig. Bezorgdagen werken weer onafhankelijk.
+* Zet automatische SooCool-ordersynchronisatie standaard aan en migreert bestaande installaties eenmalig naar automatische sync vanaf status pending.
+
 = 0.7.79 =
 * Verhoogt de releaseversie naar 0.7.79 en synchroniseert pluginheader, versieconstante, Stable tag, admin-assetversie en vertaalmetadata. Geen functionele wijzigingen.
 

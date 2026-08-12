@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Admin;
 
+use SooCool\WooCommerce\Infrastructure\ProviderContext;
 use SooCool\WooCommerce\WooCommerce\OrderActions;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use WC_Order;
@@ -15,10 +16,14 @@ defined( 'ABSPATH' ) || exit;
  */
 final class OrderListColumn {
 
+	private readonly ProviderContext $provider_context;
+
 	private const COLUMN_KEY  = 'soocool_status';
 	private const FILTER_PARAM = 'soocool_sync';
 
-	public function __construct( private readonly OrderMeta $meta, private readonly OrderStatusPresenter $presenter ) {}
+	public function __construct( private readonly OrderMeta $meta, private readonly OrderStatusPresenter $presenter, ?ProviderContext $provider_context = null ) {
+		$this->provider_context = $provider_context ?? new ProviderContext();
+	}
 
 	public function register(): void {
 		// HPOS orders table.
@@ -77,9 +82,10 @@ final class OrderListColumn {
 	}
 
 	private function render_badge( WC_Order $order ): void {
-		$status         = $this->meta->get_sync_status( $order );
-		$display_status = $this->presenter->display_status( $status, $this->meta->is_synced( $order ) );
-		$tracking       = $this->meta->get_tracking_code( $order );
+		$status                = $this->meta->get_sync_status( $order );
+		$current_provider_link = $this->is_synced_in_current_provider( $order );
+		$display_status        = $current_provider_link ? $this->presenter->display_status( $status, true ) : 'not_synced';
+		$tracking              = $current_provider_link ? $this->meta->get_tracking_code( $order ) : '';
 
 		printf(
 			'<span class="%1$s">%2$s</span>',
@@ -96,7 +102,7 @@ final class OrderListColumn {
 	}
 
 	private function render_sync_action( WC_Order $order, string $status ): void {
-		if ( ! current_user_can( 'manage_woocommerce' ) || $this->meta->is_synced( $order ) ) {
+		if ( ! current_user_can( 'manage_woocommerce' ) || $this->is_synced_in_current_provider( $order ) ) {
 			return;
 		}
 
@@ -125,7 +131,7 @@ final class OrderListColumn {
 	}
 
 	private function render_label_links( WC_Order $order ): void {
-		if ( ! current_user_can( 'manage_woocommerce' ) || ! $this->meta->is_synced( $order ) ) {
+		if ( ! current_user_can( 'manage_woocommerce' ) || ! $this->is_synced_in_current_provider( $order ) ) {
 			return;
 		}
 
@@ -219,20 +225,24 @@ final class OrderListColumn {
 	private function meta_query_clause( string $filter ): array {
 		if ( 'not_synced' === $filter ) {
 			return array(
-				'relation' => 'AND',
-				$this->missing_remote_order_clause(),
+				'relation' => 'OR',
 				array(
-					'relation' => 'OR',
+					'relation' => 'AND',
+					$this->missing_remote_order_clause(),
 					array(
-						'key'     => OrderMeta::SYNC_STATUS,
-						'compare' => 'NOT EXISTS',
-					),
-					array(
-						'key'     => OrderMeta::SYNC_STATUS,
-						'value'   => '',
-						'compare' => '=',
+						'relation' => 'OR',
+						array(
+							'key'     => OrderMeta::SYNC_STATUS,
+							'compare' => 'NOT EXISTS',
+						),
+						array(
+							'key'     => OrderMeta::SYNC_STATUS,
+							'value'   => '',
+							'compare' => '=',
+						),
 					),
 				),
+				$this->stale_provider_context_clause(),
 			);
 		}
 
@@ -247,6 +257,11 @@ final class OrderListColumn {
 					'key'     => OrderMeta::ORDER_ID,
 					'value'   => '',
 					'compare' => '!=',
+				),
+				array(
+					'key'     => OrderMeta::PROVIDER_CONTEXT,
+					'value'   => $this->provider_context->provider_fingerprint(),
+					'compare' => '=',
 				),
 				array(
 					'relation' => 'OR',
@@ -289,6 +304,44 @@ final class OrderListColumn {
 		}
 
 		return array();
+	}
+
+	private function is_synced_in_current_provider( WC_Order $order ): bool {
+		if ( ! $this->meta->is_synced( $order ) ) {
+			return false;
+		}
+
+		$provider_context = $this->meta->get_provider_context( $order );
+		return '' !== $provider_context && $this->provider_context->matches_provider( $provider_context );
+	}
+
+	/** @return array<string, mixed> */
+	private function stale_provider_context_clause(): array {
+		return array(
+			'relation' => 'AND',
+			array(
+				'key'     => OrderMeta::ORDER_ID,
+				'value'   => '',
+				'compare' => '!=',
+			),
+			array(
+				'relation' => 'OR',
+				array(
+					'key'     => OrderMeta::PROVIDER_CONTEXT,
+					'compare' => 'NOT EXISTS',
+				),
+				array(
+					'key'     => OrderMeta::PROVIDER_CONTEXT,
+					'value'   => '',
+					'compare' => '=',
+				),
+				array(
+					'key'     => OrderMeta::PROVIDER_CONTEXT,
+					'value'   => $this->provider_context->provider_fingerprint(),
+					'compare' => '!=',
+				),
+			),
+		);
 	}
 
 	/** @return array<string, mixed> */

@@ -147,12 +147,23 @@ final class DeliveryOptionsIntegration {
 		return $selection;
 	}
 
-	private function is_enabled(): bool {
-		if ( ! defined( 'WC_VERSION' ) || ! version_compare( WC_VERSION, self::MINIMUM_CONDITIONAL_FIELDS_VERSION, '>=' ) ) {
-			return false;
-		}
+	private static function is_supported_runtime(): bool {
+		return defined( 'WC_VERSION' )
+			&& version_compare( WC_VERSION, self::MINIMUM_CONDITIONAL_FIELDS_VERSION, '>=' )
+			&& function_exists( 'woocommerce_register_additional_checkout_field' );
+	}
 
-		return (bool) apply_filters( 'soocool_enable_checkout_blocks_adapter', false );
+	public static function is_enabled_runtime(): bool {
+		return self::is_supported_runtime()
+			&& (bool) apply_filters( 'soocool_enable_checkout_blocks_adapter', false );
+	}
+
+	public static function compatibility_declared(): bool {
+		return false;
+	}
+
+	private function is_enabled(): bool {
+		return self::is_enabled_runtime();
 	}
 
 	/** @return array<int, array{value:string,label:string}> */

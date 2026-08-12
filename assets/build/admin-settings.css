@@ -256,22 +256,6 @@ grid-column: 1 / -1;
   align-items: center;
 }
 
-.soocool-compact-row {
-display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  align-items: stretch;
-}
-
-.soocool-compact-row > * {
-min-width: 240px;
-  flex: 1 1 280px;
-}
-
-.soocool-shell .soocool-compact-row .components-toggle-control__field {
-  gap: 16px;
-  align-items: center;
-}
 
 .soocool-actions {
 gap: var(--soocool-space-sm);
@@ -307,21 +291,32 @@ display: flex;
   min-height: 36px;
 }
 
+.soocool-connection-footer {
+  display: block;
+  padding: 14px 16px;
+  background: var(--soocool-color-surface-soft);
+  border: 1px solid var(--soocool-color-border);
+  border-radius: 12px;
+}
+
 .soocool-connection-actions {
-display: flex;
+  display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 44px;
 }
 
 .soocool-connection-actions > .soocool-action-bar__status {
-flex: 1 0 100%;
+  flex: 1 0 100%;
   margin: 0;
 }
 
 .soocool-connection-actions > .soocool-action-bar__primary,
 .soocool-connection-actions > .soocool-action-bar__secondary {
-display: flex;
+  display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
@@ -358,13 +353,17 @@ background: var(--soocool-color-accent-dark);
 
 @media (max-width: 960px) {
   .soocool-connection-actions {
-  align-items: stretch;
-      flex-direction: column;
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .soocool-connection-actions > .soocool-action-bar__primary,
   .soocool-connection-actions > .soocool-action-bar__secondary {
     width: 100%;
+  }
+
+  .soocool-connection-actions > .soocool-action-bar__secondary {
+    margin-inline-start: 0;
   }
 }
 
@@ -906,6 +905,12 @@ background: #0f5132;
 .soocool-toast.is-error {
 background: #b00020;
   border-color: #b00020;
+}
+
+.soocool-toast.is-warning {
+  color: #1d2327;
+  background: #f7d774;
+  border-color: #d8a900;
 }
 
 .soocool-toast.is-neutral {
@@ -1519,7 +1524,59 @@ padding: 12px 14px 14px;
 display: grid;
 	grid-template-columns: repeat(4, minmax(150px, 1fr));
 	gap: 14px;
+	align-items: start;
 	margin-bottom: 18px;
+}
+
+#soocool-admin-app .soocool-delivery-schedule-fields > .soocool-delivery-schedule-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+}
+
+#soocool-admin-app .soocool-delivery-schedule-field__label {
+  display: block;
+  min-height: 18px;
+  margin: 0 0 6px;
+  color: var(--soocool-color-text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 18px;
+  text-transform: none;
+}
+
+#soocool-admin-app .soocool-delivery-schedule-field .components-base-control,
+#soocool-admin-app .soocool-delivery-schedule-field .components-base-control__field,
+#soocool-admin-app .soocool-delivery-schedule-field .components-input-control {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+#soocool-admin-app .soocool-delivery-schedule-fields :where(
+  input[type="time"],
+  input[type="number"],
+  .components-text-control__input,
+  .components-input-control__container,
+  .components-select-control .components-input-control__container,
+  select.components-select-control__input
+) {
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+}
+
+#soocool-admin-app .soocool-delivery-schedule-fields select.components-select-control__input {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+#soocool-admin-app .soocool-delivery-schedule-fields .components-input-control__suffix {
+  min-height: 44px;
+  align-items: center;
 }
 
 .soocool-delivery-schedule-slots {
@@ -1662,7 +1719,7 @@ min-width: 30px;
 
 .soocool-delivery-schedule-slot__details {
 display: grid;
-	grid-template-columns: 100px minmax(140px, 1.4fr) repeat(4, minmax(110px, 1fr));
+	grid-template-columns: 100px minmax(180px, 1.4fr) minmax(150px, 1fr) repeat(3, minmax(120px, 1fr));
 	gap: 12px;
 	align-items: end;
 	padding: 12px;
@@ -1670,8 +1727,65 @@ display: grid;
 	background: #fbfbfc;
 }
 
-.soocool-delivery-schedule-slot__details .components-base-control {
+.soocool-delivery-schedule-slot__details .components-base-control,
+.soocool-delivery-schedule-slot__details .components-select-control {
+  min-width: 0;
   margin-bottom: 0;
+}
+
+#soocool-admin-app .soocool-delivery-schedule-slot__details :where(
+  .components-base-control__label,
+  label.components-input-control__label,
+  .components-input-control__label,
+  .components-select-control__label
+) {
+  margin: 0 0 6px;
+  color: var(--soocool-color-text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 18px;
+  text-transform: none;
+}
+
+#soocool-admin-app .soocool-delivery-schedule-slot__details .soocool-daypart-type-field {
+  display: flex;
+  flex-direction: column;
+  align-self: end;
+  min-width: 0;
+  margin: 0;
+}
+
+#soocool-admin-app .soocool-delivery-schedule-slot__details .soocool-daypart-type-field__label {
+  display: block;
+  min-height: 18px;
+  margin: 0 0 6px;
+  color: var(--soocool-color-text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 18px;
+  text-transform: none;
+}
+
+#soocool-admin-app .soocool-delivery-schedule-slot__details .soocool-daypart-type-control,
+#soocool-admin-app .soocool-delivery-schedule-slot__details .soocool-daypart-type-control .components-input-control {
+  min-width: 0;
+  margin: 0;
+}
+
+#soocool-admin-app .soocool-delivery-schedule-slot__details :where(
+  input[type="text"],
+  input[type="time"],
+  .components-text-control__input,
+  .components-input-control__container,
+  .components-select-control .components-input-control__container,
+  select.components-select-control__input
+) {
+  box-sizing: border-box;
+  min-height: 44px;
+  height: 44px;
+  margin: 0;
 }
 
 .soocool-delivery-slots-more.components-button.is-secondary {
@@ -2790,12 +2904,7 @@ width: 18px;
   box-shadow: none;
 }
 
-.soocool-automation-row {
-  display: contents;
-}
-
 .soocool-automation-setting,
-.soocool-automation-field,
 .soocool-automation-retention {
   min-width: 0;
   padding: 20px;
@@ -2803,12 +2912,6 @@ width: 18px;
   border: 1px solid var(--soocool-color-border);
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(23, 23, 23, 0.04);
-}
-
-.soocool-automation-row > .soocool-automation-setting,
-.soocool-automation-row > .soocool-automation-field,
-.soocool-automation-row > .soocool-automation-retention {
-  min-height: 128px;
 }
 
 .soocool-automation-setting .components-toggle-control {
@@ -2842,11 +2945,6 @@ width: 18px;
   margin-top: 9px;
 }
 
-.soocool-automation-field .components-input-control__label,
-.soocool-automation-field label.components-input-control__label {
-  margin-bottom: 5px;
-  font-weight: 600;
-}
 
 .soocool-automation-retention {
   width: 100%;
@@ -3115,14 +3213,17 @@ min-height: 30px;
     grid-template-columns: 1fr;
   }
 
-  .soocool-automation-row > .soocool-automation-setting,
-  .soocool-automation-row > .soocool-automation-field,
-  .soocool-automation-row > .soocool-automation-retention {
-    min-height: 0;
-  }
 }
 
 @media (max-width: 782px) {
+  .soocool-connection-footer {
+    padding: 14px;
+  }
+
+  .soocool-connection-footer > .soocool-connection-actions {
+    width: 100%;
+  }
+
   .soocool-action-bar,
   .soocool-action-bar__primary,
   .soocool-action-bar__secondary {
@@ -3231,9 +3332,145 @@ display: block;
   accent-color: #2271b1;
 }
 
-#soocool-admin-app .soocool-shell .soocool-compact-row .components-form-toggle {
-  position: relative;
-  top: 1px;
-  margin-top: 0;
-  transform: none;
+/* WordPress Components may change label markup between versions. These controls render their own visible labels; keep the native labels available to screen readers only. */
+#soocool-admin-app .soocool-native-label-hidden :where(
+  .components-base-control__label,
+  .components-input-control__label,
+  .components-select-control__label,
+  label.components-input-control__label
+) {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Compact form labels and fixed-status summaries. Keep selectors explicit so source and production CSS remain semantically identical. */
+#soocool-admin-app .soocool-shell .soocool-environment-control .components-base-control__label,
+#soocool-admin-app .soocool-shell .soocool-environment-control .components-input-control__label,
+#soocool-admin-app .soocool-shell .soocool-environment-control .components-select-control__label,
+#soocool-admin-app .soocool-shell .soocool-environment-control label.components-input-control__label {
+  margin: 0 0 4px;
+  color: var(--soocool-color-text);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 18px;
+  text-transform: none;
+}
+
+.soocool-status-summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid var(--soocool-color-border);
+  border-radius: 12px;
+  box-shadow: var(--soocool-shadow-sm);
+}
+
+.soocool-status-summary__copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.soocool-status-summary__title {
+  display: block;
+  margin: 0;
+  color: var(--soocool-color-text);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 20px;
+}
+
+.soocool-status-summary__description {
+  max-width: 920px;
+  margin: 3px 0 0;
+  color: var(--soocool-color-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.soocool-status-summary__badge {
+  display: inline-flex;
+  min-height: 26px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px;
+  color: var(--soocool-color-success);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 18px;
+  white-space: nowrap;
+  background: #edfaef;
+  border: 1px solid #b8ddc2;
+  border-radius: var(--soocool-radius-pill);
+}
+
+.soocool-status-summary__dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  background: #16833a;
+  border-radius: var(--soocool-radius-pill);
+}
+
+.soocool-pickup-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.soocool-pickup-status-summary {
+  min-height: 82px;
+}
+
+.soocool-pickup-prefix-card {
+  display: block;
+  min-width: 0;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid var(--soocool-color-border);
+  box-shadow: var(--soocool-shadow-sm);
+}
+
+#soocool-admin-app .soocool-pickup-prefix-card .components-base-control__label,
+#soocool-admin-app .soocool-pickup-prefix-card .components-input-control__label,
+#soocool-admin-app .soocool-pickup-prefix-card label.components-input-control__label {
+  margin-bottom: 4px;
+  font-weight: 650;
+}
+
+
+@media (max-width: 900px) {
+  .soocool-pickup-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .soocool-pickup-status-summary {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .soocool-status-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .soocool-status-summary__badge {
+    align-self: flex-start;
+  }
 }

@@ -6,6 +6,7 @@ namespace SooCool\WooCommerce\WooCommerce;
 
 use SooCool\WooCommerce\Infrastructure\NumericIdentifier;
 use SooCool\WooCommerce\Infrastructure\OptionMutex;
+use SooCool\WooCommerce\Infrastructure\ProviderContext;
 defined( 'ABSPATH' ) || exit;
 
 final class ShippingLabelBulkTokenStore {
@@ -15,6 +16,8 @@ final class ShippingLabelBulkTokenStore {
 	private const TTL         = 300;
 	private const LOCK_TTL    = 60;
 	private const MAX_ORDER_IDS = 50;
+
+	public function __construct( private readonly ?ProviderContext $provider_context = null ) {}
 
 	/** @param array<int, int> $order_ids */
 	public function create( string $action, array $order_ids, string $output ): string {
@@ -36,7 +39,8 @@ final class ShippingLabelBulkTokenStore {
 		}
 
 		$payload = array(
-			'user_id'   => $user_id,
+			'user_id'             => $user_id,
+			'context_fingerprint' => $this->current_context_fingerprint(),
 			'action'    => $action,
 			'order_ids' => $order_ids,
 			'output'    => 'collated_a4' === $output ? 'collated_a4' : 'a6',
@@ -73,11 +77,28 @@ final class ShippingLabelBulkTokenStore {
 				return array();
 			}
 
+			$context_fingerprint = isset( $payload['context_fingerprint'] ) && is_scalar( $payload['context_fingerprint'] )
+				? strtolower( trim( (string) $payload['context_fingerprint'] ) )
+				: '';
+			if ( null !== $this->provider_context && ( '' === $context_fingerprint || ! $this->context_is_current( $context_fingerprint ) ) ) {
+				delete_transient( $transient_key );
+				return array();
+			}
+
 			delete_transient( $transient_key );
 			return $payload;
 		} finally {
 			OptionMutex::release( $lock_key, $lock_value );
 		}
+	}
+
+
+	private function current_context_fingerprint(): string {
+		return null !== $this->provider_context ? $this->provider_context->execution_fingerprint( 'bulk-label' ) : '';
+	}
+
+	private function context_is_current( string $context_fingerprint ): bool {
+		return null !== $this->provider_context && $this->provider_context->matches_execution( $context_fingerprint, 'bulk-label' );
 	}
 
 	public function nonce_action( string $token ): string {

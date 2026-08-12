@@ -463,6 +463,39 @@ final class WebhookPayloadExtractor {
 		}
 	}
 
+	private function normalize_event_sequence( mixed $value ): int {
+		return NumericIdentifier::positive_integer( $value ) ?? 0;
+	}
+
+	private function normalize_event_timestamp( mixed $value ): int {
+		$timestamp = NumericIdentifier::positive_integer( $value );
+		if ( null !== $timestamp ) {
+			return $timestamp;
+		}
+
+		if ( ! is_string( $value ) ) {
+			return 0;
+		}
+
+		$value = trim( $value );
+		if ( 1 !== preg_match(
+			'/^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))$/',
+			$value,
+			$parts
+		) || ! checkdate( (int) $parts['month'], (int) $parts['day'], (int) $parts['year'] ) ) {
+			return 0;
+		}
+
+		try {
+			$date_time = new \DateTimeImmutable( $value );
+		} catch ( \Exception ) {
+			return 0;
+		}
+
+		$timestamp = $date_time->getTimestamp();
+		return 0 < $timestamp ? $timestamp : 0;
+	}
+
 	/**
 	 * @param array<string, mixed> $payload
 	 * @param array<int, string>   $keys
@@ -503,39 +536,6 @@ final class WebhookPayloadExtractor {
 		}
 
 		return 0;
-	}
-
-	private function normalize_event_sequence( mixed $value ): int {
-		return NumericIdentifier::positive( $value ) ?? 0;
-	}
-
-	private function normalize_event_timestamp( mixed $value ): int {
-		if ( is_int( $value ) || ( is_string( $value ) && 1 === preg_match( '/^\d{1,16}$/', trim( $value ) ) ) ) {
-			$timestamp = NumericIdentifier::positive( $value ) ?? 0;
-			while ( $timestamp > 20000000000 ) {
-				$timestamp = intdiv( $timestamp, 1000 );
-			}
-
-			return $timestamp;
-		}
-		if ( ! is_string( $value ) ) {
-			return 0;
-		}
-
-		$value = trim( $value );
-		if ( 1 !== preg_match(
-			'/^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.\d{1,6})?(Z|[+-]((?:0\d|1[0-3]):[0-5]\d|14:00))$/',
-			$value,
-			$parts
-		) || ! checkdate( (int) $parts[2], (int) $parts[3], (int) $parts[1] ) ) {
-			return 0;
-		}
-
-		try {
-			return ( new \DateTimeImmutable( $value ) )->getTimestamp();
-		} catch ( \Exception ) {
-			return 0;
-		}
 	}
 
 }

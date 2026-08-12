@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Checkout;
 
+use SooCool\WooCommerce\Infrastructure\OptionDefaults;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
 use SooCool\WooCommerce\Infrastructure\StrictLocalDateTime;
 
@@ -21,6 +22,9 @@ final class DeliverySchedule {
 		'saturday'  => 6,
 		'sunday'    => 7,
 	);
+
+	/** @var array<int, int> SooCool collects on Wednesday, Friday and Saturday. */
+	private const SOOCOOL_PICKUP_WEEKDAYS = array( 3, 5, 6 );
 
 	/** @var array<string, mixed>|null */
 	private ?array $settings_cache = null;
@@ -43,6 +47,11 @@ final class DeliverySchedule {
 		return $this->options->default_delivery_time_slots();
 	}
 
+	/** @return array<int, array<string, mixed>> */
+	private function default_schedule(): array {
+		return $this->options->default_delivery_schedule();
+	}
+
 	/** @return array<int, array{date:string,label:string,weekday:string,cutoff:string}> */
 	public function available_options(): array {
 		if ( null !== $this->available_options_cache ) {
@@ -60,7 +69,7 @@ final class DeliverySchedule {
 		$days_ahead = max( 7, min( 92, absint( $settings['checkout_delivery_days_ahead'] ?? 92 ) ) );
 		$last_day   = $today->modify( '+' . $days_ahead . ' days' );
 		$holidays   = $this->holiday_dates( (string) ( $settings['checkout_delivery_holidays'] ?? '' ) );
-		$rules      = $this->rules( $settings['checkout_delivery_rules'] ?? $this->default_rules() );
+		$rules      = $this->rules( $settings['checkout_delivery_schedule'] ?? $this->default_schedule() );
 		$options    = array();
 
 		foreach ( $rules as $rule ) {
@@ -81,7 +90,7 @@ final class DeliverySchedule {
 					continue;
 				}
 
-				if ( ! $this->is_after_pickup_date_if_needed( $date, $settings, $now ) ) {
+				if ( ! $this->is_pickup_window_available( $date, $now ) ) {
 					continue;
 				}
 
@@ -141,7 +150,7 @@ final class DeliverySchedule {
 		}
 
 		$settings = $this->settings();
-		$slots    = $this->time_slots( $settings['checkout_delivery_time_slots'] ?? $this->default_time_slots() );
+		$slots    = $this->time_slots_for_date( $date, $settings );
 		$visible  = array();
 
 		foreach ( $slots as $slot ) {
@@ -209,6 +218,28 @@ final class DeliverySchedule {
 
 		$time_label = $time_from . ' - ' . $time_to;
 		return '' !== $label ? trim( $label . ' (' . $time_label . ')' ) : $time_label;
+	}
+
+	public function pickup_date_for_delivery( string $date ): string {
+		$date = $this->sanitize_date( $date );
+		if ( '' === $date ) {
+			return '';
+		}
+
+		try {
+			$delivery_date = new \DateTimeImmutable( $date . ' 00:00:00', $this->timezone() );
+		} catch ( \Exception ) {
+			return '';
+		}
+
+		for ( $days_before = 1; $days_before <= 7; $days_before++ ) {
+			$candidate = $delivery_date->modify( '-' . $days_before . ' days' );
+			if ( in_array( (int) $candidate->format( 'N' ), self::SOOCOOL_PICKUP_WEEKDAYS, true ) ) {
+				return $candidate->format( 'Y-m-d' );
+			}
+		}
+
+		return '';
 	}
 
 	public function is_usable_order_date( string $date, string $minimum_after_date = '' ): bool {
@@ -351,13 +382,37 @@ final class DeliverySchedule {
 
 	/** @param array<string, mixed> $settings */
 	private function has_available_time_slot_for_date( string $date, array $settings ): bool {
-		foreach ( $this->time_slots( $settings['checkout_delivery_time_slots'] ?? $this->default_time_slots() ) as $slot ) {
-			if ( $this->slot_matches_date( $slot, $date ) && $this->is_time_slot_available_for_date( $slot, $date ) ) {
+		foreach ( $this->time_slots_for_date( $date, $settings ) as $slot ) {
+			if ( $this->is_time_slot_available_for_date( $slot, $date ) ) {
 				return true;
 			}
 		}
 
 		return false;
+	}
+
+	/** @param array<string, mixed> $settings @return array<int, array<string, mixed>> */
+	private function time_slots_for_date( string $date, array $settings ): array {
+		$weekday = $this->weekday_key_for_date( $date );
+		if ( '' === $weekday ) {
+			return array();
+		}
+
+		$schedule = is_array( $settings['checkout_delivery_schedule'] ?? null ) ? $settings['checkout_delivery_schedule'] : $this->default_schedule();
+		foreach ( $schedule as $rule ) {
+			if ( ! is_array( $rule ) || ! (bool) ( $rule['enabled'] ?? true ) ) {
+				continue;
+			}
+
+			$delivery_weekday = sanitize_key( (string) ( $rule['delivery_weekday'] ?? '' ) );
+			if ( $weekday !== $delivery_weekday ) {
+				continue;
+			}
+
+			return $this->time_slots( $rule['slots'] ?? array() );
+		}
+
+		return array();
 	}
 
 	/** @param array<string, mixed> $slot */
@@ -417,29 +472,15 @@ final class DeliverySchedule {
 		return StrictLocalDateTime::from_date_and_time( $cutoff_date->format( 'Y-m-d' ), $cutoff_time, $this->timezone() );
 	}
 
-	/** @param array<string, mixed> $settings */
-	private function is_after_pickup_date_if_needed( string $date, array $settings, \DateTimeImmutable $now ): bool {
-		if ( ! (bool) ( $settings['enable_pickup'] ?? false ) ) {
-			return true;
+	private function is_pickup_window_available( string $date, \DateTimeImmutable $now ): bool {
+		$pickup_date = $this->pickup_date_for_delivery( $date );
+		if ( '' === $pickup_date ) {
+			return false;
 		}
 
-		$pickup_offset = max( 0, absint( $settings['pickup_days_offset'] ?? 0 ) );
-		if ( 0 === $pickup_offset ) {
-			$pickup_time_to = $this->sanitize_time( (string) ( $settings['pickup_time_to'] ?? '' ) );
-			if ( '' !== $pickup_time_to ) {
-				$pickup_end = StrictLocalDateTime::from_date_and_time( $now->format( 'Y-m-d' ), $pickup_time_to, $this->timezone() );
-				if ( null === $pickup_end ) {
-					return false;
-				}
-				if ( $now >= $pickup_end ) {
-					$pickup_offset = 1;
-				}
-			}
-		}
+		$pickup_end = StrictLocalDateTime::from_date_and_time( $pickup_date, OptionDefaults::PICKUP_TIME_TO, $this->timezone() );
 
-		$pickup_date = $now->setTime( 0, 0, 0 )->modify( '+' . $pickup_offset . ' days' )->format( 'Y-m-d' );
-
-		return $date > $pickup_date;
+		return null !== $pickup_end && $now < $pickup_end;
 	}
 
 	/** @return array<string, mixed> */

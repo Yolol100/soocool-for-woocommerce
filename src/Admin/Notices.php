@@ -20,32 +20,6 @@ final class Notices {
 		printf( '<div class="notice notice-error"><p>%s</p></div>', esc_html( $this->requirements->get_missing_message() ) );
 	}
 
-	public function render_runtime_notices(): void {
-		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-			return;
-		}
-
-		$this->render_checkout_blocks_notice();
-	}
-
-	private function render_checkout_blocks_notice(): void {
-		if ( ! function_exists( 'wc_get_page_id' ) || ! function_exists( 'has_block' ) ) {
-			return;
-		}
-
-		$checkout_page_id = wc_get_page_id( 'checkout' );
-		if ( $checkout_page_id <= 0 ) {
-			return;
-		}
-
-		if ( ! has_block( 'woocommerce/checkout', $checkout_page_id ) ) {
-			return;
-		}
-
-		printf(
-			'<div class="notice notice-warning"><p>%s</p></div>',
-			esc_html__( 'SooCool ondersteunt in deze release alleen de klassieke WooCommerce checkout. De actieve checkoutpagina gebruikt WooCommerce Checkout Blocks; de bezorgmomentkiezer kan daardoor ontbreken.', 'soocool-for-woocommerce' )
-		);
-	}
+	public function render_runtime_notices(): void {}
 
 }

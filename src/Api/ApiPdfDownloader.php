@@ -23,6 +23,17 @@ final class ApiPdfDownloader {
 			throw new ApiException( __( 'SooCool API-key ontbreekt of is ongeldig.', 'soocool-for-woocommerce' ), 401 );
 		}
 
+		$cooldown_remaining = $this->transport->cooldown_remaining_seconds( $api_key );
+		if ( 0 < $cooldown_remaining ) {
+			throw new ApiException(
+				__( 'De SooCool API heeft tijdelijk een snelheidslimiet ingesteld. Het label kan na de opgegeven wachttijd opnieuw worden opgevraagd.', 'soocool-for-woocommerce' ),
+				429,
+				array(),
+				true,
+				$cooldown_remaining
+			);
+		}
+
 		$attempt = 0;
 		do {
 			++$attempt;
@@ -44,16 +55,19 @@ final class ApiPdfDownloader {
 					'User-Agent' => 'SooCool for WooCommerce/' . SOOCOOL_VERSION . '; ' . home_url( '/' ),
 				),
 			);
-			$response = wp_safe_remote_request( $url, $args );
-			$status   = is_wp_error( $response ) ? 0 : (int) wp_remote_retrieve_response_code( $response );
-			$retry    = $attempt < ApiTransport::MAX_RETRY_ATTEMPTS && ( is_wp_error( $response ) || in_array( $status, ApiTransport::RETRYABLE_STATUS_CODES, true ) );
+			$response            = wp_safe_remote_request( $url, $args );
+			$status              = is_wp_error( $response ) ? 0 : (int) wp_remote_retrieve_response_code( $response );
+			$retry_after_seconds = $this->transport->retry_after_seconds( $response );
+			$retry               = $attempt < ApiTransport::MAX_RETRY_ATTEMPTS && ( is_wp_error( $response ) || in_array( $status, ApiTransport::RETRYABLE_STATUS_CODES, true ) );
 			if ( $retry ) {
-				wp_delete_file( $filename );
 				$delay_ms = $this->transport->retry_delay_milliseconds( $response, $attempt );
-				if ( 0 < $delay_ms ) {
-					usleep( $delay_ms * 1000 );
+				if ( $delay_ms <= ApiTransport::MAX_INLINE_RETRY_DELAY_MILLISECONDS ) {
+					wp_delete_file( $filename );
+					if ( 0 < $delay_ms ) {
+						usleep( $delay_ms * 1000 );
+					}
+					continue;
 				}
-				continue;
 			}
 
 			if ( is_wp_error( $response ) ) {
@@ -61,11 +75,14 @@ final class ApiPdfDownloader {
 				throw new ApiException( __( 'Kon geen verbinding maken met de SooCool API.', 'soocool-for-woocommerce' ), 0, array(), true );
 			}
 			if ( $status < 200 || $status >= 300 ) {
+				if ( in_array( $status, ApiTransport::RETRYABLE_STATUS_CODES, true ) && 0 < $retry_after_seconds ) {
+					$this->transport->store_cooldown( $api_key, $retry_after_seconds );
+				}
 				$raw    = is_readable( $filename ) ? (string) file_get_contents( $filename, false, null, 0, 65536 ) : '';
 				$body   = $this->transport->decode_body( $raw );
 				$errors = $this->errors->redacted_errors( $body );
 				wp_delete_file( $filename );
-				throw new ApiException( $this->errors->public_message( $status ), $status, $errors );
+				throw new ApiException( $this->errors->public_message( $status ), $status, $errors, null, $retry_after_seconds );
 			}
 
 			$this->validate_pdf_file( $filename );

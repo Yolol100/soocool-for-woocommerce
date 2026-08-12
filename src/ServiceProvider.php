@@ -36,6 +36,7 @@ use SooCool\WooCommerce\Domain\TaskContactFactory;
 use SooCool\WooCommerce\Infrastructure\ConnectionStateRepository;
 use SooCool\WooCommerce\Infrastructure\Logger;
 use SooCool\WooCommerce\Infrastructure\OptionRepository;
+use SooCool\WooCommerce\Infrastructure\ProviderContext;
 use SooCool\WooCommerce\Infrastructure\OptionDefaults;
 use SooCool\WooCommerce\Infrastructure\Requirements;
 use SooCool\WooCommerce\Infrastructure\SecretSanitizer;
@@ -52,6 +53,7 @@ use SooCool\WooCommerce\Rest\WebhookController;
 use SooCool\WooCommerce\Rest\WebhookSecretController;
 use SooCool\WooCommerce\Rest\MaintenanceController;
 use SooCool\WooCommerce\WooCommerce\OrderActions;
+use SooCool\WooCommerce\WooCommerce\OrderDeliveryEligibility;
 use SooCool\WooCommerce\WooCommerce\OrderMeta;
 use SooCool\WooCommerce\WooCommerce\OrderEmailLabels;
 use SooCool\WooCommerce\WooCommerce\RemoteStatusMapper;
@@ -82,6 +84,7 @@ final class ServiceProvider {
 			OptionDefaults::class => new OptionDefaults(),
 			OptionRepository::class => new OptionRepository( $this->get( OptionDefaults::class ) ),
 			ConnectionStateRepository::class => new ConnectionStateRepository(),
+			ProviderContext::class => new ProviderContext( $this->get( OptionRepository::class ), $this->get( ConnectionStateRepository::class ) ),
 			Logger::class => new Logger( $this->get( SecretSanitizer::class ), $this->get( OptionRepository::class ) ),
 			ApiErrorMapper::class => new ApiErrorMapper( $this->get( SecretSanitizer::class ) ),
 			ApiClient::class => new ApiClient( $this->get( OptionRepository::class ), $this->get( Logger::class ), $this->get( ApiErrorMapper::class ) ),
@@ -96,12 +99,12 @@ final class ServiceProvider {
 			OrderPayloadBuilder::class => new OrderPayloadBuilder( $this->get( TaskFactory::class ), $this->get( OptionRepository::class ), $this->get( OrderPayloadValidator::class ) ),
 			OrderMeta::class => new OrderMeta( $this->get( RemoteStatusPolicy::class ) ),
 			RemoteOrderResponseParser::class => new RemoteOrderResponseParser( $this->get( OrderMeta::class ) ),
-			OrderEmailLabels::class => new OrderEmailLabels( $this->get( ShippingLabelService::class ), $this->get( OptionRepository::class ), $this->get( OrderMeta::class ), $this->get( Logger::class ) ),
+			OrderEmailLabels::class => new OrderEmailLabels( $this->get( ShippingLabelService::class ), $this->get( OptionRepository::class ), $this->get( OrderMeta::class ), $this->get( Logger::class ), $this->get( ProviderContext::class ) ),
 			OrderSyncService::class => new OrderSyncService( $this->get( ApiClient::class ), $this->get( OrderMeta::class ), $this->get( RemoteOrderResponseParser::class ) ),
 			OrderStatusPresenter::class => new OrderStatusPresenter(),
-			OrderSyncCoordinator::class => new OrderSyncCoordinator( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ), $this->get( OrderSyncService::class ), $this->get( RemoteStatusMapper::class ), $this->get( SecretSanitizer::class ), $this->get( Logger::class ) ),
-			ShippingLabelService::class => new ShippingLabelService( $this->get( ApiClient::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ), $this->get( RemoteOrderResponseParser::class ) ),
-			ShippingLabelBulkTokenStore::class => new ShippingLabelBulkTokenStore(),
+			OrderSyncCoordinator::class => new OrderSyncCoordinator( $this->get( ApiClient::class ), $this->get( OrderPayloadBuilder::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ), $this->get( OrderSyncService::class ), $this->get( RemoteStatusMapper::class ), $this->get( SecretSanitizer::class ), $this->get( Logger::class ), $this->get( ProviderContext::class ) ),
+			ShippingLabelService::class => new ShippingLabelService( $this->get( ApiClient::class ), $this->get( OrderMeta::class ), $this->get( OptionRepository::class ), $this->get( RemoteOrderResponseParser::class ), $this->get( ProviderContext::class ) ),
+			ShippingLabelBulkTokenStore::class => new ShippingLabelBulkTokenStore( $this->get( ProviderContext::class ) ),
 			ShippingLabelOrderResolver::class => new ShippingLabelOrderResolver( $this->get( OrderMeta::class ) ),
 			ShippingLabelPdfResponse::class => new ShippingLabelPdfResponse(),
 			AdminMenu::class => new AdminMenu(),
@@ -120,16 +123,17 @@ final class ServiceProvider {
 			WebhookAuthenticator::class => new WebhookAuthenticator( $this->get( OptionRepository::class ) ),
 			RemoteStatusPolicy::class => new RemoteStatusPolicy(),
 			WebhookPayloadExtractor::class => new WebhookPayloadExtractor( $this->get( RemoteStatusPolicy::class ) ),
-			WebhookController::class => new WebhookController( $this->get( OrderMeta::class ), $this->get( Logger::class ), $this->get( WebhookAuthenticator::class ), $this->get( WebhookPayloadExtractor::class ), $this->get( ApiClient::class ) ),
+			WebhookController::class => new WebhookController( $this->get( OrderMeta::class ), $this->get( Logger::class ), $this->get( WebhookAuthenticator::class ), $this->get( WebhookPayloadExtractor::class ), $this->get( ApiClient::class ), $this->get( ProviderContext::class ) ),
 			WebhookSecretController::class => new WebhookSecretController( $this->get( OptionRepository::class ) ),
 			RemoteStatusMapper::class => new RemoteStatusMapper( $this->get( RemoteStatusPolicy::class ) ),
-			OrderMetaBox::class => new OrderMetaBox( $this->get( OrderMeta::class ), $this->get( OrderStatusPresenter::class ), $this->get( DeliverySchedule::class ), $this->get( OrderSyncCoordinator::class ) ),
+			OrderMetaBox::class => new OrderMetaBox( $this->get( OrderMeta::class ), $this->get( OrderStatusPresenter::class ), $this->get( DeliverySchedule::class ), $this->get( OrderSyncCoordinator::class ), $this->get( ProviderContext::class ) ),
 			OrderActionConfirmScript::class => new OrderActionConfirmScript(),
-			OrderActions::class => new OrderActions( $this->get( OrderMeta::class ), $this->get( OrderMetaBox::class ), $this->get( OrderActionConfirmScript::class ), $this->get( OrderSyncCoordinator::class ) ),
-			OrderListColumn::class => new OrderListColumn( $this->get( OrderMeta::class ), $this->get( OrderStatusPresenter::class ) ),
+			OrderDeliveryEligibility::class => new OrderDeliveryEligibility(),
+			OrderActions::class => new OrderActions( $this->get( OrderMeta::class ), $this->get( OrderMetaBox::class ), $this->get( OrderActionConfirmScript::class ), $this->get( OrderSyncCoordinator::class ), $this->get( ProviderContext::class ), $this->get( OrderDeliveryEligibility::class ) ),
+			OrderListColumn::class => new OrderListColumn( $this->get( OrderMeta::class ), $this->get( OrderStatusPresenter::class ), $this->get( ProviderContext::class ) ),
 			BulkSyncActions::class => new BulkSyncActions( $this->get( OrderActions::class ) ),
 			MaintenanceController::class => new MaintenanceController( $this->get( OrderActions::class ) ),
-			OrderStatusHooks::class => new OrderStatusHooks( $this->get( OptionRepository::class ), $this->get( OrderActions::class ), $this->get( OrderMeta::class ) ),
+			OrderStatusHooks::class => new OrderStatusHooks( $this->get( OptionRepository::class ), $this->get( OrderActions::class ), $this->get( OrderMeta::class ), $this->get( OrderDeliveryEligibility::class ) ),
 			ShippingLabelActions::class => new ShippingLabelActions( $this->get( ShippingLabelService::class ), $this->get( OptionRepository::class ), $this->get( ShippingLabelBulkTokenStore::class ), $this->get( ShippingLabelOrderResolver::class ), $this->get( ShippingLabelPdfResponse::class ) ),
 			default => throw new \InvalidArgumentException( 'Unknown service: ' . $id ),
 		};

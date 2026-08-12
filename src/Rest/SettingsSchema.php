@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SooCool\WooCommerce\Rest;
 
+use SooCool\WooCommerce\Infrastructure\OptionDefaults;
+
 defined( 'ABSPATH' ) || exit;
 
 final class SettingsSchema {
@@ -15,121 +17,63 @@ final class SettingsSchema {
 		$text           = static fn ( $value ): string => is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
 		$key            = static fn ( $value ): string => is_scalar( $value ) ? sanitize_key( (string) $value ) : '';
 		$bool           = static fn ( $value ): bool => is_scalar( $value ) ? ( filter_var( $value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE ) ?? false ) : false;
+		$bool_validate  = static function ( $value ): bool {
+			if ( is_bool( $value ) ) {
+				return true;
+			}
+			if ( is_int( $value ) ) {
+				return 0 === $value || 1 === $value;
+			}
+			if ( ! is_string( $value ) ) {
+				return false;
+			}
+
+			return in_array( strtolower( trim( $value ) ), array( '0', '1', 'false', 'true' ), true );
+		};
+		$fixed_bool_validate = static fn ( bool $expected ): callable => static function ( $value ) use ( $expected ): bool {
+			if ( is_bool( $value ) ) {
+				return $value === $expected;
+			}
+			if ( is_int( $value ) && ( 0 === $value || 1 === $value ) ) {
+				return (bool) $value === $expected;
+			}
+			if ( ! is_string( $value ) || ! in_array( strtolower( trim( $value ) ), array( '0', '1', 'false', 'true' ), true ) ) {
+				return false;
+			}
+
+			return ( filter_var( $value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE ) ?? ! $expected ) === $expected;
+		};
+		$fixed_text_validate = static fn ( string $expected ): callable => static fn ( $value ): bool => is_string( $value ) && sanitize_text_field( $value ) === $expected;
 		$int            = static fn ( $value ): int => is_scalar( $value ) ? max( 0, absint( $value ) ) : 0;
 		$money          = static fn ( $value ): float => is_scalar( $value ) ? round( (float) str_replace( ',', '.', sanitize_text_field( (string) $value ) ), 2 ) : 0.0;
-		$money_validate = static fn ( $value ): bool => is_scalar( $value ) && is_numeric( str_replace( ',', '.', (string) $value ) ) && (float) str_replace( ',', '.', (string) $value ) >= 0 && (float) str_replace( ',', '.', (string) $value ) <= 999;
-		$time_validate  = static fn ( $value ): bool => is_string( $value ) && preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $value ) === 1;
-		$range_validate  = static fn ( int $min, int $max ): callable => static fn ( $value ): bool => is_numeric( $value ) && (int) $value >= $min && (int) $value <= $max;
-		$time_slot_schema = array(
-			'type'                 => 'object',
-			'additionalProperties' => false,
-			'properties' => array(
-				'id'          => array( 'type' => 'string', 'maxLength' => 64 ),
-				'type'        => array( 'type' => 'string', 'enum' => array( 'daytime', 'evening' ) ),
-				'enabled'     => array(
-					'type' => 'boolean',
-				),
-				'label'       => array(
-					'type'      => 'string',
-					'minLength' => 1,
-					'maxLength' => 80,
-				),
-				'time_from'   => array(
-					'type'    => 'string',
-					'pattern' => '^([01]\\d|2[0-3]):[0-5]\\d$',
-				),
-				'time_to'     => array(
-					'type'    => 'string',
-					'pattern' => '^([01]\\d|2[0-3]):[0-5]\\d$',
-				),
-				'cutoff_time' => array(
-					'type'    => 'string',
-					'pattern' => '^([01]\\d|2[0-3]):[0-5]\\d$',
-				),
-				'weekdays'    => array(
-					'type'     => 'array',
-					'minItems' => 1,
-					'maxItems' => 7,
-					'items'    => array(
-						'type' => 'string',
-						'enum' => $this->validator->allowed_delivery_weekdays(),
-					),
-				),
-				'sort_order'  => array(
-					'type' => 'integer',
-				),
-			),
-		);
+		$money_validate = static function ( $value ): bool {
+			if ( ! is_scalar( $value ) || is_bool( $value ) ) {
+				return false;
+			}
 
-		$delivery_rule_schema = array(
-			'type'                 => 'object',
-			'additionalProperties' => false,
-			'properties'           => array(
-				'enabled'          => array( 'type' => 'boolean' ),
-				'delivery_weekday' => array(
-					'type' => 'string',
-					'enum' => $this->validator->allowed_delivery_weekdays(),
-				),
-				'cutoff_weekday'   => array(
-					'type' => 'string',
-					'enum' => $this->validator->allowed_delivery_weekdays(),
-				),
-				'cutoff_time'      => array(
-					'type'    => 'string',
-					'pattern' => '^([01]\d|2[0-3]):[0-5]\d$',
-				),
-			),
-		);
+			$raw = trim( (string) $value );
+			if ( 1 !== preg_match( '/^\d+(?:[.,]\d{0,2})?$/', $raw ) ) {
+				return false;
+			}
 
-		$schedule_slot_schema = array(
-			'type'                 => 'object',
-			'additionalProperties' => false,
-			'properties' => array(
-				'id'          => array( 'type' => 'string', 'maxLength' => 64 ),
-				'type'        => array( 'type' => 'string', 'enum' => array( 'daytime', 'evening' ) ),
-				'enabled'     => array( 'type' => 'boolean' ),
-				'label'       => array( 'type' => 'string', 'minLength' => 1, 'maxLength' => 80 ),
-				'time_from'   => array(
-					'type'    => 'string',
-					'pattern' => '^([01]\d|2[0-3]):[0-5]\d$',
-				),
-				'time_to'     => array(
-					'type'    => 'string',
-					'pattern' => '^([01]\d|2[0-3]):[0-5]\d$',
-				),
-				'cutoff_time' => array(
-					'type'    => 'string',
-					'pattern' => '^([01]\d|2[0-3]):[0-5]\d$',
-				),
-				'sort_order'  => array( 'type' => 'integer' ),
-			),
-		);
-		$schedule_rule_schema = array(
-			'type'                 => 'object',
-			'additionalProperties' => false,
-			'properties' => array(
-				'enabled'          => array( 'type' => 'boolean' ),
-				'delivery_weekday' => array(
-					'type' => 'string',
-					'enum' => $this->validator->allowed_delivery_weekdays(),
-				),
-				'cutoff_weekday'   => array(
-					'type' => 'string',
-					'enum' => $this->validator->allowed_delivery_weekdays(),
-				),
-				'cutoff_time'      => array(
-					'type'    => 'string',
-					'pattern' => '^([01]\d|2[0-3]):[0-5]\d$',
-				),
-				'sort_order'       => array( 'type' => 'integer' ),
-				'slots'            => array(
-					'type'     => 'array',
-					'minItems' => 1,
-					'maxItems' => 12,
-					'items' => $schedule_slot_schema,
-				),
-			),
-		);
+			$amount = (float) str_replace( ',', '.', $raw );
+			return $amount >= 0 && $amount <= 999;
+		};
+		$range_validate = static fn ( int $min, int $max ): callable => static function ( $value ) use ( $min, $max ): bool {
+			if ( is_int( $value ) ) {
+				$integer = $value;
+			} elseif ( is_string( $value ) && 1 === preg_match( '/^\d+$/', trim( $value ) ) ) {
+				$integer = (int) trim( $value );
+			} else {
+				return false;
+			}
+
+			return $integer >= $min && $integer <= $max;
+		};
+		$time_slot_schema     = $this->time_slot_schema();
+		$delivery_rule_schema = $this->delivery_rule_schema();
+		$schedule_slot_schema = $this->schedule_slot_schema();
+		$schedule_rule_schema = $this->schedule_rule_schema( $schedule_slot_schema );
 
 		return array(
 			'environment'                => array(
@@ -170,11 +114,14 @@ final class SettingsSchema {
 				'type'              => 'boolean',
 				'required'          => false,
 				'sanitize_callback' => $bool,
+				'validate_callback' => $bool_validate,
 			),
 			'enable_pickup'              => array(
 				'type'              => 'boolean',
+				'enum'              => array( OptionDefaults::PICKUP_ENABLED ),
 				'required'          => false,
 				'sanitize_callback' => $bool,
+				'validate_callback' => $fixed_bool_validate( OptionDefaults::PICKUP_ENABLED ),
 			),
 			'order_reference_prefix'     => array(
 				'type'              => 'string',
@@ -201,6 +148,7 @@ final class SettingsSchema {
 				'type'              => 'string',
 				'required'          => false,
 				'sanitize_callback' => $text,
+				'validate_callback' => array( $this->validator, 'validate_phone_or_empty' ),
 			),
 			'pickup_street'              => array(
 				'type'              => 'string',
@@ -228,46 +176,45 @@ final class SettingsSchema {
 				'sanitize_callback' => $key,
 				'validate_callback' => array( $this->validator, 'validate_country' ),
 			),
-			'pickup_days_offset'         => array(
-				'type'              => 'integer',
-				'required'          => false,
-				'sanitize_callback' => $int,
-				'validate_callback' => $range_validate( 0, 29 ),
-			),
 			'pickup_time_from'           => array(
 				'type'              => 'string',
+				'enum'              => array( OptionDefaults::PICKUP_TIME_FROM ),
 				'required'          => false,
 				'sanitize_callback' => $text,
-				'validate_callback' => $time_validate,
+				'validate_callback' => $fixed_text_validate( OptionDefaults::PICKUP_TIME_FROM ),
 			),
 			'pickup_time_to'             => array(
 				'type'              => 'string',
+				'enum'              => array( OptionDefaults::PICKUP_TIME_TO ),
 				'required'          => false,
 				'sanitize_callback' => $text,
-				'validate_callback' => $time_validate,
+				'validate_callback' => $fixed_text_validate( OptionDefaults::PICKUP_TIME_TO ),
 			),
 			'delivery_time_from'         => array(
 				'type'              => 'string',
+				'enum'              => array( OptionDefaults::DELIVERY_TIME_FROM ),
 				'required'          => false,
 				'sanitize_callback' => $text,
-				'validate_callback' => $time_validate,
+				'validate_callback' => $fixed_text_validate( OptionDefaults::DELIVERY_TIME_FROM ),
 			),
 			'delivery_time_to'           => array(
 				'type'              => 'string',
+				'enum'              => array( OptionDefaults::DELIVERY_TIME_TO ),
 				'required'          => false,
 				'sanitize_callback' => $text,
-				'validate_callback' => $time_validate,
+				'validate_callback' => $fixed_text_validate( OptionDefaults::DELIVERY_TIME_TO ),
 			),
 			'delivery_days_offset'       => array(
 				'type'              => 'integer',
 				'required'          => false,
 				'sanitize_callback' => $int,
-				'validate_callback' => $range_validate( 0, 30 ),
+				'validate_callback' => $range_validate( 1, 30 ),
 			),
 			'checkout_delivery_enabled'  => array(
 				'type'              => 'boolean',
 				'required'          => false,
 				'sanitize_callback' => $bool,
+				'validate_callback' => $bool_validate,
 			),
 			'checkout_delivery_days_ahead' => array(
 				'type'              => 'integer',
@@ -312,6 +259,7 @@ final class SettingsSchema {
 				'type'              => 'boolean',
 				'required'          => false,
 				'sanitize_callback' => $bool,
+				'validate_callback' => $bool_validate,
 			),
 			'checkout_delivery_netherlands_surcharge_amount' => array(
 				'type'              => 'number',
@@ -341,6 +289,7 @@ final class SettingsSchema {
 				'type'              => 'boolean',
 				'required'          => false,
 				'sanitize_callback' => $bool,
+				'validate_callback' => $bool_validate,
 			),
 			'checkout_delivery_fee_tax_class' => array(
 				'type'              => 'string',
@@ -350,20 +299,23 @@ final class SettingsSchema {
 			),
 			'auto_submit_enabled'        => array(
 				'type'              => 'boolean',
+				'enum'              => array( OptionDefaults::AUTO_SUBMIT_ENABLED ),
 				'required'          => false,
 				'sanitize_callback' => $bool,
+				'validate_callback' => $fixed_bool_validate( OptionDefaults::AUTO_SUBMIT_ENABLED ),
 			),
 			'auto_submit_status'         => array(
 				'type'              => 'string',
 				'required'          => false,
 				'sanitize_callback' => $key,
-				'enum'              => array( 'pending', 'processing', 'completed', 'on-hold' ),
+				'enum'              => array( OptionDefaults::AUTO_SUBMIT_STATUS ),
 				'validate_callback' => array( $this->validator, 'validate_auto_submit_status' ),
 			),
 			'allow_resubmit'             => array(
 				'type'              => 'boolean',
 				'required'          => false,
 				'sanitize_callback' => $bool,
+				'validate_callback' => $bool_validate,
 			),
 			'label_output'               => array(
 				'type'              => 'string',
@@ -437,4 +389,76 @@ final class SettingsSchema {
 			),
 		);
 	}
+
+	private function slot_schema(): array {
+		return array(
+			'type'                 => 'object',
+			'additionalProperties' => false,
+			'properties'           => array(
+				'id'          => array( 'type' => 'string', 'maxLength' => 64 ),
+				'type'        => array( 'type' => 'string', 'enum' => array( 'daytime', 'evening' ) ),
+				'enabled'     => array( 'type' => 'boolean' ),
+				'label'       => array( 'type' => 'string', 'minLength' => 1, 'maxLength' => 80 ),
+				'time_from'   => array( 'type' => 'string', 'pattern' => '^([01]\d|2[0-3]):[0-5]\d$' ),
+				'time_to'     => array( 'type' => 'string', 'pattern' => '^([01]\d|2[0-3]):[0-5]\d$' ),
+				'cutoff_time' => array( 'type' => 'string', 'pattern' => '^([01]\d|2[0-3]):[0-5]\d$' ),
+			),
+		);
+	}
+
+	private function time_slot_schema(): array {
+		$schema = $this->slot_schema();
+		$schema['properties']['weekdays'] = array(
+			'type'     => 'array',
+			'minItems' => 1,
+			'maxItems' => 7,
+			'items'    => array(
+				'type' => 'string',
+				'enum' => $this->validator->allowed_delivery_weekdays(),
+			),
+		);
+		$schema['properties']['sort_order'] = array( 'type' => 'integer' );
+
+		return $schema;
+	}
+
+	private function schedule_slot_schema(): array {
+		$schema = $this->slot_schema();
+		$schema['properties']['sort_order'] = array( 'type' => 'integer' );
+
+		return $schema;
+	}
+
+	private function delivery_rule_schema(): array {
+		return array(
+			'type'                 => 'object',
+			'additionalProperties' => false,
+			'properties'           => array(
+				'enabled'          => array( 'type' => 'boolean' ),
+				'delivery_weekday' => array(
+					'type' => 'string',
+					'enum' => $this->validator->allowed_delivery_weekdays(),
+				),
+				'cutoff_weekday'   => array(
+					'type' => 'string',
+					'enum' => $this->validator->allowed_delivery_weekdays(),
+				),
+				'cutoff_time'      => array( 'type' => 'string', 'pattern' => '^([01]\d|2[0-3]):[0-5]\d$' ),
+			),
+		);
+	}
+
+	private function schedule_rule_schema( array $slot_schema ): array {
+		$schema = $this->delivery_rule_schema();
+		$schema['properties']['sort_order'] = array( 'type' => 'integer' );
+		$schema['properties']['slots'] = array(
+			'type'     => 'array',
+			'minItems' => 1,
+			'maxItems' => 12,
+			'items'    => $slot_schema,
+		);
+
+		return $schema;
+	}
+
 }
