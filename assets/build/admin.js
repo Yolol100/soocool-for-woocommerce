@@ -276,7 +276,7 @@
         detailsRef.current.open = true;
       }
     }, [props.defaultOpen, props.forceOpen]);
-    return el('details', { className: 'soocool-disclosure' + (props.className ? ' ' + props.className : ''), ref: detailsRef },
+    return el('details', { id: props.id || undefined, className: 'soocool-disclosure' + (props.className ? ' ' + props.className : ''), ref: detailsRef },
       el('summary', { className: 'soocool-disclosure__summary' },
         el('span', null, el('strong', null, props.title), props.description ? el('small', null, props.description) : null),
         el('span', { className: 'soocool-disclosure__chevron', 'aria-hidden': true })
@@ -819,11 +819,52 @@
       next[newIndex] = true;
       setOpenCards(next);
     }
+    function remapRuleIndexedStateAfterRemoval(state, removedIndex){
+      var next = {};
+      Object.keys(state || {}).forEach(function(key){
+        var index = parseInt(key, 10);
+        if (!Number.isInteger(index) || index === removedIndex) { return; }
+        next[index > removedIndex ? index - 1 : index] = state[key];
+      });
+      return next;
+    }
+    function remapOpenSlotsAfterRuleRemoval(state, removedRuleIndex){
+      var next = {};
+      Object.keys(state || {}).forEach(function(key){
+        var match = /^(\d+)-(\d+)$/.exec(key);
+        if (!match) { return; }
+        var ruleIndex = parseInt(match[1], 10);
+        if (ruleIndex === removedRuleIndex) { return; }
+        var targetRuleIndex = ruleIndex > removedRuleIndex ? ruleIndex - 1 : ruleIndex;
+        next[String(targetRuleIndex) + '-' + match[2]] = state[key];
+      });
+      return next;
+    }
+    function remapOpenSlotsAfterSlotRemoval(state, ruleIndex, removedSlotIndex){
+      var next = {};
+      Object.keys(state || {}).forEach(function(key){
+        var match = /^(\d+)-(\d+)$/.exec(key);
+        if (!match) { return; }
+        var currentRuleIndex = parseInt(match[1], 10);
+        var slotIndex = parseInt(match[2], 10);
+        if (currentRuleIndex !== ruleIndex) {
+          next[key] = state[key];
+          return;
+        }
+        if (slotIndex === removedSlotIndex) { return; }
+        var targetSlotIndex = slotIndex > removedSlotIndex ? slotIndex - 1 : slotIndex;
+        next[String(ruleIndex) + '-' + String(targetSlotIndex)] = state[key];
+      });
+      return next;
+    }
     function removeRule(index){
       var schedule = normalizeSchedule().filter(function(rule, ruleIndex){ return ruleIndex !== index; });
       if (!schedule.length) { return; }
       if (!enabledRuleCount(schedule)) { schedule[0] = Object.assign({}, schedule[0], { enabled: true }); }
       setSchedule(schedule);
+      setOpenCards(function(current){ return remapRuleIndexedStateAfterRemoval(current, index); });
+      setExpandedSlotLists(function(current){ return remapRuleIndexedStateAfterRemoval(current, index); });
+      setOpenSlots(function(current){ return remapOpenSlotsAfterRuleRemoval(current, index); });
     }
     function updateRule(index, key, value){
       var schedule = normalizeSchedule().slice();
@@ -857,6 +898,7 @@
       rule.slots = slots;
       schedule[ruleIndex] = rule;
       setSchedule(schedule);
+      setOpenSlots(function(current){ return remapOpenSlotsAfterSlotRemoval(current, ruleIndex, slotIndex); });
     }
     function updateSlot(ruleIndex, slotIndex, key, value){
       var schedule = normalizeSchedule().slice();

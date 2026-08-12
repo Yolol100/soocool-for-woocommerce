@@ -1438,6 +1438,12 @@ display: inline-flex;
 	padding: 14px 16px 14px 0;
 }
 
+.soocool-delivery-schedule-card__actions > .components-base-control,
+.soocool-delivery-schedule-card__actions > .components-button {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
 .soocool-delivery-schedule-card__actions .components-toggle-control {
 display: inline-flex;
 	align-items: center;
@@ -1490,6 +1496,10 @@ position: absolute;
   padding: 0;
   justify-content: center;
   border-radius: 9px;
+}
+
+.soocool-delivery-schedule-card__actions .components-button.is-secondary.is-destructive + .soocool-delivery-schedule-card__expand.components-button {
+  margin-inline-start: -4px;
 }
 
 .soocool-delivery-schedule-card__actions .soocool-delivery-schedule-card__expand.components-button {
@@ -3446,6 +3456,11 @@ display: block;
   justify-content: flex-start;
   flex-direction: column;
   gap: 10px;
+}
+
+.soocool-pickup-status-summary .soocool-status-summary__copy {
+  width: 100%;
+  flex: 0 0 auto;
 }
 
 .soocool-pickup-status-summary .soocool-status-summary__badge {
