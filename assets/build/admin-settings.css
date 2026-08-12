@@ -28,6 +28,7 @@
   --soocool-space-lg: 24px;
   --soocool-shadow-sm: 0 1px 2px rgba(23, 23, 23, 0.05);
   --soocool-color-focus: #7a0010;
+  --soocool-color-focus-field: #c94f5b;
   --soocool-color-focus-gap: #ffffff;
   --soocool-shadow-focus: 0 0 0 2px var(--soocool-color-focus-gap), 0 0 0 4px var(--soocool-color-focus);
   color: var(--soocool-color-text);
@@ -507,8 +508,8 @@ display: block;
 }
 
 .soocool-shell :where(input, textarea, select, .components-text-control__input, .components-input-control__input, .components-select-control__input):focus {
-border-color: var(--soocool-color-accent);
-  box-shadow: var(--soocool-shadow-focus);
+  border-color: var(--soocool-color-focus-field);
+  box-shadow: none;
   outline: none;
 }
 
@@ -542,7 +543,7 @@ width: 100%;
 position: relative;
   width: 100%;
   max-width: none;
-  min-height: 42px;
+  min-height: 44px;
   margin: 0;
   color: var(--soocool-color-text);
   font-size: 14px;
@@ -563,15 +564,15 @@ border: 1px solid var(--soocool-color-border-strong);
 }
 
 #soocool-admin-app .soocool-shell .components-select-control:focus-within .components-input-control__backdrop {
-border-color: var(--soocool-color-focus);
-  box-shadow: var(--soocool-shadow-focus);
+  border-color: var(--soocool-color-focus-field);
+  box-shadow: none;
 }
 
 #soocool-admin-app .soocool-shell .components-select-control select {
 display: block;
   width: 100%;
   max-width: none;
-  min-height: 42px;
+  min-height: 44px;
   margin: 0;
   padding: 8px 36px 8px 12px;
   color: var(--soocool-color-text);
@@ -584,9 +585,9 @@ display: block;
 }
 
 #soocool-admin-app .soocool-shell .components-select-control select:focus {
-outline: 2px solid transparent;
-  outline-offset: 2px;
-  box-shadow: none;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
 }
 
 #soocool-admin-app .soocool-shell .soocool-compact-label-control .components-base-control__field,
@@ -1072,14 +1073,14 @@ min-height: 44px;
   line-height: 20px;
 }
 
-.soocool-shell .components-text-control__input:focus,
-.soocool-shell .components-input-control__input:focus,
-.soocool-shell .components-select-control__input:focus,
-.soocool-shell input:focus,
-.soocool-shell textarea:focus {
-border-color: var(--soocool-color-accent);
-  box-shadow: var(--soocool-shadow-focus);
-  outline: none;
+#soocool-admin-app .soocool-shell .components-text-control__input:focus,
+#soocool-admin-app .soocool-shell .components-input-control__input:focus,
+#soocool-admin-app .soocool-shell .components-select-control__input:focus,
+#soocool-admin-app .soocool-shell input:focus,
+#soocool-admin-app .soocool-shell textarea:focus {
+  border-color: var(--soocool-color-focus-field) !important;
+  box-shadow: none !important;
+  outline: 0 !important;
 }
 
 .soocool-shell .soocool-card .soocool-field-grid.two > .components-select-control:only-child,
@@ -1152,26 +1153,31 @@ border-color: transparent;
   box-shadow: none;
 }
 
-.soocool-shell .components-input-control__container:focus-within .components-input-control__input,
-.soocool-shell .components-select-control .components-input-control__container:focus-within .components-select-control__input {
-border-color: transparent;
-  outline: 0;
-  box-shadow: none;
+#soocool-admin-app .soocool-shell .components-input-control__container:focus-within .components-input-control__input,
+#soocool-admin-app .soocool-shell .components-select-control .components-input-control__container:focus-within .components-select-control__input {
+  border-color: transparent !important;
+  outline: 0 !important;
+  box-shadow: none !important;
 }
 
-.soocool-shell .components-input-control__container:focus-within .components-input-control__backdrop,
-.soocool-shell .components-select-control .components-input-control__container:focus-within .components-input-control__backdrop,
-.soocool-shell .components-select-control:focus-within .components-input-control__backdrop {
-border-color: var(--soocool-color-accent);
-  box-shadow: var(--soocool-shadow-focus);
-  outline: 0;
+#soocool-admin-app .soocool-shell .components-input-control__container:focus-within .components-input-control__backdrop,
+#soocool-admin-app .soocool-shell .components-select-control .components-input-control__container:focus-within .components-input-control__backdrop,
+#soocool-admin-app .soocool-shell .components-select-control:focus-within .components-input-control__backdrop {
+  border-color: var(--soocool-color-focus-field) !important;
+  box-shadow: none !important;
+  outline: 0 !important;
 }
 
-.soocool-shell select:focus,
-.soocool-shell select.components-select-control__input:focus {
-border-color: var(--soocool-color-accent);
-  outline: 0;
-  box-shadow: var(--soocool-shadow-focus);
+#soocool-admin-app .soocool-shell select:not(.components-select-control__input):focus {
+  border-color: var(--soocool-color-focus-field) !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+#soocool-admin-app .soocool-shell .components-select-control select.components-select-control__input:focus {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
 }
 
 .soocool-delivery-dashboard {
@@ -1384,45 +1390,21 @@ display: grid;
 	border-bottom: 1px solid #f0f0f1;
 }
 
-#soocool-admin-app .soocool-shell .soocool-delivery-schedule-card__toggle.components-button {
-display: flex;
-	align-items: center;
-	justify-content: flex-start;
-	gap: 12px;
-	width: 100%;
-	min-height: 70px;
-	height: auto;
-	padding: 16px 20px;
-	background: #ffffff !important;
-	border: 0 !important;
-	border-radius: 0;
-	box-shadow: none !important;
-	color: #1d2327 !important;
-	font: inherit;
-	text-align: left;
-	cursor: pointer;
+.soocool-delivery-schedule-card__summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 70px;
+  padding: 16px 20px;
+  flex-wrap: wrap;
 }
 
-#soocool-admin-app .soocool-shell .soocool-delivery-schedule-card__toggle.components-button:hover,
-#soocool-admin-app .soocool-shell .soocool-delivery-schedule-card__toggle.components-button:focus {
-	background: var(--soocool-color-surface-soft) !important;
-	color: var(--soocool-color-text) !important;
-}
-
-.soocool-delivery-schedule-card__toggle:focus-visible,
 .soocool-delivery-slot-edit.components-button:focus-visible,
 .soocool-delivery-slots-more.components-button:focus-visible {
-outline: 2px solid #c5161d;
-	outline-offset: 3px;
-	border-radius: 6px;
-}
-
-.soocool-delivery-schedule-card__summary {
-display: flex;
-	align-items: center;
-	gap: 12px;
-	min-width: 0;
-	flex-wrap: wrap;
+  outline: 2px solid #c5161d;
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
 .soocool-delivery-schedule-card__title {
@@ -1446,13 +1428,6 @@ display: inline-flex;
 	font-weight: 600;
 	line-height: 1;
 	padding: 5px 9px;
-}
-
-.soocool-delivery-schedule-card__edit-text {
-margin-left: auto;
-	color: #8a1217;
-	font-size: 13px;
-	font-weight: 600;
 }
 
 .soocool-delivery-schedule-card__actions {
@@ -1507,12 +1482,26 @@ position: absolute;
 	border: 0;
 }
 
-.soocool-delivery-schedule-card__actions .components-button.is-secondary.is-destructive {
-min-width: 42px;
-	height: 42px;
-	padding: 0;
-	justify-content: center;
-	border-radius: 9px;
+.soocool-delivery-schedule-card__actions .components-button.is-secondary.is-destructive,
+.soocool-delivery-schedule-card__actions .soocool-delivery-schedule-card__expand.components-button {
+  min-width: 42px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 9px;
+}
+
+.soocool-delivery-schedule-card__actions .soocool-delivery-schedule-card__expand.components-button {
+  color: var(--soocool-color-text);
+  background: #fff;
+  border-color: var(--soocool-color-border);
+}
+
+.soocool-delivery-schedule-card__actions .soocool-delivery-schedule-card__expand.components-button:hover {
+  color: var(--soocool-color-accent);
+  border-color: rgba(191, 4, 19, 0.45);
+  background: #fffafa;
 }
 
 .soocool-delivery-schedule-card__panel {
@@ -1844,12 +1833,8 @@ border-color: #c5161d;
   }
 
   .soocool-delivery-schedule-card__actions {
-  padding-left: 0;
-  		justify-content: space-between;
-  }
-
-  .soocool-delivery-schedule-card__edit-text {
-    margin-left: 0;
+    padding: 0 12px 12px;
+    justify-content: flex-end;
   }
 
   .soocool-delivery-schedule-card__actions .components-toggle-control {
@@ -2675,8 +2660,8 @@ margin: 0;
   }
 }
 
-#soocool-admin-app .soocool-shell :where(button, a[href], input, textarea, select, summary, [role="button"], [role="tab"], [tabindex]:not([tabindex="-1"])):focus-visible,
-.soocool-confirm-modal :where(button, a[href], input, textarea, select, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+#soocool-admin-app .soocool-shell :where(button, a[href], summary, [role="button"], [role="tab"], [tabindex]:not([tabindex="-1"])):focus-visible,
+.soocool-confirm-modal :where(button, a[href], summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: 2px solid var(--soocool-color-focus);
   outline-offset: 2px;
   box-shadow: var(--soocool-shadow-focus) !important;
@@ -3351,18 +3336,41 @@ display: block;
   border: 0 !important;
 }
 
-/* Compact form labels and fixed-status summaries. Keep selectors explicit so source and production CSS remain semantically identical. */
-#soocool-admin-app .soocool-shell .soocool-environment-control .components-base-control__label,
-#soocool-admin-app .soocool-shell .soocool-environment-control .components-input-control__label,
-#soocool-admin-app .soocool-shell .soocool-environment-control .components-select-control__label,
-#soocool-admin-app .soocool-shell .soocool-environment-control label.components-input-control__label {
-  margin: 0 0 4px;
+/* Stable environment field alignment.
+ * This field deliberately uses native label/select markup so its vertical rhythm
+ * does not depend on private @wordpress/components SelectControl wrappers. */
+#soocool-admin-app .soocool-shell .soocool-native-field {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+}
+
+#soocool-admin-app .soocool-shell .soocool-native-field__label {
+  display: block;
+  margin: 0 0 8px;
   color: var(--soocool-color-text);
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: 0;
   line-height: 18px;
   text-transform: none;
+}
+
+#soocool-admin-app .soocool-shell .soocool-native-field__control {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  box-sizing: border-box;
+}
+
+#soocool-admin-app .soocool-shell .soocool-native-field > .soocool-field-help {
+  margin: 8px 0 0;
 }
 
 .soocool-status-summary {
@@ -3429,11 +3437,23 @@ display: block;
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .soocool-pickup-status-summary {
   min-height: 82px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.soocool-pickup-status-summary .soocool-status-summary__badge {
+  align-self: flex-start;
+}
+
+.soocool-pickup-status-summary .soocool-status-summary__title {
+  font-weight: 600;
 }
 
 .soocool-pickup-prefix-card {
@@ -3449,7 +3469,7 @@ display: block;
 #soocool-admin-app .soocool-pickup-prefix-card .components-input-control__label,
 #soocool-admin-app .soocool-pickup-prefix-card label.components-input-control__label {
   margin-bottom: 4px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 
@@ -3460,6 +3480,7 @@ display: block;
 
   .soocool-pickup-status-summary {
     min-height: 0;
+    align-items: flex-start;
   }
 }
 

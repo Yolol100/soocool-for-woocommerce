@@ -255,7 +255,7 @@
     if (!props.open) { return null; }
     var descriptionId = 'soocool-confirm-' + slugId(props.title || 'dialog');
     var modalClass = 'soocool-confirm-modal' + (props.destructive ? ' is-destructive' : '');
-    return el(c.Modal, { title: props.title, onRequestClose: props.busy ? function(){} : props.onCancel, className: modalClass, shouldCloseOnClickOutside: !props.busy, shouldCloseOnEsc: !props.busy, 'aria.describedby': descriptionId },
+    return el(c.Modal, { title: props.title, onRequestClose: props.busy ? function(){} : props.onCancel, className: modalClass, shouldCloseOnClickOutside: !props.busy, shouldCloseOnEsc: !props.busy, 'aria-describedby': descriptionId },
       el('div', { className: 'soocool-confirm-content' },
         el('span', { className: 'soocool-confirm-icon', 'aria-hidden': true }, '!'),
         el('div', { className: 'soocool-confirm-content__copy', id: descriptionId },
@@ -585,7 +585,14 @@
       !activeKeyPresent ? el(c.Notice, { status: 'warning', isDismissible: false }, __('Voeg voor de actieve omgeving een API-key toe voordat je de verbinding test.', 'soocool-for-woocommerce')) : null,
       el(Card, null,
         el('div', { className: 'soocool-field-grid two' },
-          el(c.SelectControl, { className: 'soocool-environment-control', label: __('SooCool-omgeving', 'soocool-for-woocommerce'), value: currentEnvironment, options: [{ label: 'Test', value: 'test' }, { label: __('Productie', 'soocool-for-woocommerce'), value: 'production' }], help: __('De actieve omgeving bepaalt automatisch welke API-key en basis-URL gebruikt worden.', 'soocool-for-woocommerce'), onChange: function(v){ upd('environment', v); } }),
+          el('div', { className: 'soocool-native-field soocool-environment-field' },
+            el('label', { className: 'soocool-native-field__label', htmlFor: 'soocool-environment-select' }, __('SooCool-omgeving', 'soocool-for-woocommerce')),
+            el('select', { id: 'soocool-environment-select', className: 'soocool-native-field__control', value: currentEnvironment, 'aria-describedby': 'soocool-environment-help', onChange: function(event){ upd('environment', event.target.value); } },
+              el('option', { value: 'test' }, 'Test'),
+              el('option', { value: 'production' }, __('Productie', 'soocool-for-woocommerce'))
+            ),
+            el('p', { id: 'soocool-environment-help', className: 'soocool-field-help' }, __('De actieve omgeving bepaalt automatisch welke API-key en basis-URL gebruikt worden.', 'soocool-for-woocommerce'))
+          ),
           currentEnvironment === 'test'
             ? el(c.TextControl, { type: 'password', maxLength: 512, label: __('Test API-key', 'soocool-for-woocommerce'), help: apiKeyManagedByConstant ? managedApiKeyHelp : __('Actief: deze key wordt gebruikt voor testaanvragen.', 'soocool-for-woocommerce'), value: settings.test_api_key || '', disabled: apiKeyManagedByConstant, 'aria-invalid': !isApiKeyInputValid(settings.test_api_key) ? 'true' : 'false', onFocus: function(){ if (isMaskedSecretValue(settings.test_api_key)) { upd('test_api_key', ''); } }, onClick: function(){ if (isMaskedSecretValue(settings.test_api_key)) { upd('test_api_key', ''); } }, onChange: function(v){ upd('test_api_key', v); } })
             : el(c.TextControl, { type: 'password', maxLength: 512, label: __('Productie API-key', 'soocool-for-woocommerce'), help: apiKeyManagedByConstant ? managedApiKeyHelp : __('Actief: deze key wordt gebruikt voor productieaanvragen.', 'soocool-for-woocommerce'), value: settings.production_api_key || '', disabled: apiKeyManagedByConstant, 'aria-invalid': !isApiKeyInputValid(settings.production_api_key) ? 'true' : 'false', onFocus: function(){ if (isMaskedSecretValue(settings.production_api_key)) { upd('production_api_key', ''); } }, onClick: function(){ if (isMaskedSecretValue(settings.production_api_key)) { upd('production_api_key', ''); } }, onChange: function(v){ upd('production_api_key', v); } }),
@@ -963,25 +970,26 @@
               var isOpen = openCards[ruleIndex] === true;
               var panelId = 'soocool-delivery-schedule-panel-' + ruleIndex;
               var buttonId = 'soocool-delivery-schedule-button-' + ruleIndex;
+              var titleId = 'soocool-delivery-schedule-title-' + ruleIndex;
               var slots = Array.isArray(rule.slots) ? rule.slots : [];
               var activeSlots = slots.filter(function(slot){ return slot.enabled !== false; }).length;
+              var dayLabel = weekdayByValue[rule.delivery_weekday] || rule.delivery_weekday;
               return el('article', { className: 'soocool-delivery-schedule-card' + (rule.enabled === false ? ' is-disabled' : ''), key: ruleIndex },
                 el('div', { className: 'soocool-delivery-schedule-card__top' },
-                  el(c.Button, { variant: 'tertiary', id: buttonId, className: 'soocool-delivery-schedule-card__toggle', 'aria-expanded': isOpen ? 'true' : 'false', 'aria-controls': panelId, onClick: function(){ toggleCard(ruleIndex); } },
-                    el('span', { className: 'soocool-delivery-schedule-card__summary' },
-                      el('span', { className: 'soocool-delivery-schedule-card__title' }, weekdayByValue[rule.delivery_weekday] || rule.delivery_weekday),
-                      el('span', { className: 'soocool-delivery-schedule-card__meta' }, __('Bestelbaar t/m', 'soocool-for-woocommerce') + ' ' + (weekdayByValue[rule.cutoff_weekday] || rule.cutoff_weekday) + ' ' + (rule.cutoff_time || '13:00')),
-                      el('span', { className: 'soocool-delivery-schedule-card__count' }, activeSlots + ' ' + __('actieve dagdelen', 'soocool-for-woocommerce'))
-                    ),
-                    !isOpen ? el('span', { className: 'soocool-delivery-schedule-card__edit-text' }, __('Bewerken', 'soocool-for-woocommerce')) : null,
-                    el('span', { className: 'dashicons ' + (isOpen ? 'dashicons-arrow-up-alt2' : 'dashicons-edit'), 'aria-hidden': true })
+                  el('div', { className: 'soocool-delivery-schedule-card__summary' },
+                    el('span', { id: titleId, className: 'soocool-delivery-schedule-card__title' }, dayLabel),
+                    el('span', { className: 'soocool-delivery-schedule-card__meta' }, __('Bestelbaar t/m', 'soocool-for-woocommerce') + ' ' + (weekdayByValue[rule.cutoff_weekday] || rule.cutoff_weekday) + ' ' + (rule.cutoff_time || '13:00')),
+                    el('span', { className: 'soocool-delivery-schedule-card__count' }, activeSlots + ' ' + __('actieve dagdelen', 'soocool-for-woocommerce'))
                   ),
                   el('div', { className: 'soocool-delivery-schedule-card__actions' },
                     el(c.ToggleControl, { label: __('Actief', 'soocool-for-woocommerce'), checked: rule.enabled !== false, disabled: !deliveryEnabled, onChange: function(v){ updateRule(ruleIndex, 'enabled', v); } }),
-                    el(c.Button, { variant: 'secondary', isDestructive: true, disabled: !deliveryEnabled || schedule.length <= 1, onClick: function(){ removeRule(ruleIndex); }, 'aria-label': __('Verwijder bezorgdag', 'soocool-for-woocommerce') + ': ' + (weekdayByValue[rule.delivery_weekday] || rule.delivery_weekday) }, el('span', { className: 'dashicons dashicons-trash', 'aria-hidden': true }))
+                    el(c.Button, { variant: 'secondary', isDestructive: true, disabled: !deliveryEnabled || schedule.length <= 1, onClick: function(){ removeRule(ruleIndex); }, 'aria-label': __('Verwijder bezorgdag', 'soocool-for-woocommerce') + ': ' + dayLabel }, el('span', { className: 'dashicons dashicons-trash', 'aria-hidden': true })),
+                    el(c.Button, { variant: 'secondary', id: buttonId, className: 'soocool-delivery-schedule-card__expand', 'aria-expanded': isOpen ? 'true' : 'false', 'aria-controls': panelId, 'aria-label': (isOpen ? __('Sluiten', 'soocool-for-woocommerce') : __('Bewerken', 'soocool-for-woocommerce')) + ': ' + dayLabel, onClick: function(){ toggleCard(ruleIndex); } },
+                      el('span', { className: 'dashicons ' + (isOpen ? 'dashicons-arrow-up-alt2' : 'dashicons-arrow-down-alt2'), 'aria-hidden': true })
+                    )
                   )
                 ),
-                isOpen ? el('div', { id: panelId, className: 'soocool-delivery-schedule-card__panel', role: 'region', 'aria-labelledby': buttonId },
+                isOpen ? el('div', { id: panelId, className: 'soocool-delivery-schedule-card__panel', role: 'region', 'aria-labelledby': titleId },
                   el('div', { className: 'soocool-delivery-schedule-fields' },
                     el('div', { className: 'soocool-delivery-schedule-field' },
                       el('span', { className: 'soocool-delivery-schedule-field__label' }, __('Bezorgdag', 'soocool-for-woocommerce')),

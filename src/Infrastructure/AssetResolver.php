@@ -35,8 +35,14 @@ final class AssetResolver {
 			return $fallback;
 		}
 
-		$mtime        = filemtime( $path );
 		$base_version = '' !== trim( $fallback ) ? trim( $fallback ) : SOOCOOL_VERSION;
+		$content_hash = hash_file( 'sha256', $path );
+
+		if ( is_string( $content_hash ) && '' !== $content_hash ) {
+			return $base_version . '-' . substr( $content_hash, 0, 12 );
+		}
+
+		$mtime = filemtime( $path );
 
 		return false !== $mtime ? $base_version . '-' . (string) $mtime : $base_version;
 	}
