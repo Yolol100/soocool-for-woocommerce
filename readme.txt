@@ -100,7 +100,7 @@ Uninstall removes plugin settings, plugin-owned logs, locks, transients and temp
 == Changelog ==
 
 = 0.7.147 =
-* Verhoogt de releaseversie naar 0.7.147; functionele pluginlogica blijft gelijk aan de gecontroleerde 0.7.108-release.
+* Herstelt verouderde SooCool-koppelingen automatisch en voorkomt een harde reload van het WooCommerce-orderbewerkingsscherm nadat de beheerder de pagina heeft gewijzigd; bestaande remote orders worden veilig gekoppeld zonder dubbele SooCool-order.
 
 = 0.7.108 =
 * Scheidt echte synchronisatiefouten van fouten tijdens bijwerken, vernieuwen en annuleren van al gekoppelde SooCool-orders.

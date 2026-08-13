@@ -467,6 +467,39 @@
   }
 
 
+  var reconciliationPageDirty = false;
+
+  function markReconciliationPageDirty(event) {
+    var target = event && event.target ? event.target : null;
+    if (target && closest(target, '.soocool-order-sync-action')) {
+      return;
+    }
+    reconciliationPageDirty = true;
+  }
+
+  function reconciliationReloadPolicy(button) {
+    return closest(button, '.soocool-order-card') ? 'when-clean' : 'always';
+  }
+
+  function bindReconciliationDirtyTracking(buttons) {
+    var needsCleanReload = buttons.some(function (button) {
+      return reconciliationReloadPolicy(button) === 'when-clean';
+    });
+    if (!needsCleanReload) {
+      return;
+    }
+
+    document.addEventListener('input', markReconciliationPageDirty, true);
+    document.addEventListener('change', markReconciliationPageDirty, true);
+    document.addEventListener('click', function (event) {
+      var control = event && event.target ? closest(event.target, 'button, input[type="button"], input[type="submit"], a.button') : null;
+      if (control && !closest(control, '.soocool-order-sync-action')) {
+        reconciliationPageDirty = true;
+      }
+    }, true);
+  }
+
+
   function reconciliationStorageKey(button) {
     return 'soocool-order-reconcile:' + (button.getAttribute('data-order-id') || '');
   }
@@ -544,8 +577,12 @@
       return;
     }
 
+    bindReconciliationDirtyTracking(buttons);
+
     var index = 0;
     var repaired = false;
+    var alwaysReload = false;
+    var cleanReloadButtons = [];
     var workers = [];
     var workerCount = Math.min(2, buttons.length);
 
@@ -555,7 +592,14 @@
         return Promise.resolve();
       }
       return reconcileStaleOrder(button).then(function (wasReconciled) {
-        repaired = repaired || wasReconciled;
+        if (wasReconciled) {
+          repaired = true;
+          if (reconciliationReloadPolicy(button) === 'when-clean') {
+            cleanReloadButtons.push(button);
+          } else {
+            alwaysReload = true;
+          }
+        }
         return worker();
       });
     }
@@ -565,9 +609,17 @@
     }
 
     Promise.all(workers).then(function () {
-      if (repaired) {
-        window.location.reload();
+      if (!repaired) {
+        return;
       }
+      if (alwaysReload || !reconciliationPageDirty) {
+        window.location.reload();
+        return;
+      }
+
+      cleanReloadButtons.forEach(function (button) {
+        manualSyncFeedback(button, manualSyncMessages.success || '', 'success');
+      });
     });
   }
 
