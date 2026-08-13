@@ -119,7 +119,7 @@ final class OrderListColumn {
 			: ( $is_pending ? __( 'Nu synchroniseren', 'soocool-for-woocommerce' ) : __( 'Synchroniseer nu', 'soocool-for-woocommerce' ) );
 
 		echo '<div class="soocool-list-sync-action soocool-order-sync-action">';
-		echo '<button type="button" class="button button-secondary soocool-list-sync-action__button" data-soocool-manual-sync="1" data-action="' . esc_attr( OrderActions::MANUAL_SYNC_AJAX_ACTION ) . '" data-order-id="' . esc_attr( (string) $order_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( OrderActions::MANUAL_SYNC_NONCE_ACTION . $order_id ) ) . '" data-soocool-confirm="' . esc_attr__( 'Deze order nu naar SooCool synchroniseren?', 'soocool-for-woocommerce' ) . '">' . esc_html( $button_label ) . '</button>';
+		echo '<button type="button" class="button button-secondary soocool-list-sync-action__button" data-soocool-manual-sync="1" data-action="' . esc_attr( OrderActions::MANUAL_SYNC_AJAX_ACTION ) . '" data-order-id="' . esc_attr( (string) $order_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( OrderActions::MANUAL_SYNC_NONCE_ACTION . $order_id ) ) . '" data-soocool-confirm="' . esc_attr__( 'Deze order nu naar SooCool synchroniseren?', 'soocool-for-woocommerce' ) . '"' . ( $this->meta->is_synced( $order ) ? ' data-soocool-auto-reconcile="1" data-soocool-reconcile-action="' . esc_attr( OrderActions::RECONCILE_AJAX_ACTION ) . '"' : '' ) . '>' . esc_html( $button_label ) . '</button>';
 		echo '<div class="soocool-order-alert soocool-manual-sync-feedback" hidden aria-live="polite"></div>';
 
 		$error = $this->presenter->display_error( $this->meta->get_last_error( $order ) );

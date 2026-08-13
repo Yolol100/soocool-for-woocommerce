@@ -133,7 +133,7 @@ final class OrderMetaBox {
 
 		echo '<div class="soocool-order-action-group soocool-order-sync-action">';
 		echo '<div class="soocool-order-action-group__title">' . esc_html__( 'Synchronisatie', 'soocool-for-woocommerce' ) . '</div>';
-		echo '<button type="button" class="button button-primary soocool-order-button" data-soocool-manual-sync="1" data-action="' . esc_attr( OrderActions::MANUAL_SYNC_AJAX_ACTION ) . '" data-order-id="' . esc_attr( (string) $order_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( OrderActions::MANUAL_SYNC_NONCE_ACTION . $order_id ) ) . '" data-soocool-confirm="' . esc_attr__( 'Deze order nu naar SooCool synchroniseren?', 'soocool-for-woocommerce' ) . '">' . esc_html( $button_label ) . '</button>';
+		echo '<button type="button" class="button button-primary soocool-order-button" data-soocool-manual-sync="1" data-action="' . esc_attr( OrderActions::MANUAL_SYNC_AJAX_ACTION ) . '" data-order-id="' . esc_attr( (string) $order_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( OrderActions::MANUAL_SYNC_NONCE_ACTION . $order_id ) ) . '" data-soocool-confirm="' . esc_attr__( 'Deze order nu naar SooCool synchroniseren?', 'soocool-for-woocommerce' ) . '"' . ( $this->meta->is_synced( $order ) ? ' data-soocool-auto-reconcile="1" data-soocool-reconcile-action="' . esc_attr( OrderActions::RECONCILE_AJAX_ACTION ) . '"' : '' ) . '>' . esc_html( $button_label ) . '</button>';
 		echo '<p class="description soocool-order-action-help">' . esc_html( $help ) . '</p>';
 		echo '<div class="soocool-order-alert soocool-manual-sync-feedback" hidden aria-live="polite"></div>';
 		echo '</div>';

@@ -466,6 +466,117 @@
     return true;
   }
 
+
+  function reconciliationStorageKey(button) {
+    return 'soocool-order-reconcile:' + (button.getAttribute('data-order-id') || '');
+  }
+
+  function reconciliationRecentlyAttempted(button) {
+    try {
+      var value = window.sessionStorage.getItem(reconciliationStorageKey(button));
+      var timestamp = value ? parseInt(value, 10) : 0;
+      return timestamp > 0 && (Date.now() - timestamp) < 300000;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function rememberReconciliationAttempt(button) {
+    try {
+      window.sessionStorage.setItem(reconciliationStorageKey(button), String(Date.now()));
+    } catch (error) {
+      // Storage can be unavailable in restricted browser contexts; reconciliation can still continue.
+    }
+  }
+
+  function reconcileStaleOrder(button) {
+    var ajaxUrl = config.ajaxUrl || window.ajaxurl || '';
+    var action = button.getAttribute('data-soocool-reconcile-action') || '';
+    var orderId = button.getAttribute('data-order-id') || '';
+    var nonce = button.getAttribute('data-nonce') || '';
+    if (!ajaxUrl || !action || !orderId || !nonce || typeof window.fetch !== 'function') {
+      return Promise.resolve(false);
+    }
+
+    var body = new URLSearchParams();
+    body.set('action', action);
+    body.set('order_id', orderId);
+    body.set('_ajax_nonce', nonce);
+
+    var controller = typeof window.AbortController === 'function' ? new window.AbortController() : null;
+    var timeout = window.setTimeout(function () {
+      if (controller) {
+        controller.abort();
+      }
+    }, 30000);
+
+    return window.fetch(ajaxUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: body.toString(),
+      signal: controller ? controller.signal : undefined
+    }).then(function (response) {
+      return response.json().catch(function () { return null; });
+    }).then(function (payload) {
+      return !!(payload && payload.success && payload.data && payload.data.reconciled === true);
+    }).catch(function () {
+      return false;
+    }).finally(function () {
+      window.clearTimeout(timeout);
+    });
+  }
+
+  function reconcileVisibleStaleOrders() {
+    if (!document.querySelectorAll || typeof Promise !== 'function') {
+      return;
+    }
+
+    var buttons = Array.prototype.slice.call(document.querySelectorAll('[data-soocool-auto-reconcile="1"]'));
+    buttons = buttons.filter(function (button) {
+      if (reconciliationRecentlyAttempted(button)) {
+        return false;
+      }
+      rememberReconciliationAttempt(button);
+      return true;
+    });
+    if (!buttons.length) {
+      return;
+    }
+
+    var index = 0;
+    var repaired = false;
+    var workers = [];
+    var workerCount = Math.min(2, buttons.length);
+
+    function worker() {
+      var button = buttons[index++];
+      if (!button) {
+        return Promise.resolve();
+      }
+      return reconcileStaleOrder(button).then(function (wasReconciled) {
+        repaired = repaired || wasReconciled;
+        return worker();
+      });
+    }
+
+    while (workers.length < workerCount) {
+      workers.push(worker());
+    }
+
+    Promise.all(workers).then(function () {
+      if (repaired) {
+        window.location.reload();
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', reconcileVisibleStaleOrders, { once: true });
+  } else {
+    reconcileVisibleStaleOrders();
+  }
+
   document.addEventListener('click', confirmClick, true);
   document.addEventListener('submit', confirmSubmit, true);
 }());

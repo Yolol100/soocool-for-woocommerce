@@ -28,8 +28,9 @@ final class OrderActions {
 	public const QUEUE_DUPLICATE          = 'duplicate';
 	public const QUEUE_FAILED             = 'failed';
 	public const QUEUE_MANUAL             = 'manual';
-	public const MANUAL_SYNC_AJAX_ACTION  = 'soocool_manual_sync_order';
-	public const MANUAL_SYNC_NONCE_ACTION = 'soocool_manual_sync_order_';
+	public const MANUAL_SYNC_AJAX_ACTION   = 'soocool_manual_sync_order';
+	public const RECONCILE_AJAX_ACTION     = 'soocool_reconcile_order_link';
+	public const MANUAL_SYNC_NONCE_ACTION  = 'soocool_manual_sync_order_';
 
 	private const RETRY_DELAYS_SECONDS   = array( 60, 300, 900 );
 	private const WATCHDOG_DELAY_SECONDS = 120;
@@ -85,6 +86,7 @@ final class OrderActions {
 		add_action( 'admin_notices', array( $this->meta_box, 'render_delivery_date_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( $this->confirm_script, 'enqueue' ) );
 		add_action( 'wp_ajax_' . self::MANUAL_SYNC_AJAX_ACTION, array( $this, 'handle_manual_sync' ) );
+		add_action( 'wp_ajax_' . self::RECONCILE_AJAX_ACTION, array( $this, 'handle_reconcile_link' ) );
 		add_action( self::SYNC_HOOK, array( $this, 'send_order_by_id' ), 10, 3 );
 		add_action( self::RESYNC_HOOK, array( $this, 'resync_order_by_id' ), 10, 3 );
 		add_action( self::WATCHDOG_HOOK, array( $this, 'run_sync_watchdog' ), 10, 4 );
@@ -439,6 +441,61 @@ final class OrderActions {
 
 		$status = isset( $result['status'] ) ? (int) $result['status'] : 400;
 		wp_send_json_error( $data, $status >= 400 && $status <= 599 ? $status : 400 );
+	}
+
+	public function handle_reconcile_link(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Order ID is needed to build the order-specific nonce action and is sanitized before the nonce check.
+		$order_id = isset( $_POST['order_id'] ) && is_scalar( $_POST['order_id'] ) ? ( NumericIdentifier::positive( wp_unslash( (string) $_POST['order_id'] ) ) ?? 0 ) : 0;
+		if ( 0 >= $order_id ) {
+			wp_send_json_error( array( 'message' => __( 'Ongeldige order.', 'soocool-for-woocommerce' ) ), 400 );
+		}
+
+		check_ajax_referer( self::MANUAL_SYNC_NONCE_ACTION . $order_id );
+
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Je mag deze order niet synchroniseren.', 'soocool-for-woocommerce' ) ), 403 );
+		}
+
+		$order = wc_get_order( $order_id );
+		if ( ! $order instanceof WC_Order ) {
+			wp_send_json_error( array( 'message' => __( 'Order niet gevonden.', 'soocool-for-woocommerce' ) ), 404 );
+		}
+
+		// Only repair a stale local link. A genuinely unsynchronised order is never sent from this endpoint.
+		if ( ! $this->meta->is_synced( $order ) ) {
+			wp_send_json_success( array( 'reconciled' => false ) );
+		}
+
+		if ( $this->is_synced_in_current_provider( $order ) ) {
+			wp_send_json_success( array( 'reconciled' => true ) );
+		}
+
+		$result = $this->coordinator->refresh_order( $order );
+		if ( method_exists( $order, 'read_meta_data' ) ) {
+			$order->read_meta_data( true );
+		}
+
+		$success    = (bool) ( $result['success'] ?? false );
+		$reconciled = $this->is_synced_in_current_provider( $order );
+		$message    = sanitize_text_field( (string) ( $result['message'] ?? __( 'SooCool-statusupdate mislukt. Controleer de SooCool-logs voor details.', 'soocool-for-woocommerce' ) ) );
+
+		if ( $success && $reconciled ) {
+			wp_send_json_success(
+				array(
+					'reconciled' => true,
+					'message'    => $message,
+				)
+			);
+		}
+
+		$status = isset( $result['status'] ) ? (int) $result['status'] : 409;
+		wp_send_json_error(
+			array(
+				'reconciled' => false,
+				'message'    => $message,
+			),
+			$status >= 400 && $status <= 599 ? $status : 409
+		);
 	}
 
 	public function update_at_soocool( WC_Order $order ): void {
