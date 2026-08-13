@@ -9,7 +9,7 @@ defined( 'ABSPATH' ) || exit;
 final class AssetResolver {
 
 	public static function filename( string $relative_directory, string $base, string $extension ): string {
-		$suffixes = self::asset_suffixes( $extension );
+		$suffixes = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? array( '' ) : array( '.min', '' );
 
 		foreach ( $suffixes as $suffix ) {
 			$file = $base . $suffix . '.' . $extension;
@@ -19,19 +19,6 @@ final class AssetResolver {
 		}
 
 		return '';
-	}
-
-	/** @return array<int, string> */
-	private static function asset_suffixes( string $extension ): array {
-		if ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) {
-			return array( '' );
-		}
-
-		if ( 'css' === $extension ) {
-			return array( '', '.min' );
-		}
-
-		return array( '.min', '' );
 	}
 
 	public static function path( string $relative_directory, string $file ): string {

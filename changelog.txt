@@ -1,5 +1,8 @@
 = 0.7.147 =
-* Verhoogt de releaseversie naar 0.7.147; functionele pluginlogica blijft gelijk aan de gecontroleerde 0.7.108-release.
+* Maakt remote SooCool-statusmapping taakbewust: orderstatussen hebben voorrang, pickup-taskstatussen kunnen de hele order niet meer ten onrechte afronden en alleen eenduidige delivery-taskstatussen worden als fallback toegepast.
+* Laat ambigue of ongescopeerde task-statussen fail-closed zonder de WooCommerce-orderstatus te wijzigen en maakt de uitkomst onafhankelijk van de volgorde van pickup- en delivery-taken in API- en webhookpayloads.
+* Herstelt automatisch verouderde SooCool-koppelingen op WooCommerce-orderlijst en orderbewerkingsscherm door bestaande remote orders in de actieve API-context te reconciliëren, status/tracking en providercontext lokaal te vernieuwen en dubbele remote orders te voorkomen.
+* Voorkomt dat een succesvolle automatische reconciliatie niet-opgeslagen wijzigingen op het orderbewerkingsscherm kan onderbreken: na gebruikersinteractie wordt niet hard herladen; op een ongewijzigde orderpagina en in de orderlijst blijft automatische vernieuwing actief.
 
 = 0.7.108 =
 * Scheidt echte ordersynchronisatiefouten van fouten tijdens bijwerken, status vernieuwen en annuleren, zodat een gekoppelde order na zo’n actieprobleem gekoppeld blijft terwijl de laatste fout zichtbaar blijft.

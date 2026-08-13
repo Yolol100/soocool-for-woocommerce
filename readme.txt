@@ -100,6 +100,8 @@ Uninstall removes plugin settings, plugin-owned logs, locks, transients and temp
 == Changelog ==
 
 = 0.7.147 =
+* Maakt remote SooCool-statusmapping taakbewust: orderstatussen hebben voorrang, pickup-taskstatussen kunnen de hele order niet meer ten onrechte afronden en alleen eenduidige delivery-taskstatussen worden als fallback toegepast.
+* Laat ambigue of ongescopeerde task-statussen fail-closed zonder de WooCommerce-orderstatus te wijzigen en maakt de uitkomst onafhankelijk van de volgorde van pickup- en delivery-taken in API- en webhookpayloads.
 * Herstelt verouderde SooCool-koppelingen automatisch en voorkomt een harde reload van het WooCommerce-orderbewerkingsscherm nadat de beheerder de pagina heeft gewijzigd; bestaande remote orders worden veilig gekoppeld zonder dubbele SooCool-order.
 
 = 0.7.108 =

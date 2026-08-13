@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace SooCool\WooCommerce\WooCommerce;
 
 use SooCool\WooCommerce\Domain\RemoteStatusPolicy;
+use SooCool\WooCommerce\Domain\RemoteStatusSelector;
 use SooCool\WooCommerce\Infrastructure\HttpsUrl;
 
 defined( 'ABSPATH' ) || exit;
 
 final class RemoteStatusMapper {
 
-	private readonly RemoteStatusPolicy $statuses;
+	private readonly RemoteStatusSelector $status_selector;
 
 	public function __construct( ?RemoteStatusPolicy $statuses = null ) {
-		$this->statuses = $statuses ?? new RemoteStatusPolicy();
+		$this->status_selector = new RemoteStatusSelector( $statuses ?? new RemoteStatusPolicy() );
 	}
 
 	private const MAX_RESPONSE_NESTING_DEPTH = 5;
@@ -34,33 +35,7 @@ final class RemoteStatusMapper {
 
 	/** @param array<string, mixed> $body */
 	private function status_from_body( array $body ): string {
-		$candidates = $this->payload_candidates( $body );
-		foreach ( $candidates as $candidate ) {
-			$cancelled = $candidate['cancelled'] ?? null;
-			if ( true === $cancelled || ( is_scalar( $cancelled ) && ( 'true' === strtolower( trim( (string) $cancelled ) ) || '1' === trim( (string) $cancelled ) ) ) ) {
-				return 'soocool_cancelled';
-			}
-		}
-
-		foreach ( $candidates as $candidate ) {
-			foreach ( array( 'status', 'orderStatus', 'state', 'taskState' ) as $key ) {
-				if ( ! isset( $candidate[ $key ] ) || ! is_scalar( $candidate[ $key ] ) ) {
-					continue;
-				}
-
-				$value = trim( sanitize_text_field( (string) $candidate[ $key ] ) );
-				if ( '' === $value ) {
-					continue;
-				}
-
-				$status = $this->statuses->normalize_remote( $value );
-				if ( '' !== $status ) {
-					return $status;
-				}
-			}
-		}
-
-		return '';
+		return $this->status_selector->select( $this->payload_candidates( $body ) );
 	}
 
 	/** @param array<string, string> $data */

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SooCool\WooCommerce\Rest;
 
 use SooCool\WooCommerce\Domain\RemoteStatusPolicy;
+use SooCool\WooCommerce\Domain\RemoteStatusSelector;
 use SooCool\WooCommerce\Infrastructure\HttpsUrl;
 use SooCool\WooCommerce\Infrastructure\NumericIdentifier;
 
@@ -22,10 +23,10 @@ final class WebhookPayloadExtractor {
 	private const EVENT_SEQUENCE_KEYS = array( 'eventSequence', 'event_sequence', 'eventVersion', 'event_version', 'sequenceNumber', 'sequence_number' );
 	private const EVENT_TIMESTAMP_KEYS = array( 'eventTimestamp', 'event_timestamp', 'eventTime', 'event_time', 'occurredAt', 'occurred_at', 'occurredOn', 'occurred_on' );
 
-	private readonly RemoteStatusPolicy $statuses;
+	private readonly RemoteStatusSelector $status_selector;
 
 	public function __construct( ?RemoteStatusPolicy $statuses = null ) {
-		$this->statuses = $statuses ?? new RemoteStatusPolicy();
+		$this->status_selector = new RemoteStatusSelector( $statuses ?? new RemoteStatusPolicy() );
 	}
 
 	/** @param array<string, mixed> $payload */
@@ -99,28 +100,7 @@ final class WebhookPayloadExtractor {
 
 	/** @param array<string, mixed> $payload */
 	private function status_from_payload( array $payload ): string {
-		$containers = $this->status_containers( $payload );
-		foreach ( $containers as $container ) {
-			$cancelled = $container['cancelled'] ?? null;
-			if ( true === $cancelled || ( is_scalar( $cancelled ) && ( 'true' === strtolower( trim( (string) $cancelled ) ) || '1' === trim( (string) $cancelled ) ) ) ) {
-				return 'soocool_cancelled';
-			}
-		}
-
-		foreach ( $containers as $container ) {
-			foreach ( array( 'status', 'orderStatus', 'state', 'taskState' ) as $key ) {
-				if ( ! isset( $container[ $key ] ) || ! is_scalar( $container[ $key ] ) || '' === trim( (string) $container[ $key ] ) ) {
-					continue;
-				}
-
-				$status = $this->statuses->normalize_remote( sanitize_text_field( (string) $container[ $key ] ) );
-				if ( '' !== $status ) {
-					return $status;
-				}
-			}
-		}
-
-		return '';
+		return $this->status_selector->select( $this->status_containers( $payload ) );
 	}
 
 	/** @param array<string, mixed> $payload @return array<int, array<string, mixed>> */
