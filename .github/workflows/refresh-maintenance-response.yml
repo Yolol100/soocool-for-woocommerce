@@ -1,0 +1,47 @@
+name: Refresh maintenance response
+
+on:
+  push:
+    branches:
+      - fix/maintenance-empty-response-contract-2026-09-02
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/maintenance-empty-response-contract-2026-09-02
+
+      - name: Validate maintenance contract
+        run: |
+          php -l src/Rest/MaintenanceController.php
+          php -l tests/sync-scheduling-regression.php
+          php tests/sync-scheduling-regression.php
+          php tests/order-actions-recovery-regression.php
+          python3 tools/build-css-assets.py --check
+
+      - name: Regenerate translations
+        run: |
+          python3 tools/build-translations.py --stamp
+          python3 tools/build-translations.py --check
+          git diff --check
+
+      - name: Commit translation references
+        run: |
+          git add languages/soocool-for-woocommerce.pot \
+            languages/soocool-for-woocommerce-nl_NL.po \
+            languages/soocool-for-woocommerce-nl_NL.mo
+          if git diff --cached --quiet; then
+            echo "Translation catalogs were already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh maintenance translation references"
+          git push origin HEAD:fix/maintenance-empty-response-contract-2026-09-02
