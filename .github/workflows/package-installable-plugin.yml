@@ -1,0 +1,81 @@
+name: Build verified installable SooCool 0.7.147
+
+on:
+  push:
+    branches:
+      - artifact/package-0.7.147-2026-09-02-compat
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Verify package source is exact main
+        run: |
+          git diff --exit-code fe80d040e44a08667705738881da2c017e9f4478 HEAD -- . ':(exclude).github/workflows/package-installable-plugin.yml'
+          grep -F ' * Version: 0.7.147' soocool-for-woocommerce.php
+          grep -F "define( 'SOOCOOL_VERSION', '0.7.147' );" soocool-for-woocommerce.php
+          grep -F ' * WC tested up to: 11.0' soocool-for-woocommerce.php
+          grep -F 'Tested up to: 7.1' readme.txt
+          grep -F 'Stable tag: 0.7.147' readme.txt
+          test "$(wc -c < readme.txt)" -lt 10240
+
+      - name: Run release regressions
+        run: |
+          find . -path './vendor' -prune -o -path './node_modules' -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
+          php tests/sync-scheduling-regression.php
+          php tests/order-actions-recovery-regression.php
+          python3 tools/build-css-assets.py --check
+          python3 tools/build-translations.py --check
+          git diff --check
+
+      - name: Build and verify installable ZIP
+        run: |
+          set -euo pipefail
+          rm -rf dist verify
+          mkdir -p dist/soocool-for-woocommerce verify
+          rsync -a --exclude='dist' --exclude='verify' --exclude-from=.distignore ./ dist/soocool-for-woocommerce/
+
+          test ! -e dist/soocool-for-woocommerce/.github
+          test ! -e dist/soocool-for-woocommerce/tests
+          test ! -e dist/soocool-for-woocommerce/tools
+          test ! -e dist/soocool-for-woocommerce/.distignore
+          test ! -e dist/soocool-for-woocommerce/composer.json
+          test ! -e dist/soocool-for-woocommerce/package.json
+
+          grep -F ' * Version: 0.7.147' dist/soocool-for-woocommerce/soocool-for-woocommerce.php
+          grep -F "define( 'SOOCOOL_VERSION', '0.7.147' );" dist/soocool-for-woocommerce/soocool-for-woocommerce.php
+          grep -F ' * WC tested up to: 11.0' dist/soocool-for-woocommerce/soocool-for-woocommerce.php
+          grep -F 'Tested up to: 7.1' dist/soocool-for-woocommerce/readme.txt
+          grep -F 'Stable tag: 0.7.147' dist/soocool-for-woocommerce/readme.txt
+
+          php_count="$(find dist/soocool-for-woocommerce -type f -name '*.php' | wc -l | tr -d ' ')"
+          test "$php_count" = '81'
+          find dist/soocool-for-woocommerce -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+          find dist/soocool-for-woocommerce -exec touch -t 200001010000 {} +
+          ( cd dist && zip -X -q -r ../soocool-for-woocommerce.zip soocool-for-woocommerce )
+
+          unzip -q soocool-for-woocommerce.zip -d verify
+          test "$(find verify -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" = '1'
+          test -d verify/soocool-for-woocommerce
+          diff -qr dist/soocool-for-woocommerce verify/soocool-for-woocommerce
+          find verify/soocool-for-woocommerce -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+          file_count="$(find verify/soocool-for-woocommerce -type f | wc -l | tr -d ' ')"
+          php_count="$(find verify/soocool-for-woocommerce -type f -name '*.php' | wc -l | tr -d ' ')"
+          echo "Runtime files: $file_count"
+          echo "PHP files: $php_count"
+          sha256sum soocool-for-woocommerce.zip
+
+      - name: Upload verified plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: soocool-installable-0.7.147-fe80d040
+          path: soocool-for-woocommerce.zip
+          if-no-files-found: error
+          retention-days: 1
