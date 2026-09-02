@@ -32,10 +32,11 @@ namespace {
 
 	function wc_get_orders( array $args ): object {
 		unset( $args );
-		return (object) array(
+		$query = $GLOBALS['soocool_test_wc_get_orders'] ?? array(
 			'orders' => array( 101 ),
 			'total'  => 1,
 		);
+		return (object) $query;
 	}
 
 	class WC_Order {
@@ -218,6 +219,29 @@ namespace {
 		|| 0 !== (int) ( $response->data['queued'] ?? 0 )
 	) {
 		fwrite( STDERR, 'Linked failed orders must remain classified as manual recovery, not queue duplicates.' . PHP_EOL );
+		exit( 1 );
+	}
+
+	$GLOBALS['soocool_test_wc_get_orders'] = array(
+		'orders' => array(),
+		'total'  => 0,
+	);
+	$response = $maintenance->resync_failed();
+
+	if ( ! is_array( $response->data ) ) {
+		fwrite( STDERR, 'Empty maintenance response must remain an array payload.' . PHP_EOL );
+		exit( 1 );
+	}
+
+	foreach ( array( 'queued', 'duplicates', 'manual', 'failed' ) as $counter ) {
+		if ( ! array_key_exists( $counter, $response->data ) || 0 !== (int) $response->data[ $counter ] ) {
+			fwrite( STDERR, "Empty maintenance response must expose {$counter}=0.\n" );
+			exit( 1 );
+		}
+	}
+
+	if ( true !== ( $response->data['success'] ?? null ) || 'none' !== ( $response->data['mode'] ?? null ) ) {
+		fwrite( STDERR, 'Empty maintenance response must remain a successful none-mode result.' . PHP_EOL );
 		exit( 1 );
 	}
 
