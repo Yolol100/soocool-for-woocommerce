@@ -108,39 +108,4 @@ Uninstall removes plugin settings, plugin-owned logs, locks, transients and temp
 * Houdt de lege onderhoudsresponse structureel gelijk met niet-lege batches door alle queue-tellers als nul terug te geven.
 * Verifieert 0.7.147 in echte MySQL/WordPress/WooCommerce-runtimes op WordPress 6.5 + WooCommerce 8.2.5 + PHP 8.1 en WordPress 7.1 + WooCommerce 11.0.1 + PHP 8.4, inclusief HPOS, order-CRUD, lifecycle en reinstallability.
 
-= 0.7.108 =
-* Scheidt echte synchronisatiefouten van fouten tijdens bijwerken, vernieuwen en annuleren van al gekoppelde SooCool-orders.
-* Herstelt gekoppelde legacy `failed`/`pending` state veilig zonder een onjuiste nieuwe synchronisatie te starten; de laatste fout blijft zichtbaar voor handmatige controle.
-* Voorkomt dat een stale queuejob uit een oude API-context een nieuwere geldige orderstate overschrijft.
-
-= 0.7.107 =
-* Binds queued sync, webhook, label and stored SooCool order state to the active provider/account context so stale work fails closed after API configuration changes.
-* Preserves provider Retry-After/cooldown semantics for API and PDF label flows and revalidates transport eligibility before background dispatch.
-* Shows the calculated pickup date in the WooCommerce order card; delivery on 20-08-2026 is displayed with pickup on 19-08-2026 instead of only a weekday label.
-
-= 0.7.106 =
-* Invalidates a successful connection test when the active API key, effective API base URL, environment or plugin version changes, preventing stale readiness from being shown as current.
-* Extends bounded webhook maintenance cleanup to expired plugin mutex rows left behind by an aborted worker, using exact-value deletion so a renewed live lock cannot be removed by the cleanup pass.
-
-= 0.7.105 =
-* Limits background failed-order recovery to retryable local synchronization failures and never re-submits an order that became linked before the queued job executes.
-* Keeps definitive SooCool failures/rejections visible for manual review instead of repeatedly queueing them as recoverable failures.
-* Clarifies that manual re-synchronization keeps the order-reference duplicate check active.
-
-= 0.7.104 =
-* Restores webhook event-order validation by adding the missing sequence and timestamp normalizers, with conflicting or malformed event metadata rejected before order state changes.
-* Restores asynchronous admin e-mail label attachment validation and rejects invalid, oversized, symlinked or non-temporary cached PDF files while cleaning rejected temporary files.
-* Keeps the existing WooCommerce, HPOS, Checkout Blocks and public hook/REST compatibility contracts unchanged.
-
-= 0.7.103 =
-* Guards group-wide Action Scheduler cleanup with the same initialization policy used by scheduling and retry paths, while WP-Cron cleanup still always runs.
-* Keeps direct uninstall loading complete by loading the Action Scheduler readiness helper before the order cleanup class.
-* Reduces `readme.txt` below the WordPress.org 10 KB risk threshold and keeps historical release notes in `changelog.txt`.
-* Reverts the unintended delivery-settings grid spacing drift from 16px to the prior 14px without changing settings or checkout behavior.
-
-= 0.7.102 =
-* Prevents overlapping partial settings saves from overwriting a newer change by another request.
-* Uses Action Scheduler only after initialization for normal order and e-mail-label scheduling paths, with WP-Cron fallback before initialization.
-* Removes confirmed unused admin CSS and corrects release-history metadata.
-
 Full historical release notes are included in `changelog.txt`.
