@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 use Automattic\WooCommerce\Utilities\OrderUtil;
 use WC_Order;
 
