@@ -45,8 +45,7 @@ final class OrderStatusHooks {
 
 		$this->schedule_order(
 			$order,
-			__( 'SooCool-synchronisatie is ingepland op de achtergrond na de orderstatuswijziging.', 'soocool-for-woocommerce' ),
-			true
+			__( 'SooCool-synchronisatie is ingepland op de achtergrond na de orderstatuswijziging.', 'soocool-for-woocommerce' )
 		);
 	}
 
@@ -73,12 +72,19 @@ final class OrderStatusHooks {
 
 		$this->schedule_order(
 			$order,
-			__( 'SooCool-synchronisatie is direct na het aanmaken van de order op de achtergrond ingepland.', 'soocool-for-woocommerce' ),
-			false
+			__( 'SooCool-synchronisatie is direct na het aanmaken van de order op de achtergrond ingepland.', 'soocool-for-woocommerce' )
 		);
 	}
 
-	private function schedule_order( WC_Order $order, string $scheduled_note, bool $note_duplicate ): void {
+	private function schedule_order( WC_Order $order, string $scheduled_note ): void {
+		if ( method_exists( $order, 'read_meta_data' ) ) {
+			$order->read_meta_data( true );
+		}
+
+		if ( in_array( $this->meta->get_sync_status( $order ), array( 'pending', 'soocool_pending' ), true ) ) {
+			return;
+		}
+
 		$result = $this->actions->schedule_send_to_soocool( (int) $order->get_id() );
 		if ( OrderActions::QUEUE_SCHEDULED === $result ) {
 			$order->add_order_note( $scheduled_note );
@@ -86,9 +92,6 @@ final class OrderStatusHooks {
 		}
 
 		if ( OrderActions::QUEUE_DUPLICATE === $result ) {
-			if ( $note_duplicate ) {
-				$order->add_order_note( __( 'SooCool-synchronisatie is overgeslagen omdat deze order al op de achtergrond ingepland staat.', 'soocool-for-woocommerce' ) );
-			}
 			return;
 		}
 
