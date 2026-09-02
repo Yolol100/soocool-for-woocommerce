@@ -61,7 +61,7 @@ final class MaintenanceController extends AbstractRestController {
 		$manual      = 0;
 		$failed      = 0;
 		foreach ( $order_ids as $order_id ) {
-			$result = $this->actions->schedule_resync_order( (int) $order_id );
+			$result = $this->actions->schedule_send_to_soocool( (int) $order_id );
 			if ( OrderActions::QUEUE_SCHEDULED === $result ) {
 				++$queued;
 				continue;
