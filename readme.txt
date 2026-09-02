@@ -2,7 +2,7 @@
 Contributors: webactueel
 Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.1
 Stable tag: 0.7.147
 License: GPLv2 or later
@@ -103,6 +103,10 @@ Uninstall removes plugin settings, plugin-owned logs, locks, transients and temp
 * Maakt remote SooCool-statusmapping taakbewust: orderstatussen hebben voorrang, pickup-taskstatussen kunnen de hele order niet meer ten onrechte afronden en alleen eenduidige delivery-taskstatussen worden als fallback toegepast.
 * Laat ambigue of ongescopeerde task-statussen fail-closed zonder de WooCommerce-orderstatus te wijzigen en maakt de uitkomst onafhankelijk van de volgorde van pickup- en delivery-taken in API- en webhookpayloads.
 * Herstelt verouderde SooCool-koppelingen automatisch en voorkomt een harde reload van het WooCommerce-orderbewerkingsscherm nadat de beheerder de pagina heeft gewijzigd; bestaande remote orders worden veilig gekoppeld zonder dubbele SooCool-order.
+* Houdt onderhoudsrecovery op de canonieke syncqueue, maar rapporteert al gekoppelde mislukte orders correct als handmatige controle in plaats van als queue-duplicate.
+* Herstelt echte productie-minificatie van de admin-instellingen-CSS en bewaakt CSS- en vertaalbuilds permanent tegen drift in CI.
+* Houdt de lege onderhoudsresponse structureel gelijk met niet-lege batches door alle queue-tellers als nul terug te geven.
+* Verifieert 0.7.147 in echte MySQL/WordPress/WooCommerce-runtimes op WordPress 6.5 + WooCommerce 8.2.5 + PHP 8.1 en WordPress 7.1 + WooCommerce 11.0.1 + PHP 8.4, inclusief HPOS, order-CRUD, lifecycle en reinstallability.
 
 = 0.7.108 =
 * Scheidt echte synchronisatiefouten van fouten tijdens bijwerken, vernieuwen en annuleren van al gekoppelde SooCool-orders.
