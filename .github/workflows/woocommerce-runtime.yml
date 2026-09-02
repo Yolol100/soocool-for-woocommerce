@@ -1,0 +1,130 @@
+name: WooCommerce Runtime Compatibility
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  runtime:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Minimum supported runtime
+            php: '8.1'
+            wordpress: '6.5'
+            woocommerce: '8.2.5'
+          - name: Current supported runtime
+            php: '8.4'
+            wordpress: '7.1'
+            woocommerce: '11.0.1'
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: wordpress
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli
+          coverage: none
+
+      - name: Install WP-CLI
+        run: |
+          curl -fsSL -o /tmp/wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          php /tmp/wp-cli.phar --info
+          sudo install -m 0755 /tmp/wp-cli.phar /usr/local/bin/wp
+
+      - name: Install WordPress and WooCommerce
+        env:
+          WP_PATH: /tmp/wordpress
+        run: |
+          mkdir -p "$WP_PATH"
+          wp core download --version='${{ matrix.wordpress }}' --locale=en_US --path="$WP_PATH" --allow-root --force
+          wp config create \
+            --dbname=wordpress \
+            --dbuser=root \
+            --dbpass=root \
+            --dbhost=127.0.0.1:3306 \
+            --skip-check \
+            --path="$WP_PATH" \
+            --allow-root
+          wp core install \
+            --url=http://localhost \
+            --title='SooCool Runtime Test' \
+            --admin_user=admin \
+            --admin_password='runtime-test-only' \
+            --admin_email=runtime@example.invalid \
+            --skip-email \
+            --path="$WP_PATH" \
+            --allow-root
+          wp plugin install \
+            "https://downloads.wordpress.org/plugin/woocommerce.${{ matrix.woocommerce }}.zip" \
+            --activate \
+            --path="$WP_PATH" \
+            --allow-root
+          wp option update woocommerce_custom_orders_table_enabled yes --path="$WP_PATH" --allow-root
+          wp option update woocommerce_custom_orders_table_data_sync_enabled yes --path="$WP_PATH" --allow-root
+
+      - name: Install and activate SooCool
+        env:
+          WP_PATH: /tmp/wordpress
+        run: |
+          mkdir -p "$WP_PATH/wp-content/plugins/soocool-for-woocommerce"
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            "$GITHUB_WORKSPACE/" "$WP_PATH/wp-content/plugins/soocool-for-woocommerce/"
+          wp plugin activate soocool-for-woocommerce --path="$WP_PATH" --allow-root
+          wp plugin status soocool-for-woocommerce --path="$WP_PATH" --allow-root
+
+      - name: Runtime smoke with HPOS
+        env:
+          WP_PATH: /tmp/wordpress
+          SOOCOOL_EXPECT_WP: ${{ matrix.wordpress }}
+          SOOCOOL_EXPECT_WC: ${{ matrix.woocommerce }}
+        run: |
+          wp eval-file \
+            "$GITHUB_WORKSPACE/tests/woocommerce-runtime-smoke.php" \
+            --path="$WP_PATH" \
+            --allow-root
+
+      - name: Activation and deactivation lifecycle
+        env:
+          WP_PATH: /tmp/wordpress
+        run: |
+          wp plugin deactivate soocool-for-woocommerce --path="$WP_PATH" --allow-root
+          wp plugin activate soocool-for-woocommerce --path="$WP_PATH" --allow-root
+          wp plugin status soocool-for-woocommerce --path="$WP_PATH" --allow-root
+
+      - name: Uninstall cleanup and reinstallability
+        env:
+          WP_PATH: /tmp/wordpress
+        run: |
+          wp eval 'update_option( "soocool_settings", array( "environment" => "test" ) );' --path="$WP_PATH" --allow-root
+          wp plugin uninstall soocool-for-woocommerce --deactivate --skip-delete --path="$WP_PATH" --allow-root
+          if wp option get soocool_settings --path="$WP_PATH" --allow-root >/dev/null 2>&1; then
+            echo 'soocool_settings still exists after uninstall.' >&2
+            exit 1
+          fi
+          wp plugin activate soocool-for-woocommerce --path="$WP_PATH" --allow-root
+          wp plugin status soocool-for-woocommerce --path="$WP_PATH" --allow-root
