@@ -8,7 +8,7 @@ on:
 
 jobs:
   php-quality:
-    name: PHP, translations and WPCS
+    name: PHP, assets, translations and WPCS
     runs-on: ubuntu-latest
 
     steps:
@@ -35,6 +35,9 @@ jobs:
 
       - name: Maintenance recovery regression
         run: php tests/order-actions-recovery-regression.php
+
+      - name: CSS asset consistency
+        run: python3 tools/build-css-assets.py --check
 
       - name: Translation catalog consistency
         run: python3 tools/build-translations.py --check
