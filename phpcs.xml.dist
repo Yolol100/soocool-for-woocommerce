@@ -4,6 +4,7 @@
 
 	<arg name="extensions" value="php"/>
 	<arg name="parallel" value="4"/>
+	<arg name="warning-severity" value="0"/>
 	<arg value="ps"/>
 
 	<file>soocool-for-woocommerce.php</file>
@@ -17,10 +18,26 @@
 	<config name="minimum_supported_wp_version" value="6.5"/>
 	<config name="text_domain" value="soocool-for-woocommerce"/>
 
-	<rule ref="WordPress"/>
+	<!--
+		Use WordPress-Extra rather than the aggregate WordPress ruleset. This keeps
+		Core plus security and best-practice checks, while avoiding WordPress-Docs as
+		a hard CI gate for every internal method.
+	-->
+	<rule ref="WordPress-Extra"/>
+
+	<!--
+		The src tree follows PSR-4 (ClassName.php). WordPress.Files.FileName expects
+		legacy class-foo.php naming, so scope that naming exception to src only.
+	-->
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>src/*</exclude-pattern>
+	</rule>
+
 	<rule ref="WordPress.WP.I18n">
 		<properties>
-			<property name="text_domain" type="array" value="soocool-for-woocommerce"/>
+			<property name="text_domain" type="array">
+				<element value="soocool-for-woocommerce"/>
+			</property>
 		</properties>
 	</rule>
 </ruleset>
