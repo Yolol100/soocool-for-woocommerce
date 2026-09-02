@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: SooCool for WooCommerce 0.7.147\n"
 "Report-Msgid-Bugs-To: security@webactueel.nl\n"
-"POT-Creation-Date: 2026-09-02 15:39+0000\n"
-"PO-Revision-Date: 2026-09-02 15:39+0000\n"
+"POT-Creation-Date: 2026-09-02 15:53+0000\n"
+"PO-Revision-Date: 2026-09-02 15:53+0000\n"
 "Last-Translator: Webactueel\n"
 "Language-Team: Dutch\n"
 "Language: \n"
@@ -15,7 +15,7 @@ msgstr ""
 "X-Domain: soocool-for-woocommerce\n"
 
 
-#: src/Rest/MaintenanceController.php:88
+#: src/Rest/MaintenanceController.php:91
 msgid "%1$d lokaal mislukte orders ingepland voor hersynchronisatie op de achtergrond. %2$d orders stonden al ingepland, %3$d al gekoppelde orders zijn teruggezet naar gekoppelde status en vereisen handmatige controle van de laatste actie, %4$d orders konden niet worden ingepland. Nog resterend na deze batch: %5$d."
 msgstr ""
 
@@ -1216,7 +1216,7 @@ msgid "Geen logs gevonden voor deze filters."
 msgstr ""
 
 
-#: src/Rest/MaintenanceController.php:54
+#: src/Rest/MaintenanceController.php:57
 msgid "Geen lokaal mislukte SooCool-synchronisaties om opnieuw in te plannen."
 msgstr ""
 
@@ -3388,7 +3388,7 @@ msgid "Voeg voor de actieve omgeving een API-key toe voordat je de verbinding te
 msgstr ""
 
 
-#: src/Rest/MaintenanceController.php:97
+#: src/Rest/MaintenanceController.php:100
 msgid "Voer deze actie opnieuw uit om de volgende batch lokaal mislukte orders in te plannen."
 msgstr ""
 
