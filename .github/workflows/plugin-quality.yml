@@ -8,7 +8,7 @@ on:
 
 jobs:
   php-quality:
-    name: PHP lint and WPCS
+    name: PHP, translations and WPCS
     runs-on: ubuntu-latest
 
     steps:
@@ -32,6 +32,9 @@ jobs:
 
       - name: Sync scheduling regression
         run: php tests/sync-scheduling-regression.php
+
+      - name: Translation catalog consistency
+        run: python3 tools/build-translations.py --check
 
       - name: Install WordPress Coding Standards
         run: |
