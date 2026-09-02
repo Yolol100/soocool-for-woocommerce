@@ -117,7 +117,9 @@ namespace SooCool\WooCommerce\WooCommerce {
 		public const QUEUE_MANUAL    = 'manual';
 
 		public int $send_calls = 0;
+		public int $recovery_calls = 0;
 		public int $resync_calls = 0;
+		public string $recovery_result = self::QUEUE_SCHEDULED;
 
 		public function __construct( private readonly OrderMeta $meta ) {}
 
@@ -125,6 +127,14 @@ namespace SooCool\WooCommerce\WooCommerce {
 			++$this->send_calls;
 			$this->meta->set_sync_status( $order_id, 'pending' );
 			return self::QUEUE_SCHEDULED;
+		}
+
+		public function schedule_failed_order_recovery( int $order_id ): string {
+			++$this->recovery_calls;
+			if ( in_array( $this->recovery_result, array( self::QUEUE_SCHEDULED, self::QUEUE_DUPLICATE ), true ) ) {
+				$this->meta->set_sync_status( $order_id, 'pending' );
+			}
+			return $this->recovery_result;
 		}
 
 		public function schedule_resync_order( int $order_id ): string {
@@ -182,13 +192,32 @@ namespace {
 	$maintenance = new \SooCool\WooCommerce\Rest\MaintenanceController( $actions );
 	$response    = $maintenance->resync_failed();
 
-	if ( 2 !== $actions->send_calls || 0 !== $actions->resync_calls ) {
-		fwrite( STDERR, 'Failed-order maintenance must reuse the canonical normal sync queue.' . PHP_EOL );
+	if ( 1 !== $actions->send_calls || 1 !== $actions->recovery_calls || 0 !== $actions->resync_calls ) {
+		fwrite( STDERR, 'Failed-order maintenance must use the canonical recovery queue without reopening the legacy resync queue.' . PHP_EOL );
 		exit( 1 );
 	}
 
-	if ( ! is_array( $response->data ) || 1 !== (int) ( $response->data['queued'] ?? 0 ) ) {
-		fwrite( STDERR, 'Maintenance response did not report the queued retry.' . PHP_EOL );
+	if ( ! is_array( $response->data ) || 1 !== (int) ( $response->data['queued'] ?? 0 ) || 0 !== (int) ( $response->data['manual'] ?? 0 ) ) {
+		fwrite( STDERR, 'Maintenance response did not report the queued recovery correctly.' . PHP_EOL );
+		exit( 1 );
+	}
+
+	$meta->set_sync_status( 101, 'failed' );
+	$actions->recovery_result = \SooCool\WooCommerce\WooCommerce\OrderActions::QUEUE_MANUAL;
+	$response = $maintenance->resync_failed();
+
+	if ( 2 !== $actions->recovery_calls ) {
+		fwrite( STDERR, 'Maintenance did not use the recovery path for the linked-order case.' . PHP_EOL );
+		exit( 1 );
+	}
+
+	if (
+		! is_array( $response->data )
+		|| 1 !== (int) ( $response->data['manual'] ?? 0 )
+		|| 0 !== (int) ( $response->data['duplicates'] ?? 0 )
+		|| 0 !== (int) ( $response->data['queued'] ?? 0 )
+	) {
+		fwrite( STDERR, 'Linked failed orders must remain classified as manual recovery, not queue duplicates.' . PHP_EOL );
 		exit( 1 );
 	}
 

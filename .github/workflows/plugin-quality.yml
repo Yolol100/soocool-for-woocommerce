@@ -33,6 +33,9 @@ jobs:
       - name: Sync scheduling regression
         run: php tests/sync-scheduling-regression.php
 
+      - name: Maintenance recovery regression
+        run: php tests/order-actions-recovery-regression.php
+
       - name: Translation catalog consistency
         run: python3 tools/build-translations.py --check
 
