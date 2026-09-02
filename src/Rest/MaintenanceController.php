@@ -46,6 +46,9 @@ final class MaintenanceController extends AbstractRestController {
 				array(
 					'success'     => true,
 					'queued'      => 0,
+					'duplicates'  => 0,
+					'manual'      => 0,
+					'failed'      => 0,
 					'limit'       => self::MAX_ORDERS,
 					'total_found' => 0,
 					'remaining'   => 0,
