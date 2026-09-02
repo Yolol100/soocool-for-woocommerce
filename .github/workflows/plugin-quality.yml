@@ -30,6 +30,9 @@ jobs:
             -name '*.php' -print0 \
             | xargs -0 -n1 php -l
 
+      - name: Sync scheduling regression
+        run: php tests/sync-scheduling-regression.php
+
       - name: Install WordPress Coding Standards
         run: |
           composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
