@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: SooCool for WooCommerce 0.7.147\n"
 "Report-Msgid-Bugs-To: security@webactueel.nl\n"
-"POT-Creation-Date: 2026-09-02 13:22+0000\n"
-"PO-Revision-Date: 2026-09-02 13:22+0000\n"
+"POT-Creation-Date: 2026-09-02 15:39+0000\n"
+"PO-Revision-Date: 2026-09-02 15:39+0000\n"
 "Last-Translator: Webactueel\n"
 "Language-Team: Dutch\n"
 "Language: nl_NL\n"
@@ -286,12 +286,12 @@ msgid "API-route"
 msgstr "API-route"
 
 
-#: src/WooCommerce/OrderActions.php:204
+#: src/WooCommerce/OrderActions.php:208
 msgid "Automatische SooCool-herpoging %1$d van %2$d is ingepland over ongeveer %3$d seconden. Laatste fout: %4$s"
 msgstr "Automatische SooCool-herpoging %1$d van %2$d is ingepland over ongeveer %3$d seconden. Laatste fout: %4$s"
 
 
-#: src/WooCommerce/OrderActions.php:192
+#: src/WooCommerce/OrderActions.php:196
 msgid "Automatische SooCool-herpoging %1$d van %2$d stond al ingepland. Laatste fout: %3$s"
 msgstr "Automatische SooCool-herpoging %1$d van %2$d stond al ingepland. Laatste fout: %3$s"
 
@@ -396,7 +396,7 @@ msgid "Bestaande SooCool-order gevonden op orderreferentie. Er is geen dubbele S
 msgstr "Bestaande SooCool-order gevonden op orderreferentie. Er is geen dubbele SooCool-order aangemaakt."
 
 
-#: src/WooCommerce/OrderActions.php:545
+#: src/WooCommerce/OrderActions.php:549
 msgid "Bestaande SooCool-order gevonden op orderreferentie. WooCommerce-order gekoppeld zonder dubbele SooCool-order aan te maken."
 msgstr "Bestaande SooCool-order gevonden op orderreferentie. WooCommerce-order gekoppeld zonder dubbele SooCool-order aan te maken."
 
@@ -671,7 +671,7 @@ msgid "De API-keyconstante in wp-config.php blijft actief."
 msgstr "De API-keyconstante in wp-config.php blijft actief."
 
 
-#: src/WooCommerce/OrderActions.php:215
+#: src/WooCommerce/OrderActions.php:219
 msgid "De automatische SooCool-herpoging kon niet worden ingepland."
 msgstr "De automatische SooCool-herpoging kon niet worden ingepland."
 
@@ -1506,7 +1506,7 @@ msgid "Je mag deze order niet bijwerken."
 msgstr "Je mag deze order niet bijwerken."
 
 
-#: src/Admin/OrderActionConfirmScript.php:49 src/WooCommerce/OrderActions.php:420 src/WooCommerce/OrderActions.php:456
+#: src/Admin/OrderActionConfirmScript.php:49 src/WooCommerce/OrderActions.php:424 src/WooCommerce/OrderActions.php:460
 msgid "Je mag deze order niet synchroniseren."
 msgstr "Je mag deze order niet synchroniseren."
 
@@ -1971,7 +1971,7 @@ msgid "Ongeldige instellingen-payload."
 msgstr "Ongeldige instellingen-payload."
 
 
-#: src/Admin/OrderMetaBox.php:198 src/Admin/OrderMetaBox.php:209 src/WooCommerce/OrderActions.php:414 src/WooCommerce/OrderActions.php:450
+#: src/Admin/OrderMetaBox.php:198 src/Admin/OrderMetaBox.php:209 src/WooCommerce/OrderActions.php:418 src/WooCommerce/OrderActions.php:454
 msgid "Ongeldige order."
 msgstr "Ongeldige order."
 
@@ -2096,7 +2096,7 @@ msgid "Order naar SooCool verstuurd."
 msgstr "Order naar SooCool verstuurd."
 
 
-#: src/Rest/OrderSyncController.php:50 src/WooCommerce/OrderActions.php:425 src/WooCommerce/OrderActions.php:461 src/WooCommerce/ShippingLabelActions.php:152 src/WooCommerce/ShippingLabelActions.php:223
+#: src/Rest/OrderSyncController.php:50 src/WooCommerce/OrderActions.php:429 src/WooCommerce/OrderActions.php:465 src/WooCommerce/ShippingLabelActions.php:152 src/WooCommerce/ShippingLabelActions.php:223
 msgid "Order niet gevonden."
 msgstr "Order niet gevonden."
 
@@ -2261,17 +2261,17 @@ msgid "Responslimiet"
 msgstr "Responslimiet"
 
 
-#: src/WooCommerce/OrderActions.php:509
+#: src/WooCommerce/OrderActions.php:513
 msgid "Resultaat: bestaande SooCool-order bijgewerkt. Volgende stap: vernieuw de status of controleer het SooCool-dashboard als fulfilment al is gestart."
 msgstr "Resultaat: bestaande SooCool-order bijgewerkt. Volgende stap: vernieuw de status of controleer het SooCool-dashboard als fulfilment al is gestart."
 
 
-#: src/WooCommerce/OrderActions.php:546
+#: src/WooCommerce/OrderActions.php:550
 msgid "Resultaat: order naar SooCool verstuurd. Volgende stap: download het label of wacht op de track & trace-webhook."
 msgstr "Resultaat: order naar SooCool verstuurd. Volgende stap: download het label of wacht op de track & trace-webhook."
 
 
-#: src/WooCommerce/OrderActions.php:535
+#: src/WooCommerce/OrderActions.php:539
 msgid "Resultaat: SooCool-order geannuleerd. Volgende stap: controleer de fulfilmentstatus in SooCool voordat je terugbetaalt of de WooCommerce-orderstatus wijzigt."
 msgstr "Resultaat: SooCool-order geannuleerd. Volgende stap: controleer de fulfilmentstatus in SooCool voordat je terugbetaalt of de WooCommerce-orderstatus wijzigt."
 
@@ -2748,7 +2748,7 @@ msgid "SooCool-actie mislukt."
 msgstr "SooCool-actie mislukt."
 
 
-#: src/WooCommerce/OrderActions.php:567
+#: src/WooCommerce/OrderActions.php:571
 msgid "SooCool-actie overgeslagen omdat de huidige gebruiker WooCommerce niet mag beheren."
 msgstr "SooCool-actie overgeslagen omdat de huidige gebruiker WooCommerce niet mag beheren."
 
@@ -2763,7 +2763,7 @@ msgid "SooCool-activiteitenlogs"
 msgstr "SooCool-activiteitenlogs"
 
 
-#: src/Domain/OrderSyncCoordinator.php:284 src/WooCommerce/OrderActions.php:536
+#: src/Domain/OrderSyncCoordinator.php:284 src/WooCommerce/OrderActions.php:540
 msgid "SooCool-annulering mislukt. Controleer de SooCool-logs voor details."
 msgstr "SooCool-annulering mislukt. Controleer de SooCool-logs voor details."
 
@@ -2913,7 +2913,7 @@ msgid "SooCool-status vernieuwd en lokale status-/trackingdata bijgewerkt."
 msgstr "SooCool-status vernieuwd en lokale status-/trackingdata bijgewerkt."
 
 
-#: src/WooCommerce/OrderActions.php:522
+#: src/WooCommerce/OrderActions.php:526
 msgid "SooCool-status vernieuwd."
 msgstr "SooCool-status vernieuwd."
 
@@ -2923,7 +2923,7 @@ msgid "SooCool-status vernieuwd. Er zijn geen status- of trackingwijzigingen ter
 msgstr "SooCool-status vernieuwd. Er zijn geen status- of trackingwijzigingen teruggegeven."
 
 
-#: src/Domain/OrderSyncCoordinator.php:212 src/WooCommerce/OrderActions.php:480 src/WooCommerce/OrderActions.php:523
+#: src/Domain/OrderSyncCoordinator.php:212 src/WooCommerce/OrderActions.php:484 src/WooCommerce/OrderActions.php:527
 msgid "SooCool-statusupdate mislukt. Controleer de SooCool-logs voor details."
 msgstr "SooCool-statusupdate mislukt. Controleer de SooCool-logs voor details."
 
@@ -2963,7 +2963,7 @@ msgid "SooCool-synchronisatie is onverwacht mislukt. Controleer de SooCool-logs 
 msgstr "SooCool-synchronisatie is onverwacht mislukt. Controleer de SooCool-logs en PHP-foutlog voor details."
 
 
-#: src/WooCommerce/OrderActions.php:131 src/WooCommerce/OrderStatusHooks.php:98
+#: src/WooCommerce/OrderActions.php:135 src/WooCommerce/OrderStatusHooks.php:98
 msgid "SooCool-synchronisatie kon niet op de achtergrond worden ingepland. Gebruik de knop “Synchroniseer nu met SooCool” of controleer WooCommerce Action Scheduler en WP-Cron."
 msgstr "SooCool-synchronisatie kon niet op de achtergrond worden ingepland. Gebruik de knop “Synchroniseer nu met SooCool” of controleer WooCommerce Action Scheduler en WP-Cron."
 
@@ -2973,12 +2973,12 @@ msgid "SooCool-synchronisatie kon niet worden gestart."
 msgstr "SooCool-synchronisatie kon niet worden gestart."
 
 
-#: src/WooCommerce/OrderActions.php:430
+#: src/WooCommerce/OrderActions.php:434
 msgid "SooCool-synchronisatie mislukt."
 msgstr "SooCool-synchronisatie mislukt."
 
 
-#: src/Domain/OrderSyncCoordinator.php:108 src/WooCommerce/OrderActions.php:176 src/WooCommerce/OrderActions.php:552
+#: src/Domain/OrderSyncCoordinator.php:108 src/WooCommerce/OrderActions.php:180 src/WooCommerce/OrderActions.php:556
 msgid "SooCool-synchronisatie mislukt. Controleer de SooCool-logs voor details."
 msgstr "SooCool-synchronisatie mislukt. Controleer de SooCool-logs voor details."
 
@@ -2993,12 +2993,12 @@ msgid "SooCool-synchronisatie mislukt: %s"
 msgstr "SooCool-synchronisatie mislukt: %s"
 
 
-#: src/WooCommerce/OrderActions.php:151
+#: src/WooCommerce/OrderActions.php:155
 msgid "SooCool-synchronisatie overgeslagen omdat de API-omgeving of API-inloggegevens zijn gewijzigd nadat de taak werd ingepland. Plan de synchronisatie opnieuw."
 msgstr "SooCool-synchronisatie overgeslagen omdat de API-omgeving of API-inloggegevens zijn gewijzigd nadat de taak werd ingepland. Plan de synchronisatie opnieuw."
 
 
-#: src/WooCommerce/OrderActions.php:166
+#: src/WooCommerce/OrderActions.php:170
 msgid "SooCool-synchronisatie overgeslagen omdat deze order bij uitvoering geen transport meer vereist."
 msgstr "SooCool-synchronisatie overgeslagen omdat deze order bij uitvoering geen transport meer vereist."
 
@@ -3013,7 +3013,7 @@ msgid "SooCool-taak verwijst naar een good dat niet in de goods-lijst staat."
 msgstr "SooCool-taak verwijst naar een good dat niet in de goods-lijst staat."
 
 
-#: src/Domain/OrderSyncCoordinator.php:152 src/WooCommerce/OrderActions.php:510
+#: src/Domain/OrderSyncCoordinator.php:152 src/WooCommerce/OrderActions.php:514
 msgid "SooCool-update mislukt. Controleer de SooCool-logs voor details."
 msgstr "SooCool-update mislukt. Controleer de SooCool-logs voor details."
 
@@ -3043,22 +3043,22 @@ msgid "SooCool: alles"
 msgstr "SooCool: alles"
 
 
-#: src/WooCommerce/OrderActions.php:397
+#: src/WooCommerce/OrderActions.php:401
 msgid "SooCool: bestaande order bijwerken"
 msgstr "SooCool: bestaande order bijwerken"
 
 
-#: src/WooCommerce/OrderActions.php:395
+#: src/WooCommerce/OrderActions.php:399
 msgid "SooCool: order aanmaken/versturen"
 msgstr "SooCool: order aanmaken/versturen"
 
 
-#: src/WooCommerce/OrderActions.php:398
+#: src/WooCommerce/OrderActions.php:402
 msgid "SooCool: order annuleren"
 msgstr "SooCool: order annuleren"
 
 
-#: src/WooCommerce/OrderActions.php:396
+#: src/WooCommerce/OrderActions.php:400
 msgid "SooCool: status vernieuwen"
 msgstr "SooCool: status vernieuwen"
 

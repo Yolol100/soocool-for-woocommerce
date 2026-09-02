@@ -101,14 +101,18 @@ final class OrderActions {
 	}
 
 	public function schedule_send_to_soocool( int $order_id ): string {
-		return $this->schedule_initial_order_action( self::SYNC_HOOK, $order_id );
+		return $this->schedule_initial_order_action( self::SYNC_HOOK, $order_id, false );
+	}
+
+	public function schedule_failed_order_recovery( int $order_id ): string {
+		return $this->schedule_initial_order_action( self::SYNC_HOOK, $order_id, true );
 	}
 
 	public function schedule_resync_order( int $order_id ): string {
-		return $this->schedule_initial_order_action( self::RESYNC_HOOK, $order_id );
+		return $this->schedule_initial_order_action( self::RESYNC_HOOK, $order_id, true );
 	}
 
-	private function schedule_initial_order_action( string $hook, int $order_id ): string {
+	private function schedule_initial_order_action( string $hook, int $order_id, bool $manual_when_linked ): string {
 		$order_id = NumericIdentifier::positive( $order_id ) ?? 0;
 		$order    = 0 < $order_id ? wc_get_order( $order_id ) : null;
 		if ( ! $order instanceof WC_Order ) {
@@ -117,7 +121,7 @@ final class OrderActions {
 
 		if ( $this->is_synced_in_current_provider( $order ) ) {
 			$this->meta->restore_linked_status( $order );
-			return self::SYNC_HOOK === $hook ? self::QUEUE_DUPLICATE : self::QUEUE_MANUAL;
+			return $manual_when_linked ? self::QUEUE_MANUAL : self::QUEUE_DUPLICATE;
 		}
 
 		$result = $this->schedule_order_action( $hook, $order_id, 0, 0, $this->current_sync_context_fingerprint() );
