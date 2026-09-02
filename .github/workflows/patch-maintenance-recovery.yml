@@ -39,6 +39,9 @@ jobs:
           path.write_text(source, encoding='utf-8')
           PY
 
+      - name: Regenerate translations
+        run: python3 tools/build-translations.py --stamp
+
       - name: Validate recovery behavior
         run: |
           php -l src/WooCommerce/OrderActions.php
@@ -51,7 +54,10 @@ jobs:
       - name: Commit patch
         run: |
           git diff --check
-          git add src/WooCommerce/OrderActions.php
+          git add src/WooCommerce/OrderActions.php \
+            languages/soocool-for-woocommerce.pot \
+            languages/soocool-for-woocommerce-nl_NL.po \
+            languages/soocool-for-woocommerce-nl_NL.mo
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Keep maintenance recovery on canonical sync queue"
