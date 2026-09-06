@@ -21,7 +21,7 @@ jobs:
           - name: Current supported runtime
             php: '8.4'
             wordpress: '7.1'
-            woocommerce: '11.0.1'
+            woocommerce: '11.1.0'
 
     services:
       mysql:
@@ -39,7 +39,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
