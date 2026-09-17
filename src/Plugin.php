@@ -19,6 +19,7 @@ use SooCool\WooCommerce\Rest\SettingsController;
 use SooCool\WooCommerce\Rest\SystemStatusController;
 use SooCool\WooCommerce\Rest\WebhookAuthenticator;
 use SooCool\WooCommerce\Rest\WebhookController;
+use SooCool\WooCommerce\Rest\WebhookReadinessController;
 use SooCool\WooCommerce\Rest\WebhookSecretController;
 use SooCool\WooCommerce\Rest\MaintenanceController;
 use SooCool\WooCommerce\WooCommerce\OrderActions;
@@ -68,6 +69,7 @@ final class Plugin {
 		add_action( 'rest_api_init', array( $provider->get( LogsController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( OrderSyncController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( WebhookController::class ), 'register_routes' ) );
+		add_action( 'rest_api_init', array( new WebhookReadinessController(), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( WebhookSecretController::class ), 'register_routes' ) );
 		add_action( 'rest_api_init', array( $provider->get( MaintenanceController::class ), 'register_routes' ) );
 

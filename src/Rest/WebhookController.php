@@ -49,32 +49,12 @@ final class WebhookController extends AbstractRestController {
 				$this->namespace,
 				$route,
 				array(
-					array(
-						'methods'             => WP_REST_Server::CREATABLE,
-						'callback'            => array( $this, 'receive' ),
-						'permission_callback' => array( $this, 'can_receive' ),
-					),
-					array(
-						'methods'             => WP_REST_Server::READABLE,
-						'callback'            => array( $this, 'probe' ),
-						'permission_callback' => '__return_true',
-					),
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'receive' ),
+					'permission_callback' => array( $this, 'can_receive' ),
 				)
 			);
 		}
-	}
-
-	public function probe(): WP_REST_Response {
-		$response = new WP_REST_Response(
-			array(
-				'success' => true,
-				'ready'   => true,
-			),
-			200
-		);
-		$response->header( 'Cache-Control', 'no-store' );
-
-		return $response;
 	}
 
 	public function can_receive( WP_REST_Request $request ): bool|WP_Error {
@@ -109,7 +89,7 @@ final class WebhookController extends AbstractRestController {
 			return $this->orders->identifier_conflict( '', '', 0 );
 		}
 
-		$soocool_order_id        = $this->payloads->soocool_order_id( $payload );
+		$soocool_order_id       = $this->payloads->soocool_order_id( $payload );
 		$payload_order_reference = $this->payloads->order_reference( $payload );
 		$request_order_reference = $this->identifiers->webhook_order_reference( $request );
 		$payload_wc_order_id     = $this->payloads->wc_order_id( $payload );
