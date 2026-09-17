@@ -2,6 +2,7 @@
 
 use Automattic\WooCommerce\Utilities\OrderUtil;
 use WC_Order;
+use WP_REST_Request;
 
 function soocool_runtime_fail( string $message ): void {
 	fwrite( STDERR, $message . PHP_EOL );
@@ -15,7 +16,7 @@ if ( '' === $expected_wp || '' === $expected_wc ) {
 	soocool_runtime_fail( 'Expected WordPress and WooCommerce versions must be provided.' );
 }
 
-if ( ! defined( 'SOOCOOL_VERSION' ) || '0.7.147' !== SOOCOOL_VERSION ) {
+if ( ! defined( 'SOOCOOL_VERSION' ) || '0.7.148' !== SOOCOOL_VERSION ) {
 	soocool_runtime_fail( 'SooCool plugin version mismatch.' );
 }
 
@@ -44,9 +45,23 @@ if ( 0 === did_action( 'rest_api_init' ) ) {
 	do_action( 'rest_api_init' );
 }
 
-$routes = rest_get_server()->get_routes();
+$server = rest_get_server();
+$routes = $server->get_routes();
 if ( ! isset( $routes['/soocool/v1/orders/(?P<id>\\d+)/sync'] ) ) {
 	soocool_runtime_fail( 'SooCool REST order sync route was not registered.' );
+}
+if ( ! isset( $routes['/soocool/v1/webhook'] ) || ! isset( $routes['/soocool/v1/webhook/(?P<wc_order_id>\\d+)'] ) ) {
+	soocool_runtime_fail( 'SooCool webhook routes were not registered.' );
+}
+
+$probe_request  = new WP_REST_Request( 'GET', '/soocool/v1/webhook/15061' );
+$probe_response = $server->dispatch( $probe_request );
+$probe_data     = $probe_response->get_data();
+if ( 200 !== $probe_response->get_status() || ! is_array( $probe_data ) || true !== ( $probe_data['ready'] ?? false ) ) {
+	soocool_runtime_fail( 'SooCool webhook readiness probe did not return HTTP 200 ready=true.' );
+}
+if ( 'no-store' !== $probe_response->get_headers()['Cache-Control'] ?? null ) {
+	soocool_runtime_fail( 'SooCool webhook readiness probe must be non-cacheable.' );
 }
 
 $order = wc_create_order();
