@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.7.147
+Stable tag: 0.7.148
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,7 +29,7 @@ Main features:
 
 = External service: SooCool API =
 
-This plugin connects to the SooCool API when an authorized manager tests the connection, submits or refreshes an order, searches for an existing SooCool order, or downloads a shipping label. It also exposes an authenticated webhook endpoint that SooCool can use to send status and tracking updates.
+This plugin connects to the SooCool API when an authorized manager tests the connection, submits or refreshes an order, searches for an existing SooCool order, or downloads a shipping label. It also exposes an authenticated webhook endpoint that SooCool can use to send status and tracking updates. The webhook URL also returns a read-only readiness response to GET/HEAD checks so providers can verify that the callback route exists without invoking order processing.
 
 Default API hosts:
 
@@ -75,7 +75,7 @@ The plugin declares WooCommerce custom order table compatibility and uses WooCom
 
 = How is the incoming webhook secured? =
 
-The receiver requires the stored SooCool webhook token plus timestamped HMAC headers and replay protection. Conflicting order identifiers fail closed before order state is changed.
+The receiver requires the stored SooCool webhook token plus timestamped HMAC headers and replay protection. Conflicting order identifiers fail closed before order state is changed. Read-only GET/HEAD readiness checks do not process webhook payloads or mutate orders.
 
 = Does the plugin support WordPress Multisite network activation? =
 
@@ -98,6 +98,9 @@ Site owners remain responsible for documenting SooCool as a transport/data recip
 Uninstall removes plugin settings, plugin-owned logs, locks, transients and temporary e-mail-label files. SooCool order metadata remains on WooCommerce orders for historical and audit continuity.
 
 == Changelog ==
+
+= 0.7.148 =
+* Laat de bestaande SooCool webhook-URL veilig antwoorden op read-only GET/HEAD readiness-checks, terwijl echte webhookverwerking uitsluitend via de bestaande beveiligde POST-route blijft lopen.
 
 = 0.7.147 =
 * Maakt remote SooCool-statusmapping taakbewust: orderstatussen hebben voorrang, pickup-taskstatussen kunnen de hele order niet meer ten onrechte afronden en alleen eenduidige delivery-taskstatussen worden als fallback toegepast.
