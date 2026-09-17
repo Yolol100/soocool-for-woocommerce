@@ -8,7 +8,7 @@ on:
 
 jobs:
   php-quality:
-    name: PHP, assets, translations and WPCS
+    name: PHP, JS, assets, translations, package and WPCS
     runs-on: ubuntu-latest
 
     steps:
@@ -18,7 +18,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2, signed tag target
         with:
           php-version: '8.1'
           tools: composer
@@ -32,17 +32,57 @@ jobs:
             -name '*.php' -print0 \
             | xargs -0 -n1 php -l
 
+      - name: JavaScript syntax check
+        run: |
+          node --check assets/build/admin.js
+          node --check assets/admin/order-actions.js
+          node --check assets/frontend/checkout-delivery.js
+
       - name: Sync scheduling regression
         run: php tests/sync-scheduling-regression.php
 
       - name: Maintenance recovery regression
         run: php tests/order-actions-recovery-regression.php
 
+      - name: Release metadata regression
+        run: php tests/release-metadata-regression.php
+
       - name: CSS asset consistency
         run: python3 tools/build-css-assets.py --check
 
       - name: Translation catalog consistency
         run: python3 tools/build-translations.py --check
+
+      - name: Package hygiene
+        run: |
+          set -eu
+          dist_root=/tmp/soocool-dist
+          package="$dist_root/soocool-for-woocommerce"
+          rm -rf "$dist_root"
+          mkdir -p "$package"
+          rsync -a --delete --exclude-from=.distignore ./ "$package/"
+          test -f "$package/soocool-for-woocommerce.php"
+          test -f "$package/readme.txt"
+          test -d "$package/src"
+          test ! -e "$package/.git"
+          test ! -e "$package/.github"
+          test ! -e "$package/tests"
+          test ! -e "$package/tools"
+          if find "$package" -type l -print -quit | grep -q .; then
+            echo 'Distribution package contains a symbolic link.' >&2
+            exit 1
+          fi
+          if find "$package" \( -name '*.log' -o -name '*.zip' -o -name '.DS_Store' \) -print -quit | grep -q .; then
+            echo 'Distribution package contains excluded junk.' >&2
+            exit 1
+          fi
+          ( cd "$dist_root" && zip -qr /tmp/soocool-for-woocommerce.zip soocool-for-woocommerce )
+          unzip -t /tmp/soocool-for-woocommerce.zip >/dev/null
+          first_entry="$(unzip -Z1 /tmp/soocool-for-woocommerce.zip | head -n 1)"
+          case "$first_entry" in
+            soocool-for-woocommerce/*) ;;
+            *) echo 'Distribution ZIP does not use the canonical plugin root.' >&2; exit 1 ;;
+          esac
 
       - name: Install WordPress Coding Standards
         run: |

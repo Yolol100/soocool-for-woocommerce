@@ -14,14 +14,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Minimum supported runtime
+          - name: Minimum supported runtime - HPOS
             php: '8.1'
             wordpress: '6.5'
             woocommerce: '8.2.5'
-          - name: Current supported runtime
+            hpos: 'yes'
+          - name: Minimum supported runtime - legacy storage
+            php: '8.1'
+            wordpress: '6.5'
+            woocommerce: '8.2.5'
+            hpos: 'no'
+          - name: Current supported runtime - HPOS
             php: '8.4'
             wordpress: '7.1'
             woocommerce: '11.1.0'
+            hpos: 'yes'
+          - name: Current supported runtime - legacy storage
+            php: '8.4'
+            wordpress: '7.1'
+            woocommerce: '11.1.0'
+            hpos: 'no'
 
     services:
       mysql:
@@ -44,15 +56,21 @@ jobs:
           persist-credentials: false
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2, signed tag target
         with:
           php-version: ${{ matrix.php }}
           extensions: mysqli
           coverage: none
 
       - name: Install WP-CLI
+        env:
+          WP_CLI_VERSION: '2.12.0'
+          WP_CLI_SHA256: 'ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c'
         run: |
-          curl -fsSL -o /tmp/wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          curl -fsSL \
+            -o /tmp/wp-cli.phar \
+            "https://github.com/wp-cli/wp-cli/releases/download/v${WP_CLI_VERSION}/wp-cli-${WP_CLI_VERSION}.phar"
+          echo "${WP_CLI_SHA256}  /tmp/wp-cli.phar" | sha256sum -c -
           php /tmp/wp-cli.phar --info
           sudo install -m 0755 /tmp/wp-cli.phar /usr/local/bin/wp
 
@@ -84,8 +102,8 @@ jobs:
             --activate \
             --path="$WP_PATH" \
             --allow-root
-          wp option update woocommerce_custom_orders_table_enabled yes --path="$WP_PATH" --allow-root
-          wp option update woocommerce_custom_orders_table_data_sync_enabled yes --path="$WP_PATH" --allow-root
+          wp option update woocommerce_custom_orders_table_enabled '${{ matrix.hpos }}' --path="$WP_PATH" --allow-root
+          wp option update woocommerce_custom_orders_table_data_sync_enabled '${{ matrix.hpos }}' --path="$WP_PATH" --allow-root
 
       - name: Install and activate SooCool
         env:
@@ -99,11 +117,12 @@ jobs:
           wp plugin activate soocool-for-woocommerce --path="$WP_PATH" --allow-root
           wp plugin status soocool-for-woocommerce --path="$WP_PATH" --allow-root
 
-      - name: Runtime smoke with HPOS
+      - name: Runtime smoke
         env:
           WP_PATH: /tmp/wordpress
           SOOCOOL_EXPECT_WP: ${{ matrix.wordpress }}
           SOOCOOL_EXPECT_WC: ${{ matrix.woocommerce }}
+          SOOCOOL_EXPECT_HPOS: ${{ matrix.hpos }}
         run: |
           wp eval-file \
             "$GITHUB_WORKSPACE/tests/woocommerce-runtime-smoke.php" \
