@@ -56,15 +56,21 @@ jobs:
           persist-credentials: false
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2, signed tag target
         with:
           php-version: ${{ matrix.php }}
           extensions: mysqli
           coverage: none
 
       - name: Install WP-CLI
+        env:
+          WP_CLI_VERSION: '2.12.0'
+          WP_CLI_SHA256: 'ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c'
         run: |
-          curl -fsSL -o /tmp/wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          curl -fsSL \
+            -o /tmp/wp-cli.phar \
+            "https://github.com/wp-cli/wp-cli/releases/download/v${WP_CLI_VERSION}/wp-cli-${WP_CLI_VERSION}.phar"
+          echo "${WP_CLI_SHA256}  /tmp/wp-cli.phar" | sha256sum -c -
           php /tmp/wp-cli.phar --info
           sudo install -m 0755 /tmp/wp-cli.phar /usr/local/bin/wp
 
