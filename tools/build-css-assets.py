@@ -18,6 +18,14 @@ PAIRS = (
         Path("assets/build/admin-settings.css"),
         Path("assets/build/admin-settings.min.css"),
     ),
+    (
+        Path("assets/build/admin-orders.css"),
+        Path("assets/build/admin-orders.min.css"),
+    ),
+    (
+        Path("assets/frontend/checkout-delivery.css"),
+        Path("assets/frontend/checkout-delivery.min.css"),
+    ),
 )
 
 # Whitespace after these characters is not required to keep tokens separate.
