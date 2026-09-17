@@ -60,7 +60,8 @@ $probe_data     = $probe_response->get_data();
 if ( 200 !== $probe_response->get_status() || ! is_array( $probe_data ) || true !== ( $probe_data['ready'] ?? false ) ) {
 	soocool_runtime_fail( 'SooCool webhook readiness probe did not return HTTP 200 ready=true.' );
 }
-if ( 'no-store' !== $probe_response->get_headers()['Cache-Control'] ?? null ) {
+$probe_headers = $probe_response->get_headers();
+if ( 'no-store' !== ( $probe_headers['Cache-Control'] ?? null ) ) {
 	soocool_runtime_fail( 'SooCool webhook readiness probe must be non-cacheable.' );
 }
 
