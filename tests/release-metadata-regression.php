@@ -36,8 +36,8 @@ $constant   = soocool_release_match( $plugin, "/define\(\s*'SOOCOOL_VERSION',\s*
 $stable     = soocool_release_match( $readme, '/^Stable tag:\s*([^\s]+)\s*$/m', 'readme Stable tag' );
 $asset_ver  = soocool_release_match( $asset, "/'version'\s*=>\s*'([^']+)'/", 'admin asset version' );
 $migration  = soocool_release_match( $options, "/MIGRATION_VERSION_FALLBACK\s*=\s*'([^']+)'/", 'migration fallback version' );
-$pot_ver    = soocool_release_match( $pot, '/Project-Id-Version: SooCool for WooCommerce ([^\\n]+)\\n/', 'POT project version' );
-$po_ver     = soocool_release_match( $po, '/Project-Id-Version: SooCool for WooCommerce ([^\\n]+)\\n/', 'PO project version' );
+$pot_ver    = soocool_release_match( $pot, '/Project-Id-Version: SooCool for WooCommerce ([0-9.]+)/', 'POT project version' );
+$po_ver     = soocool_release_match( $po, '/Project-Id-Version: SooCool for WooCommerce ([0-9.]+)/', 'PO project version' );
 $tested_wc  = soocool_release_match( $plugin, '/^\s*\*\s*WC tested up to:\s*([^\s]+)\s*$/m', 'WooCommerce tested-up-to metadata' );
 $tested_wp  = soocool_release_match( $readme, '/^Tested up to:\s*([^\s]+)\s*$/m', 'WordPress tested-up-to metadata' );
 
