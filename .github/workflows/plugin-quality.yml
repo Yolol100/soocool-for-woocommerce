@@ -8,7 +8,7 @@ on:
 
 jobs:
   php-quality:
-    name: PHP, assets, translations and WPCS
+    name: PHP, JS, assets, translations and WPCS
     runs-on: ubuntu-latest
 
     steps:
@@ -31,6 +31,12 @@ jobs:
             -path './node_modules' -prune -o \
             -name '*.php' -print0 \
             | xargs -0 -n1 php -l
+
+      - name: JavaScript syntax check
+        run: |
+          node --check assets/build/admin.js
+          node --check assets/admin/order-actions.js
+          node --check assets/frontend/checkout-delivery.js
 
       - name: Sync scheduling regression
         run: php tests/sync-scheduling-regression.php
