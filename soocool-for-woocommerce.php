@@ -82,4 +82,77 @@ spl_autoload_register(
 	}
 );
 
-\SooCool\WooCommerce\Plugin::boot();
+add_action( 'admin_init', 'soocool_deactivate_legacy_duplicate_plugin' );
+
+add_filter(
+	'plugin_action_links_' . plugin_basename( __FILE__ ),
+	static function ( array $links ): array {
+		$settings_url = admin_url( 'admin.php?page=soocool-for-woocommerce' );
+		array_unshift(
+			$links,
+			'<a href="' . esc_url( $settings_url ) . '">' . esc_html__( 'Instellingen', 'soocool-for-woocommerce' ) . '</a>'
+		);
+
+		return $links;
+	}
+);
+
+register_deactivation_hook(
+	__FILE__,
+	static function (): void {
+		SooCool\WooCommerce\WooCommerce\OrderActions::unschedule_all();
+		SooCool\WooCommerce\Rest\WebhookAuthenticator::unschedule_cleanup();
+	}
+);
+
+register_activation_hook(
+	__FILE__,
+	static function (): void {
+		soocool_deactivate_legacy_duplicate_plugin( false );
+		if ( PHP_VERSION_ID < 80100 ) {
+			deactivate_plugins( plugin_basename( __FILE__ ) );
+			wp_die( esc_html__( 'SooCool for WooCommerce vereist PHP 8.1 of hoger.', 'soocool-for-woocommerce' ) );
+		}
+
+		$soocool_requirements = new SooCool\WooCommerce\Infrastructure\Requirements();
+		if ( ! $soocool_requirements->is_supported() ) {
+			deactivate_plugins( plugin_basename( __FILE__ ) );
+			wp_die( esc_html( $soocool_requirements->get_missing_message() ) );
+		}
+
+		( new SooCool\WooCommerce\Infrastructure\OptionRepository() )->migrate_for_current_version();
+	}
+);
+
+add_action(
+	'init',
+	static function (): void {
+		load_plugin_textdomain(
+			'soocool-for-woocommerce',
+			false,
+			dirname( plugin_basename( __FILE__ ) ) . '/languages'
+		);
+	},
+	0
+);
+
+add_action(
+	'plugins_loaded',
+	static function (): void {
+		if ( PHP_VERSION_ID < 80100 ) {
+			add_action(
+				'admin_notices',
+				static function (): void {
+					if ( ! current_user_can( 'activate_plugins' ) ) {
+						return;
+					}
+
+					echo '<div class="notice notice-error"><p>' . esc_html__( 'SooCool for WooCommerce vereist PHP 8.1 of hoger.', 'soocool-for-woocommerce' ) . '</p></div>';
+				}
+			);
+			return;
+		}
+
+		SooCool\WooCommerce\Plugin::boot();
+	}
+);
