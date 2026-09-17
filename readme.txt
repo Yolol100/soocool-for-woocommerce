@@ -29,7 +29,7 @@ Main features:
 
 = External service: SooCool API =
 
-This plugin connects to the SooCool API when an authorized manager tests the connection, submits or refreshes an order, searches for an existing SooCool order, or downloads a shipping label. It also exposes an authenticated webhook endpoint that SooCool can use to send status and tracking updates.
+This plugin connects to the SooCool API when an authorized manager tests the connection, submits or refreshes an order, searches for an existing SooCool order, or downloads a shipping label. It also exposes an authenticated webhook endpoint that SooCool can use to send status and tracking updates. The webhook URL also returns a read-only readiness response to GET checks so providers can verify that the callback route exists without invoking order processing.
 
 Default API hosts:
 
@@ -75,7 +75,7 @@ The plugin declares WooCommerce custom order table compatibility and uses WooCom
 
 = How is the incoming webhook secured? =
 
-The receiver requires the stored SooCool webhook token plus timestamped HMAC headers and replay protection. Conflicting order identifiers fail closed before order state is changed.
+The receiver requires the stored SooCool webhook token plus timestamped HMAC headers and replay protection. Conflicting order identifiers fail closed before order state is changed. The public GET readiness check does not process webhook payloads or mutate orders.
 
 = Does the plugin support WordPress Multisite network activation? =
 
