@@ -4,7 +4,7 @@
 
 SooCool for WooCommerce connects WooCommerce orders to the SooCool transport platform. It handles order submission, delivery scheduling, status updates, retries and shipping labels while keeping API credentials, webhook handling and order state changes behind explicit safety boundaries.
 
-**Built by:** [Andrew Baeten](https://github.com/Yolol100) · [Portfolio](https://andrewbaeten.nl)
+**Built by:** [Andrew Baeten](https://github.com/Yolol100) · [Portfolio cases](https://andrewbaeten.nl/category/cases)
 
 ## What problem it solves
 
@@ -51,7 +51,7 @@ Useful places to inspect:
 
 I am **Andrew Baeten**, a WordPress Developer & Web Designer with 10+ years of experience across **70+ WordPress projects**. My work combines WordPress, WooCommerce, Elementor, UX, performance, technical SEO and quality-focused delivery.
 
-[Portfolio](https://andrewbaeten.nl) · [LinkedIn](https://www.linkedin.com/in/andrew-baeten-305a1478/) · [Email](mailto:info@andrewbaeten.nl)
+[Portfolio cases](https://andrewbaeten.nl/category/cases) · [LinkedIn](https://www.linkedin.com/in/andrew-baeten-305a1478/) · [Email](mailto:info@andrewbaeten.nl)
 
 ## License
 
