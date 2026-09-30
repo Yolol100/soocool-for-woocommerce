@@ -55,7 +55,8 @@ Useful places to inspect:
 
 - `src/` — application logic and integration boundaries.
 - `tests/` — regression and runtime-oriented coverage.
-- `.github/` — automated quality/release workflows.
+- [`.github/workflows/plugin-quality.yml`](.github/workflows/plugin-quality.yml) — coding standards and regression checks.
+- [`.github/workflows/woocommerce-runtime.yml`](.github/workflows/woocommerce-runtime.yml) — clean WordPress/WooCommerce runtime validation.
 - `phpcs.xml.dist` — PHP coding-standard configuration.
 - [`readme.txt`](readme.txt) — full installation, privacy, compatibility and changelog documentation.
 
