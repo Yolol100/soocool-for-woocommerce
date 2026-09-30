@@ -22,6 +22,18 @@ Shipping integrations sit between ecommerce, customer data and an external logis
 | Privacy & security | Masked API keys, sanitized logging and scoped personal-data handling |
 | Compatibility | Real WordPress/WooCommerce runtime matrices and explicit unsupported-state declarations |
 
+## Workflow at a glance
+
+```mermaid
+flowchart LR
+    A[WooCommerce order] --> B[Validate delivery data]
+    B --> C[Queued transport submission]
+    C --> D[SooCool API]
+    D --> E[Remote status or webhook]
+    E --> F[Verified WooCommerce state update]
+    D --> G[Shipping label workflow]
+```
+
 ## Important engineering choices
 
 - Existing remote orders are linked safely instead of blindly recreated.
