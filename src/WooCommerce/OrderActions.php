@@ -115,7 +115,7 @@ final class OrderActions {
 	private function schedule_initial_order_action( string $hook, int $order_id, bool $manual_when_linked ): string {
 		$order_id = NumericIdentifier::positive( $order_id ) ?? 0;
 		$order    = 0 < $order_id ? wc_get_order( $order_id ) : null;
-		if ( ! $order instanceof WC_Order ) {
+		if ( ! $order instanceof WC_Order || ! $order->is_paid() ) {
 			return self::QUEUE_FAILED;
 		}
 
@@ -164,10 +164,10 @@ final class OrderActions {
 			return;
 		}
 
-		if ( ! $this->delivery_eligibility->requires_delivery( $order ) ) {
+		if ( ! $order->is_paid() || ! $this->delivery_eligibility->requires_delivery( $order ) ) {
 			$this->clear_watchdog( $hook, $order_id, $attempt, $context_fingerprint );
 			$this->meta->clear_pending( $order );
-			$order->add_order_note( __( 'SooCool-synchronisatie overgeslagen omdat deze order bij uitvoering geen transport meer vereist.', 'soocool-for-woocommerce' ) );
+			$order->add_order_note( $order->is_paid() ? __( 'SooCool-synchronisatie overgeslagen omdat deze order bij uitvoering geen transport meer vereist.', 'soocool-for-woocommerce' ) : __( 'SooCool-synchronisatie kon niet worden gestart.', 'soocool-for-woocommerce' ) );
 			return;
 		}
 

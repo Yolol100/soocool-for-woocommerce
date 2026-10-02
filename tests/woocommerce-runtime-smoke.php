@@ -198,7 +198,7 @@ if ( '' === $expected_wp || '' === $expected_wc || ! in_array( $expected_hpos, a
 	soocool_runtime_fail( 'Expected WordPress, WooCommerce and HPOS mode must be provided.' );
 }
 
-if ( ! defined( 'SOOCOOL_VERSION' ) || '0.7.147' !== SOOCOOL_VERSION ) {
+if ( ! defined( 'SOOCOOL_VERSION' ) || '0.7.148' !== SOOCOOL_VERSION ) {
 	soocool_runtime_fail( 'SooCool plugin version mismatch.' );
 }
 

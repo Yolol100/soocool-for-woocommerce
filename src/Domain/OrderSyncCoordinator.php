@@ -36,6 +36,10 @@ final class OrderSyncCoordinator {
 
 	/** @return array<string, mixed> */
 	public function sync_order( WC_Order $order, bool $force = false ): array {
+		if ( ! $order->is_paid() ) {
+			return $this->result( false, __( 'SooCool-synchronisatie kon niet worden gestart.', 'soocool-for-woocommerce' ), 409 );
+		}
+
 		$settings = $this->options->all();
 		if ( ! $force && ! (bool) $settings['allow_resubmit'] && $this->is_synced_in_current_provider( $order ) ) {
 			return $this->result( false, __( 'Order is al met SooCool gesynchroniseerd.', 'soocool-for-woocommerce' ), 409 );

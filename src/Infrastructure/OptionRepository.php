@@ -28,7 +28,7 @@ final class OptionRepository {
 	private const PACKAGE_WEIGHT_MIGRATION_OPTION = 'soocool_package_weight_migration_20260729_10kg';
 	private const AUTO_SUBMIT_MIGRATION_OPTION    = 'soocool_auto_submit_migration_20260811';
 	private const MIGRATION_VERSION_OPTION        = 'soocool_migration_version';
-	private const MIGRATION_VERSION_FALLBACK      = '0.7.147';
+	private const MIGRATION_VERSION_FALLBACK      = '0.7.148';
 	private const WRITE_LOCK_KEY                  = 'soocool_settings_write_lock';
 	private const WRITE_LOCK_TTL                  = 10;
 	private const WRITE_LOCK_RETRIES              = 5;

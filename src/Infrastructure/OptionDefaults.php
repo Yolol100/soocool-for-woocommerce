@@ -14,7 +14,7 @@ final class OptionDefaults {
 	public const DELIVERY_TIME_FROM  = '08:00';
 	public const DELIVERY_TIME_TO    = '18:00';
 	public const AUTO_SUBMIT_ENABLED = true;
-	public const AUTO_SUBMIT_STATUS  = 'pending';
+	public const AUTO_SUBMIT_STATUS  = 'processing';
 
 	/** @return array<string, mixed> */
 	public function settings(): array {

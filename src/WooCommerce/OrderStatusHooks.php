@@ -101,7 +101,7 @@ final class OrderStatusHooks {
 	private function matches_auto_submit_status( string $order_status ): bool {
 		return in_array(
 			sanitize_key( $order_status ),
-			array( OptionDefaults::AUTO_SUBMIT_STATUS, 'on-hold', 'processing', 'completed' ),
+			array_map( 'sanitize_key', function_exists( 'wc_get_is_paid_statuses' ) ? wc_get_is_paid_statuses() : array( OptionDefaults::AUTO_SUBMIT_STATUS, 'completed' ) ),
 			true
 		);
 	}

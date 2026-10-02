@@ -1,3 +1,9 @@
+= 0.7.148 =
+* Synchroniseert automatisch alleen WooCommerce-orders die WooCommerce als betaald beschouwt; standaard `pending`, `failed`, `on-hold`, `cancelled` en `refunded` worden niet automatisch naar SooCool gestuurd.
+* Hercontroleert de betaalstatus vóór queue-planning, vlak vóór achtergrondverwerking en in de centrale synccoördinator, zodat stale of handmatige paden geen onbetaalde of mislukte order naar SooCool kunnen sturen.
+* Gebruikt WooCommerce' eigen betaalstatussemantiek (`wc_get_is_paid_statuses()` en `WC_Order::is_paid()`), zodat betaalde custom statussen via de officiële WooCommerce-filters kunnen blijven werken.
+* Voegt regressiedekking toe voor pending/failed auto-submit, onbetaalde queueplanning, stale queued execution en de centrale coordinator-guard.
+
 = 0.7.147 =
 * Houdt onderhoudsrecovery op de canonieke syncqueue, maar rapporteert al gekoppelde mislukte orders correct als handmatige controle in plaats van als queue-duplicate.
 * Herstelt echte productie-minificatie van de admin-instellingen-CSS en bewaakt CSS- en vertaalbuilds permanent tegen drift in CI.

@@ -30,6 +30,10 @@ namespace {
 		return $GLOBALS['soocool_test_orders'][ $order_id ] ?? null;
 	}
 
+	function wc_get_is_paid_statuses(): array {
+		return array( 'processing', 'completed' );
+	}
+
 	function wc_get_orders( array $args ): object {
 		unset( $args );
 		$query = $GLOBALS['soocool_test_wc_get_orders'] ?? array(
@@ -74,7 +78,7 @@ namespace {
 
 namespace SooCool\WooCommerce\Infrastructure {
 	final class OptionDefaults {
-		public const AUTO_SUBMIT_STATUS = 'pending';
+		public const AUTO_SUBMIT_STATUS = 'processing';
 	}
 
 	final class OptionRepository {}
@@ -165,20 +169,40 @@ namespace {
 	$eligibility = new \SooCool\WooCommerce\WooCommerce\OrderDeliveryEligibility();
 	$options     = new \SooCool\WooCommerce\Infrastructure\OptionRepository();
 	$hooks       = new \SooCool\WooCommerce\WooCommerce\OrderStatusHooks( $options, $actions, $meta, $eligibility );
-	$order       = new WC_Order( 101, 'pending' );
-	$GLOBALS['soocool_test_orders'][101] = $order;
+	$pending_order = new WC_Order( 101, 'pending' );
+	$GLOBALS['soocool_test_orders'][101] = $pending_order;
 
+	$hooks->maybe_auto_submit_created_order( $pending_order );
+	$hooks->maybe_auto_submit_processed_order( 101, array(), $pending_order );
+	$hooks->maybe_auto_submit( 101, 'checkout-draft', 'pending', $pending_order );
+
+	if ( 0 !== $actions->send_calls || 0 !== count( $pending_order->notes ) ) {
+		fwrite( STDERR, 'Pending-payment orders must not be queued for SooCool.' . PHP_EOL );
+		exit( 1 );
+	}
+
+	$failed_order = new WC_Order( 202, 'failed' );
+	$GLOBALS['soocool_test_orders'][202] = $failed_order;
+	$hooks->maybe_auto_submit_created_order( $failed_order );
+	$hooks->maybe_auto_submit( 202, 'pending', 'failed', $failed_order );
+	if ( 0 !== $actions->send_calls ) {
+		fwrite( STDERR, 'Failed-payment orders must not be queued for SooCool.' . PHP_EOL );
+		exit( 1 );
+	}
+
+	$order = new WC_Order( 101, 'processing' );
+	$GLOBALS['soocool_test_orders'][101] = $order;
 	$hooks->maybe_auto_submit_created_order( $order );
 	$hooks->maybe_auto_submit_processed_order( 101, array(), $order );
 	$hooks->maybe_auto_submit( 101, 'pending', 'processing', $order );
 
 	if ( 1 !== $actions->send_calls ) {
-		fwrite( STDERR, "Expected one automatic queue request, got {$actions->send_calls}.\n" );
+		fwrite( STDERR, "Expected one paid-order queue request, got {$actions->send_calls}.\n" );
 		exit( 1 );
 	}
 
 	if ( 1 !== count( $order->notes ) ) {
-		fwrite( STDERR, 'Expected exactly one scheduling note after overlapping WooCommerce hooks.' . PHP_EOL );
+		fwrite( STDERR, 'Expected exactly one scheduling note after overlapping paid-order hooks.' . PHP_EOL );
 		exit( 1 );
 	}
 

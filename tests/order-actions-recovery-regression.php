@@ -39,10 +39,20 @@ namespace {
 	}
 
 	class WC_Order {
-		public function __construct( private readonly int $id ) {}
+		public array $notes = array();
+
+		public function __construct( private readonly int $id, private readonly bool $paid = true ) {}
 
 		public function get_id(): int {
 			return $this->id;
+		}
+
+		public function is_paid(): bool {
+			return $this->paid;
+		}
+
+		public function add_order_note( string $note ): void {
+			$this->notes[] = $note;
 		}
 	}
 }
@@ -53,7 +63,15 @@ namespace SooCool\WooCommerce\Admin {
 }
 
 namespace SooCool\WooCommerce\Domain {
-	final class OrderSyncCoordinator {}
+	final class OrderSyncCoordinator {
+		public int $sync_calls = 0;
+
+		public function sync_order( \WC_Order $order, bool $force = false ): array {
+			unset( $order, $force );
+			++$this->sync_calls;
+			return array( 'success' => true );
+		}
+	}
 }
 
 namespace SooCool\WooCommerce\Infrastructure {
@@ -115,6 +133,9 @@ namespace SooCool\WooCommerce\WooCommerce {
 		/** @var array<int, int> */
 		private array $pending = array();
 
+		/** @var array<int, int> */
+		private array $pending_cleared = array();
+
 		public function set_synced( int $order_id, bool $synced, string $context = '' ): void {
 			$this->synced[ $order_id ]   = $synced;
 			$this->contexts[ $order_id ] = $context;
@@ -142,12 +163,21 @@ namespace SooCool\WooCommerce\WooCommerce {
 			unset( $order, $message );
 		}
 
+		public function clear_pending( WC_Order $order ): void {
+			$order_id = $order->get_id();
+			$this->pending_cleared[ $order_id ] = ( $this->pending_cleared[ $order_id ] ?? 0 ) + 1;
+		}
+
 		public function restored_count( int $order_id ): int {
 			return $this->restored[ $order_id ] ?? 0;
 		}
 
 		public function pending_count( int $order_id ): int {
 			return $this->pending[ $order_id ] ?? 0;
+		}
+
+		public function pending_cleared_count( int $order_id ): int {
+			return $this->pending_cleared[ $order_id ] ?? 0;
 		}
 	}
 }
@@ -170,6 +200,21 @@ namespace {
 	$GLOBALS['soocool_recovery_scheduled']   = array();
 	$meta->set_synced( 101, true, 'current' );
 	$meta->set_synced( 202, false );
+
+	$unpaid = new WC_Order( 303, false );
+	$GLOBALS['soocool_recovery_orders'][303] = $unpaid;
+	$meta->set_synced( 303, false );
+	$result = $actions->schedule_send_to_soocool( 303 );
+	if ( \SooCool\WooCommerce\WooCommerce\OrderActions::QUEUE_FAILED !== $result || 0 !== $meta->pending_count( 303 ) ) {
+		fwrite( STDERR, 'Unpaid orders must fail closed before entering the SooCool queue.' . PHP_EOL );
+		exit( 1 );
+	}
+
+	$actions->send_order_by_id( 303 );
+	if ( 0 !== $coordinator->sync_calls || 1 !== $meta->pending_cleared_count( 303 ) ) {
+		fwrite( STDERR, 'A stale queued unpaid order must be cleared without calling the SooCool sync coordinator.' . PHP_EOL );
+		exit( 1 );
+	}
 
 	$result = $actions->schedule_failed_order_recovery( 101 );
 	if ( \SooCool\WooCommerce\WooCommerce\OrderActions::QUEUE_MANUAL !== $result ) {

@@ -41,6 +41,9 @@ jobs:
       - name: Sync scheduling regression
         run: php tests/sync-scheduling-regression.php
 
+      - name: Payment eligibility regression
+        run: php tests/order-sync-payment-regression.php
+
       - name: Maintenance recovery regression
         run: php tests/order-actions-recovery-regression.php
 
@@ -95,3 +98,10 @@ jobs:
 
       - name: Run PHPCS
         run: "$HOME/.composer/vendor/bin/phpcs --standard=phpcs.xml.dist"
+
+      - name: Upload validated plugin package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: soocool-for-woocommerce
+          path: /tmp/soocool-for-woocommerce.zip
+          if-no-files-found: error

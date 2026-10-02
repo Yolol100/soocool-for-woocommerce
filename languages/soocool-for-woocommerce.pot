@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: SooCool for WooCommerce 0.7.147\n"
+"Project-Id-Version: SooCool for WooCommerce 0.7.148\n"
 "Report-Msgid-Bugs-To: security@webactueel.nl\n"
 "POT-Creation-Date: 2026-09-02 15:53+0000\n"
 "PO-Revision-Date: 2026-09-02 15:53+0000\n"
@@ -2968,7 +2968,7 @@ msgid "SooCool-synchronisatie kon niet op de achtergrond worden ingepland. Gebru
 msgstr ""
 
 
-#: src/Admin/OrderActionConfirmScript.php:50
+#: src/Admin/OrderActionConfirmScript.php:50 src/Domain/OrderSyncCoordinator.php:40 src/WooCommerce/OrderActions.php:170
 msgid "SooCool-synchronisatie kon niet worden gestart."
 msgstr ""
 

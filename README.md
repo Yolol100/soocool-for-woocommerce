@@ -36,6 +36,7 @@ flowchart LR
 
 ## Important engineering choices
 
+- Orders are submitted only when WooCommerce considers them paid; pending or failed payments stay outside the transport queue.
 - Existing remote orders are linked safely instead of blindly recreated.
 - Ambiguous remote task statuses do not overwrite WooCommerce order state.
 - Checkout Blocks support stays staging-first until parity is proven.

@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.7.147
+Stable tag: 0.7.148
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -59,7 +59,7 @@ Review SooCool's service terms and privacy information before production use:
 
 = Does the plugin send orders automatically? =
 
-Yes, after the integration is configured. Eligible physical delivery orders are queued in the background. Virtual-only orders, pure local-pickup orders and orders already linked to SooCool are not submitted as new orders again.
+Yes, after the integration is configured. Only orders that WooCommerce considers paid are queued automatically for SooCool. Standard pending payment, failed, on-hold, cancelled and refunded orders stay out of the submission queue unless WooCommerce later moves them into a paid status. Virtual-only orders, pure local-pickup orders and orders already linked to SooCool are not submitted as new orders again.
 
 = Does the delivery picker support WooCommerce Checkout Blocks? =
 
@@ -98,6 +98,11 @@ Site owners remain responsible for documenting SooCool as a transport/data recip
 Uninstall removes plugin settings, plugin-owned logs, locks, transients and temporary e-mail-label files. SooCool order metadata remains on WooCommerce orders for historical and audit continuity.
 
 == Changelog ==
+
+= 0.7.148 =
+* Synchroniseert automatisch alleen WooCommerce-orders die WooCommerce als betaald beschouwt; standaard `pending`, `failed`, `on-hold`, `cancelled` en `refunded` worden niet automatisch naar SooCool gestuurd.
+* Hercontroleert de betaalstatus zowel vóór queue-planning als vlak vóór background-uitvoering, zodat een order die na inplannen alsnog mislukt of terugvalt niet door een stale taak naar SooCool kan worden verstuurd.
+* Blokkeert ook directe en handmatige syncpaden fail-closed zolang WooCommerce de order niet als betaald beschouwt.
 
 = 0.7.147 =
 * Maakt remote SooCool-statusmapping taakbewust: orderstatussen hebben voorrang, pickup-taskstatussen kunnen de hele order niet meer ten onrechte afronden en alleen eenduidige delivery-taskstatussen worden als fallback toegepast.
