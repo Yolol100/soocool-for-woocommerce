@@ -86,6 +86,9 @@ jobs:
             soocool-for-woocommerce/*) ;;
             *) echo 'Distribution ZIP does not use the canonical plugin root.' >&2; exit 1 ;;
           esac
+          verify_root="$(mktemp -d)"
+          unzip -q /tmp/soocool-for-woocommerce.zip -d "$verify_root"
+          diff -qr "$package" "$verify_root/soocool-for-woocommerce"
 
       - name: Install WordPress Coding Standards
         run: |
