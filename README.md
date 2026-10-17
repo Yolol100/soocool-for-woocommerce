@@ -6,6 +6,18 @@ SooCool for WooCommerce connects WooCommerce orders to the SooCool transport pla
 
 **Developer profile:** [Andrew Baeten](https://github.com/Yolol100) · [GitHub project index](https://github.com/Yolol100?tab=repositories)
 
+## See the integration
+
+| Connection settings | Test order workflow |
+| :---: | :---: |
+| [![SooCool for WooCommerce API connection settings in WordPress](https://andrewbaeten.nl/wp-content/uploads/2026/06/soocool-woocommerce-api-connection-settings.png)](https://andrewbaeten.nl/socool-for-woocommerce/) | [![SooCool for WooCommerce test order screen](https://andrewbaeten.nl/wp-content/uploads/2026/06/soocool-woocommerce-api-test-order-scherm.png)](https://andrewbaeten.nl/socool-for-woocommerce/) |
+
+[Read the WooCommerce logistics integration case study](https://andrewbaeten.nl/socool-for-woocommerce/), including the problem, my contribution and interface examples.
+
+**Why a store needs this:** a paid delivery order must reach the transport provider without creating duplicate shipments. Background processing, authenticated webhooks and cautious status handling protect the order workflow when a provider is slow or unavailable.
+
+*The screenshots are from my public portfolio. Automated runtime tests validate specific scenarios; production provider delivery outcomes must be verified separately.*
+
 ## What problem it solves
 
 Shipping integrations sit between ecommerce, customer data and an external logistics provider. A failure can create duplicate transport orders, stale statuses or broken fulfilment. This plugin turns that integration into a controlled WooCommerce workflow with asynchronous processing, replay protection and explicit compatibility boundaries.
@@ -63,6 +75,16 @@ This is an **integration**, not a static demo. A functioning connection requires
 **Why the safeguards matter:** A delayed webhook or failed network request should not silently turn into a second transport order or an incorrect WooCommerce status. See the [regression suite](tests/) and [real WooCommerce runtime workflow](.github/workflows/woocommerce-runtime.yml) for the specific behaviour that is tested.
 
 **Limits:** Checkout Blocks integration is not claimed as production-ready; runtime tests do not prove any live shipping-provider service level or business improvement. More setup and privacy details are in [WordPress plugin documentation](readme.txt).
+
+## Installation (staging first)
+
+1. Install and activate WooCommerce, then upload and activate this plugin.
+2. Open **WooCommerce → SooCool** and select the **Test** environment.
+3. Enter the test API key in the settings, or use the server-side `SOOCOOL_API_KEY` constant.
+4. Configure the pickup/contact details and delivery schedule, then run the connection test.
+5. Place a test order and verify submission, webhook handling and label flow before enabling production credentials.
+
+The integration communicates with SooCool and transfers the shipment information required for fulfilment. Review [installation, privacy and API details](readme.txt) before deployment; never commit API keys or customer data.
 
 ## Technical review
 
