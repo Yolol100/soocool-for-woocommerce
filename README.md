@@ -50,6 +50,20 @@ flowchart LR
 - WooCommerce
 - Current stable version and full compatibility notes: see [`readme.txt`](readme.txt)
 
+## Set up and review on staging
+
+This is an **integration**, not a static demo. A functioning connection requires WooCommerce and authorized SooCool test credentials. Never add API keys, order addresses or customer details to GitHub.
+
+1. Install and activate WooCommerce on a disposable or staging WordPress site.
+2. Upload and activate this plugin. Open **WooCommerce → SooCool**.
+3. Select the **Test** environment and configure its authorized API key, pickup details, delivery schedule and label preferences.
+4. Run the connection test. Create a **test** physical order and move it through the WooCommerce-paid path in a test setup.
+5. Inspect transport submission, webhook handling, retry safeguards and label output before considering a production connection.
+
+**Why the safeguards matter:** A delayed webhook or failed network request should not silently turn into a second transport order or an incorrect WooCommerce status. See the [regression suite](tests/) and [real WooCommerce runtime workflow](.github/workflows/woocommerce-runtime.yml) for the specific behaviour that is tested.
+
+**Limits:** Checkout Blocks integration is not claimed as production-ready; runtime tests do not prove any live shipping-provider service level or business improvement. More setup and privacy details are in [WordPress plugin documentation](readme.txt).
+
 ## Technical review
 
 Useful places to inspect:
