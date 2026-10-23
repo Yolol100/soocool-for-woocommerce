@@ -7,7 +7,6 @@ are not treated as duplicates of base rules or other media queries.
 
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 
