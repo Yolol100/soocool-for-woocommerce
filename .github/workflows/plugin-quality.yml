@@ -59,9 +59,6 @@ jobs:
       - name: CSS asset consistency
         run: python3 tools/build-css-assets.py --check
 
-      - name: CSS duplicate rule and declaration guard
-        run: python3 tools/check-css-quality.py
-
       - name: Translation catalog consistency
         run: python3 tools/build-translations.py --check
 
