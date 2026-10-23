@@ -91,11 +91,85 @@ def declarations(body: str):
         start = index + 1
         if ":" in part:
             property_name, value = part.split(":", 1)
-            yield property_name.strip().lower(), value.strip()
+            yield normalized_property(property_name), value.strip()
     part = body[start:].strip()
     if ":" in part:
         property_name, value = part.split(":", 1)
-        yield property_name.strip().lower(), value.strip()
+        yield normalized_property(property_name), value.strip()
+
+
+def normalized_property(property_name: str) -> str:
+    name = property_name.strip()
+    return name if name.startswith("--") else name.lower()
+
+
+def normalize_selector(selector: str) -> str:
+    """Ignore optional spacing around selector lists and combinators only.
+
+    Descendant whitespace and the contents of quoted/attribute values retain
+    their meaning. Escaped punctuation is not a separator.
+    """
+    output = []
+    quote = ""
+    escaped = False
+    bracket_depth = 0
+    pending_space = False
+    separators = ",>+~"
+
+    for char in selector:
+        if escaped:
+            output.append(char)
+            escaped = False
+            continue
+        if char == "\\":
+            if pending_space and output and output[-1] not in separators:
+                output.append(" ")
+            pending_space = False
+            output.append(char)
+            escaped = True
+            continue
+        if quote:
+            output.append(char)
+            if char == quote:
+                quote = ""
+            continue
+        if char in ("'", '"'):
+            if pending_space and output and output[-1] not in separators:
+                output.append(" ")
+            pending_space = False
+            output.append(char)
+            quote = char
+            continue
+        if char == "[":
+            bracket_depth += 1
+        elif char == "]":
+            bracket_depth = max(0, bracket_depth - 1)
+        if char.isspace():
+            pending_space = True
+            continue
+        if bracket_depth == 0 and char in separators:
+            while output and output[-1] == " ":
+                output.pop()
+            output.append(char)
+        else:
+            if pending_space and output and output[-1] not in separators:
+                output.append(" ")
+            output.append(char)
+        pending_space = False
+
+    return "".join(output)
+
+
+# These at-rules own declarations rather than nested selector rules.
+DESCRIPTOR_AT_RULES = frozenset({
+    "@font-face", "@page", "@property", "@counter-style",
+    "@font-feature-values", "@font-palette-values", "@viewport", "@-ms-viewport",
+})
+
+
+def is_descriptor_at_rule(prelude: str) -> bool:
+    keyword = prelude.split(None, 1)[0].split("(", 1)[0].lower()
+    return keyword in DESCRIPTOR_AT_RULES or keyword.startswith(("@top-", "@bottom-", "@left-", "@right-"))
 
 
 def scan(source: str) -> list[str]:
@@ -109,10 +183,10 @@ def scan(source: str) -> list[str]:
             prelude = " ".join(clean[start:index].split())
             if not prelude:
                 issues.append(f"line {clean.count(chr(10), 0, index) + 1}: empty block selector")
-            kind = "at" if prelude.startswith("@") else "rule"
+            kind = ("descriptor" if is_descriptor_at_rule(prelude) else "at") if prelude.startswith("@") else "rule"
             context = tuple(entry["name"] for entry in stack if entry["kind"] == "at")
             if kind == "rule":
-                key = (context, prelude)
+                key = (context, normalize_selector(prelude))
                 line = clean.count("\n", 0, start) + 1
                 if key in seen:
                     issues.append(f"line {line}: selector {prelude!r} repeats line {seen[key]} in the same context")
@@ -125,7 +199,7 @@ def scan(source: str) -> list[str]:
                 start = index + 1
                 continue
             block = stack.pop()
-            if block["kind"] == "rule":
+            if block["kind"] in ("rule", "descriptor"):
                 properties = set()
                 for name, _ in declarations(clean[block["start"]:index]):
                     if name in properties:
@@ -147,6 +221,16 @@ def self_test() -> None:
     assert scan('.a {color: red; color: blue;}')
     assert scan('.a {content: "{;} /* harmless */"; background: url("data:x;y");}') == []
     assert scan('.a {color: red; /* ignore { } ; */ background: blue;}') == []
+    assert scan('.a,.b {color: red;} .a, .b {color: blue;}')
+    assert scan('.a > .b {color: red;} .a>.b {color: blue;}')
+    assert scan('.a + .b {color: red;} .a+.b {color: blue;}')
+    assert scan('.a .b {color: red;} .a.b {color: blue;}') == []
+    assert scan('.a[title="a, b"] {color: red;} .a[title="a,b"] {color: blue;}') == []
+    assert scan('.a {--Brand-color: red; --brand-color: blue;}') == []
+    assert scan('.a {COLOR: red; color: blue;}')
+    assert scan('@font-face {font-display: swap; font-display: swap;}')
+    assert scan('@property --primary {syntax: "<color>"; syntax: "<length>";}')
+    assert scan('@media (min-width: 500px) {@font-face {font-display: swap; font-display: swap;}}')
 
 
 def main() -> int:
