@@ -38,6 +38,12 @@ jobs:
           node --check assets/admin/order-actions.js
           node --check assets/frontend/checkout-delivery.js
 
+      - name: Checkout initialization regression
+        run: node tests/checkout-delivery-init-regression.js
+
+      - name: Checkout asset dependency regression
+        run: php tests/checkout-delivery-assets-regression.php
+
       - name: Sync scheduling regression
         run: php tests/sync-scheduling-regression.php
 
@@ -52,6 +58,9 @@ jobs:
 
       - name: CSS asset consistency
         run: python3 tools/build-css-assets.py --check
+
+      - name: CSS duplicate rule and declaration guard
+        run: python3 tools/check-css-quality.py
 
       - name: Translation catalog consistency
         run: python3 tools/build-translations.py --check

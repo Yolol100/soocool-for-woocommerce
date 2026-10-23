@@ -60,7 +60,7 @@ final class DeliveryOptions {
 			wp_enqueue_script(
 				'soocool-checkout-delivery',
 				AssetResolver::url( 'assets/frontend', $js_file ),
-				array(),
+				array( 'jquery' ),
 				AssetResolver::version( 'assets/frontend', $js_file ),
 				true
 			);

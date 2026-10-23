@@ -519,10 +519,6 @@ button.soocool-delivery-time-more:focus,
 }
 
 @media (max-width: 600px) {
-  .soocool-delivery-options {
-    padding: 14px;
-  }
-
   .soocool-delivery-options__picker {
     gap: 6px;
   }
