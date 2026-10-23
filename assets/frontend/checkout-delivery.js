@@ -371,7 +371,11 @@
       : (moreButton.getAttribute('data-more-label') || '');
   });
 
-  document.addEventListener('DOMContentLoaded', updateAll);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateAll, { once: true });
+  } else {
+    updateAll();
+  }
 
   if (window.jQuery) {
     window.jQuery(document.body).on('updated_checkout', updateAll);
