@@ -347,6 +347,33 @@ namespace {
 		'Conflicting counts must be rejected even when explicit weight is missing'
 	);
 
+	// An explicitly selected Aantal > 1 without usable Gewicht or a real product
+	// weight must stop, rather than applying the 1kg fallback to an entire pack.
+	$missing_multipack_weight = new SooCoolWeightTestProduct( array( 'pa_aantal' => '10' ), '' );
+	$missing_pack_item = new SooCoolWeightTestItem( $missing_multipack_weight );
+	soocool_weight_expect_rejected(
+		static fn () => $weight_method->invoke( $builder, $missing_multipack_weight, 'Kip kruiden', 1000, $missing_pack_item, new WC_Order() ),
+		'Multipack with no unit or official pack weight must not fall back to 1kg'
+	);
+
+	// A configured WooCommerce shipping weight can intentionally describe the
+	// whole pack when no per-piece Gewicht attribute was supplied.
+	$official_pack_weight = new SooCoolWeightTestProduct( array( 'pa_aantal' => '10' ), '1' );
+	$official_item = new SooCoolWeightTestItem( $official_pack_weight );
+	soocool_weight_expect(
+		$weight_method->invoke( $builder, $official_pack_weight, 'Kip kruiden', 1000, $official_item, new WC_Order() ),
+		1000.0,
+		'Official pack weight remains a supported fallback'
+	);
+
+	$single_bag = new SooCoolWeightTestProduct( array( 'pa_gewicht' => '80g' ) );
+	$single_item = new SooCoolWeightTestItem( $single_bag );
+	soocool_weight_expect(
+		$weight_method->invoke( $builder, $single_bag, 'Kip kruiden', 1000, $single_item, new WC_Order() ),
+		80.0,
+		'A variation with no Aantal attribute remains one bag'
+	);
+
 	$over_limit_order = new WC_Order( array( new SooCoolWeightTestItem( $meat, 1200 ) ) );
 	soocool_weight_expect_rejected(
 		static fn () => $goods_method->invoke( $builder, $over_limit_order, $settings ),
