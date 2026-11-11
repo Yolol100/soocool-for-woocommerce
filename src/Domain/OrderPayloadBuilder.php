@@ -259,14 +259,16 @@ final class OrderPayloadBuilder {
 		$is_variation = is_object( $product ) && method_exists( $product, 'get_variation_attributes' );
 
 		if ( $is_variation ) {
-			$variation_owned_weight = $this->woocommerce_product_weight_grams( $product, 'edit' );
-			if ( null !== $variation_owned_weight ) {
-				return $variation_owned_weight;
-			}
-
+			// The selected Weight and Aantal attributes define the sellable pack,
+			// even when WooCommerce inherits a weight from the variable parent.
 			$variation_weight = $this->weight_from_variation_context( $product, $item );
 			if ( null !== $variation_weight ) {
 				return $variation_weight;
+			}
+
+			$variation_owned_weight = $this->woocommerce_product_weight_grams( $product, 'edit' );
+			if ( null !== $variation_owned_weight ) {
+				return $variation_owned_weight;
 			}
 		}
 
