@@ -374,6 +374,16 @@ namespace {
 		'A variation with no Aantal attribute remains one bag'
 	);
 
+	$invalid_weight_meta = new SooCoolWeightTestItem(
+		$packs_80g,
+		1,
+		array( (object) array( 'display_key' => 'Gewicht', 'display_value' => array() ) )
+	);
+	soocool_weight_expect_rejected(
+		static fn () => $weight_method->invoke( $builder, $packs_80g, 'Kip kruiden', 1000, $invalid_weight_meta, new WC_Order() ),
+		'Non-scalar weight metadata must not be accepted as fallback'
+	);
+
 	$over_limit_order = new WC_Order( array( new SooCoolWeightTestItem( $meat, 1200 ) ) );
 	soocool_weight_expect_rejected(
 		static fn () => $goods_method->invoke( $builder, $over_limit_order, $settings ),
