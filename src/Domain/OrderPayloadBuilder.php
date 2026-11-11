@@ -446,7 +446,9 @@ final class OrderPayloadBuilder {
 	}
 
 	private function normalize_weight_attribute_value( string $value ): string {
-		if ( 1 !== preg_match( '/^\s*(\d+)-(\d+)\s*(kg|kilogram(?:men)?|kilo|g|gram(?:men)?)\s*$/iu', $value, $matches ) ) {
+		// Only a single-digit decimal segment is unambiguous (0-5kg => 0.5kg).
+		// A range such as 10-20kg must not be interpreted as 10.20kg.
+		if ( 1 !== preg_match( '/^\s*(\d)-(\d)\s*(kg|kilogram(?:men)?|kilo|g|gram(?:men)?)\s*$/iu', $value, $matches ) ) {
 			return $value;
 		}
 
