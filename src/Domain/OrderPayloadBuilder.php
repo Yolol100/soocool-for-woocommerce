@@ -259,14 +259,16 @@ final class OrderPayloadBuilder {
 		$is_variation = is_object( $product ) && method_exists( $product, 'get_variation_attributes' );
 
 		if ( $is_variation ) {
-			$variation_owned_weight = $this->woocommerce_product_weight_grams( $product, 'edit' );
-			if ( null !== $variation_owned_weight ) {
-				return $variation_owned_weight;
-			}
-
+			// The selected Weight and Aantal attributes define the sellable pack,
+			// even when WooCommerce inherits a weight from the variable parent.
 			$variation_weight = $this->weight_from_variation_context( $product, $item );
 			if ( null !== $variation_weight ) {
 				return $variation_weight;
+			}
+
+			$variation_owned_weight = $this->woocommerce_product_weight_grams( $product, 'edit' );
+			if ( null !== $variation_owned_weight ) {
+				return $variation_owned_weight;
 			}
 		}
 
@@ -317,8 +319,9 @@ final class OrderPayloadBuilder {
 	}
 
 	private function weight_from_variation_context( mixed $product, mixed $item ): ?float {
-		$keyed_candidates   = array();
-		$generic_candidates = array();
+		$keyed_candidates    = array();
+		$generic_candidates  = array();
+		$quantity_candidates = array();
 
 		if ( is_object( $product ) && method_exists( $product, 'get_variation_attributes' ) ) {
 			$attributes = $product->get_variation_attributes( false );
@@ -332,6 +335,7 @@ final class OrderPayloadBuilder {
 						}
 					}
 					$this->collect_weight_candidate( (string) $key, $value, $keyed_candidates, $generic_candidates );
+					$this->collect_quantity_candidate( (string) $key, $value, $quantity_candidates );
 				}
 			}
 		}
@@ -356,19 +360,71 @@ final class OrderPayloadBuilder {
 				}
 
 				$this->collect_weight_candidate( is_scalar( $key ) ? (string) $key : '', $value, $keyed_candidates, $generic_candidates );
+				$this->collect_quantity_candidate( is_scalar( $key ) ? (string) $key : '', $value, $quantity_candidates );
 			}
 		}
 
-		if ( array() !== $keyed_candidates ) {
-			return $this->single_unique_weight( $keyed_candidates );
+		$unique_counts = array_values( array_unique( $quantity_candidates ) );
+		if ( 1 < count( $unique_counts ) ) {
+			$this->reject_invalid_variation_attribute();
 		}
 
-		return $this->single_unique_weight( $generic_candidates );
+		$weight_candidates = array() !== $keyed_candidates ? $keyed_candidates : $generic_candidates;
+		$unit_weight = $this->single_unique_weight( $weight_candidates );
+		if ( null === $unit_weight ) {
+			if ( array() !== $weight_candidates ) {
+				$this->reject_invalid_variation_attribute();
+			}
+
+			// A multipack without a usable unit weight must not silently become
+			// 1 kg per order item. A real WooCommerce weight can represent the pack.
+			if (
+				1 < ( $unique_counts[0] ?? 1 )
+				&& null === $this->woocommerce_product_weight_grams( $product, 'edit' )
+				&& null === $this->woocommerce_product_weight_grams( $product )
+			) {
+				$this->reject_invalid_variation_attribute();
+			}
+
+			return null;
+		}
+
+		$weight = $unit_weight * ( $unique_counts[0] ?? 1 );
+		if ( ! is_finite( $weight ) || $weight > PHP_INT_MAX ) {
+			throw new PayloadValidationException( __( 'Het berekende SooCool-ordergewicht is te groot om veilig te verwerken.', 'soocool-for-woocommerce' ) );
+		}
+
+		return $weight;
+	}
+
+	/** @param array<int, int> $quantity_candidates */
+	private function collect_quantity_candidate( string $key, mixed $raw_value, array &$quantity_candidates ): void {
+		$key = trim( wp_strip_all_tags( $key ) );
+		$key = function_exists( 'mb_strtolower' ) ? mb_strtolower( $key ) : strtolower( $key );
+		$key = preg_replace( '/[^\p{L}\p{N}]+/u', ' ', $key ) ?? $key;
+		if ( 1 !== preg_match( '/(?:^|\s)(?:aantal|quantity|count)(?:\s|$)/u', $key ) ) {
+			return;
+		}
+
+		$value = is_scalar( $raw_value ) ? trim( wp_strip_all_tags( (string) $raw_value ) ) : '';
+		if ( 1 !== preg_match( '/^[1-9]\d{0,5}$/', $value ) ) {
+			$this->reject_invalid_variation_attribute();
+		}
+
+		$quantity_candidates[] = (int) $value;
+	}
+
+	private function reject_invalid_variation_attribute(): never {
+		throw new PayloadValidationException( __( 'Controleer Gewicht en Aantal van de geselecteerde productvariatie. De waarden zijn ongeldig of spreken elkaar tegen.', 'soocool-for-woocommerce' ) );
 	}
 
 	/** @param array<int, float> $keyed_candidates @param array<int, float> $generic_candidates */
 	private function collect_weight_candidate( string $key, mixed $raw_value, array &$keyed_candidates, array &$generic_candidates ): void {
 		if ( ! is_scalar( $raw_value ) ) {
+			if ( $this->is_weight_attribute_key( $key ) ) {
+				$this->reject_invalid_variation_attribute();
+			}
+
 			return;
 		}
 
@@ -381,6 +437,10 @@ final class OrderPayloadBuilder {
 
 		$weight = $this->weight_from_product_name( $value );
 		if ( null === $weight ) {
+			if ( $is_weight_key && '' !== $value ) {
+				$this->reject_invalid_variation_attribute();
+			}
+
 			return;
 		}
 
@@ -400,7 +460,9 @@ final class OrderPayloadBuilder {
 	}
 
 	private function normalize_weight_attribute_value( string $value ): string {
-		if ( 1 !== preg_match( '/^\s*(\d+)-(\d+)\s*(kg|kilogram(?:men)?|kilo|g|gram(?:men)?)\s*$/iu', $value, $matches ) ) {
+		// Only a single-digit decimal segment is unambiguous (0-5kg => 0.5kg).
+		// A range such as 10-20kg must not be interpreted as 10.20kg.
+		if ( 1 !== preg_match( '/^\s*(\d)-(\d)\s*(kg|kilogram(?:men)?|kilo|g|gram(?:men)?)\s*$/iu', $value, $matches ) ) {
 			return $value;
 		}
 

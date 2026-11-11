@@ -129,6 +129,15 @@ jobs:
             --path="$WP_PATH" \
             --allow-root
 
+      - name: Real WooCommerce variation weight and packaging regression
+        env:
+          WP_PATH: /tmp/wordpress
+        run: |
+          wp eval-file \
+            "$GITHUB_WORKSPACE/tests/woocommerce-pack-weight-runtime.php" \
+            --path="$WP_PATH" \
+            --allow-root
+
       - name: Activation and deactivation lifecycle
         env:
           WP_PATH: /tmp/wordpress

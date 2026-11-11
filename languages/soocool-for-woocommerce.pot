@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: SooCool for WooCommerce 0.7.148\n"
+"Project-Id-Version: SooCool for WooCommerce 0.7.149\n"
 "Report-Msgid-Bugs-To: security@webactueel.nl\n"
 "POT-Creation-Date: 2026-09-02 15:53+0000\n"
 "PO-Revision-Date: 2026-09-02 15:53+0000\n"
@@ -593,6 +593,11 @@ msgstr ""
 
 #: assets/build/admin.js:582 assets/build/admin.js:684
 msgid "Controleer de instellingen:"
+msgstr ""
+
+
+#: src/Domain/OrderPayloadBuilder.php:418
+msgid "Controleer Gewicht en Aantal van de geselecteerde productvariatie. De waarden zijn ongeldig of spreken elkaar tegen."
 msgstr ""
 
 
@@ -1351,7 +1356,7 @@ msgid "Het aantal te bewaren logregels moet een heel getal tussen 20 en 500 zijn
 msgstr ""
 
 
-#: src/Domain/OrderPayloadBuilder.php:156 src/Domain/OrderPayloadBuilder.php:180
+#: src/Domain/OrderPayloadBuilder.php:156 src/Domain/OrderPayloadBuilder.php:180 src/Domain/OrderPayloadBuilder.php:394
 msgid "Het berekende SooCool-ordergewicht is te groot om veilig te verwerken."
 msgstr ""
 

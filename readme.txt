@@ -4,7 +4,7 @@ Tags: woocommerce, shipping, logistics, transport, orders
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.7.148
+Stable tag: 0.7.149
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,6 +98,11 @@ Site owners remain responsible for documenting SooCool as a transport/data recip
 Uninstall removes plugin settings, plugin-owned logs, locks, transients and temporary e-mail-label files. SooCool order metadata remains on WooCommerce orders for historical and audit continuity.
 
 == Changelog ==
+
+= 0.7.149 =
+* Verwerkt WooCommerce-variaties met Gewicht × Aantal, daarna de WooCommerce-bestelhoeveelheid.
+* Voorkomt foutieve Soocool-dozen bij conflicterende of ontbrekende gewichten van multipacks; houdt de grens van 10 kg per doos intact.
+* Breidt controles uit voor aantallen, retouren, gemengde bestellingen en echte WooCommerce/HPOS-runtimes.
 
 = 0.7.148 =
 * Synchroniseert automatisch alleen WooCommerce-orders die WooCommerce als betaald beschouwt; standaard `pending`, `failed`, `on-hold`, `cancelled` en `refunded` worden niet automatisch naar SooCool gestuurd.
