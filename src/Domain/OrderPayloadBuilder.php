@@ -371,12 +371,12 @@ final class OrderPayloadBuilder {
 
 		$unique_counts = array_values( array_unique( $quantity_candidates ) );
 		if ( 1 < count( $unique_counts ) ) {
-			throw new PayloadValidationException( __( 'De geselecteerde variatie heeft conflicterende waarden voor Aantal. Controleer de productvariatie.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( __( 'Het berekende SooCool-ordergewicht is te groot om veilig te verwerken.', 'soocool-for-woocommerce' ) );
 		}
 
 		$weight = $unit_weight * ( $unique_counts[0] ?? 1 );
 		if ( ! is_finite( $weight ) || $weight > PHP_INT_MAX ) {
-			throw new PayloadValidationException( __( 'Het berekende gewicht van de productvariatie is te groot.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( __( 'Het berekende SooCool-ordergewicht is te groot om veilig te verwerken.', 'soocool-for-woocommerce' ) );
 		}
 
 		return $weight;
@@ -393,7 +393,7 @@ final class OrderPayloadBuilder {
 
 		$value = is_scalar( $raw_value ) ? trim( wp_strip_all_tags( (string) $raw_value ) ) : '';
 		if ( 1 !== preg_match( '/^[1-9]\d{0,5}$/', $value ) ) {
-			throw new PayloadValidationException( __( 'Het aantal in de geselecteerde productvariatie is ongeldig.', 'soocool-for-woocommerce' ) );
+			throw new PayloadValidationException( __( 'Het berekende SooCool-ordergewicht is te groot om veilig te verwerken.', 'soocool-for-woocommerce' ) );
 		}
 
 		$quantity_candidates[] = (int) $value;
