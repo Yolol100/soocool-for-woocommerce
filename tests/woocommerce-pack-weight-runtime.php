@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 use SooCool\WooCommerce\Domain\OrderPayloadBuilder;
 
 if ( ! defined( 'SOOCOOL_VERSION' )
