@@ -364,14 +364,19 @@ final class OrderPayloadBuilder {
 			}
 		}
 
-		$unit_weight = array() !== $keyed_candidates ? $this->single_unique_weight( $keyed_candidates ) : $this->single_unique_weight( $generic_candidates );
-		if ( null === $unit_weight ) {
-			return null;
-		}
-
 		$unique_counts = array_values( array_unique( $quantity_candidates ) );
 		if ( 1 < count( $unique_counts ) ) {
-			throw new PayloadValidationException( __( 'Het berekende SooCool-ordergewicht is te groot om veilig te verwerken.', 'soocool-for-woocommerce' ) );
+			$this->reject_invalid_variation_attribute();
+		}
+
+		$weight_candidates = array() !== $keyed_candidates ? $keyed_candidates : $generic_candidates;
+		$unit_weight = $this->single_unique_weight( $weight_candidates );
+		if ( null === $unit_weight ) {
+			if ( array() !== $weight_candidates ) {
+				$this->reject_invalid_variation_attribute();
+			}
+
+			return null;
 		}
 
 		$weight = $unit_weight * ( $unique_counts[0] ?? 1 );
@@ -393,10 +398,14 @@ final class OrderPayloadBuilder {
 
 		$value = is_scalar( $raw_value ) ? trim( wp_strip_all_tags( (string) $raw_value ) ) : '';
 		if ( 1 !== preg_match( '/^[1-9]\d{0,5}$/', $value ) ) {
-			throw new PayloadValidationException( __( 'Het berekende SooCool-ordergewicht is te groot om veilig te verwerken.', 'soocool-for-woocommerce' ) );
+			$this->reject_invalid_variation_attribute();
 		}
 
 		$quantity_candidates[] = (int) $value;
+	}
+
+	private function reject_invalid_variation_attribute(): never {
+		throw new PayloadValidationException( __( 'Controleer Gewicht en Aantal van de geselecteerde productvariatie. De waarden zijn ongeldig of spreken elkaar tegen.', 'soocool-for-woocommerce' ) );
 	}
 
 	/** @param array<int, float> $keyed_candidates @param array<int, float> $generic_candidates */
@@ -414,6 +423,10 @@ final class OrderPayloadBuilder {
 
 		$weight = $this->weight_from_product_name( $value );
 		if ( null === $weight ) {
+			if ( $is_weight_key && '' !== $value ) {
+				$this->reject_invalid_variation_attribute();
+			}
+
 			return;
 		}
 
