@@ -317,8 +317,9 @@ final class OrderPayloadBuilder {
 	}
 
 	private function weight_from_variation_context( mixed $product, mixed $item ): ?float {
-		$keyed_candidates   = array();
-		$generic_candidates = array();
+		$keyed_candidates    = array();
+		$generic_candidates  = array();
+		$quantity_candidates = array();
 
 		if ( is_object( $product ) && method_exists( $product, 'get_variation_attributes' ) ) {
 			$attributes = $product->get_variation_attributes( false );
@@ -332,6 +333,7 @@ final class OrderPayloadBuilder {
 						}
 					}
 					$this->collect_weight_candidate( (string) $key, $value, $keyed_candidates, $generic_candidates );
+					$this->collect_quantity_candidate( (string) $key, $value, $quantity_candidates );
 				}
 			}
 		}
@@ -356,14 +358,43 @@ final class OrderPayloadBuilder {
 				}
 
 				$this->collect_weight_candidate( is_scalar( $key ) ? (string) $key : '', $value, $keyed_candidates, $generic_candidates );
+				$this->collect_quantity_candidate( is_scalar( $key ) ? (string) $key : '', $value, $quantity_candidates );
 			}
 		}
 
-		if ( array() !== $keyed_candidates ) {
-			return $this->single_unique_weight( $keyed_candidates );
+		$unit_weight = array() !== $keyed_candidates ? $this->single_unique_weight( $keyed_candidates ) : $this->single_unique_weight( $generic_candidates );
+		if ( null === $unit_weight ) {
+			return null;
 		}
 
-		return $this->single_unique_weight( $generic_candidates );
+		$unique_counts = array_values( array_unique( $quantity_candidates ) );
+		if ( 1 < count( $unique_counts ) ) {
+			throw new PayloadValidationException( __( 'De geselecteerde variatie heeft conflicterende waarden voor Aantal. Controleer de productvariatie.', 'soocool-for-woocommerce' ) );
+		}
+
+		$weight = $unit_weight * ( $unique_counts[0] ?? 1 );
+		if ( ! is_finite( $weight ) || $weight > PHP_INT_MAX ) {
+			throw new PayloadValidationException( __( 'Het berekende gewicht van de productvariatie is te groot.', 'soocool-for-woocommerce' ) );
+		}
+
+		return $weight;
+	}
+
+	/** @param array<int, int> $quantity_candidates */
+	private function collect_quantity_candidate( string $key, mixed $raw_value, array &$quantity_candidates ): void {
+		$key = trim( wp_strip_all_tags( $key ) );
+		$key = function_exists( 'mb_strtolower' ) ? mb_strtolower( $key ) : strtolower( $key );
+		$key = preg_replace( '/[^\p{L}\p{N}]+/u', ' ', $key ) ?? $key;
+		if ( 1 !== preg_match( '/(?:^|\s)(?:aantal|quantity|count)(?:\s|$)/u', $key ) ) {
+			return;
+		}
+
+		$value = is_scalar( $raw_value ) ? trim( wp_strip_all_tags( (string) $raw_value ) ) : '';
+		if ( 1 !== preg_match( '/^[1-9]\d{0,5}$/', $value ) ) {
+			throw new PayloadValidationException( __( 'Het aantal in de geselecteerde productvariatie is ongeldig.', 'soocool-for-woocommerce' ) );
+		}
+
+		$quantity_candidates[] = (int) $value;
 	}
 
 	/** @param array<int, float> $keyed_candidates @param array<int, float> $generic_candidates */
