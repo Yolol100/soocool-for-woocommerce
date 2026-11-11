@@ -421,6 +421,10 @@ final class OrderPayloadBuilder {
 	/** @param array<int, float> $keyed_candidates @param array<int, float> $generic_candidates */
 	private function collect_weight_candidate( string $key, mixed $raw_value, array &$keyed_candidates, array &$generic_candidates ): void {
 		if ( ! is_scalar( $raw_value ) ) {
+			if ( $this->is_weight_attribute_key( $key ) ) {
+				$this->reject_invalid_variation_attribute();
+			}
+
 			return;
 		}
 
