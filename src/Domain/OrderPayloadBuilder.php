@@ -376,6 +376,16 @@ final class OrderPayloadBuilder {
 				$this->reject_invalid_variation_attribute();
 			}
 
+			// A multipack without a usable unit weight must not silently become
+			// 1 kg per order item. A real WooCommerce weight can represent the pack.
+			if (
+				1 < ( $unique_counts[0] ?? 1 )
+				&& null === $this->woocommerce_product_weight_grams( $product, 'edit' )
+				&& null === $this->woocommerce_product_weight_grams( $product )
+			) {
+				$this->reject_invalid_variation_attribute();
+			}
+
 			return null;
 		}
 
