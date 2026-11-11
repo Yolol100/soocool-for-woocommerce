@@ -596,6 +596,11 @@ msgid "Controleer de instellingen:"
 msgstr ""
 
 
+#: src/Domain/OrderPayloadBuilder.php:408
+msgid "Controleer Gewicht en Aantal van de geselecteerde productvariatie. De waarden zijn ongeldig of spreken elkaar tegen."
+msgstr ""
+
+
 #: assets/build/admin.js:1002
 msgid "Controleer het bezorgschema:"
 msgstr ""
@@ -1351,7 +1356,7 @@ msgid "Het aantal te bewaren logregels moet een heel getal tussen 20 en 500 zijn
 msgstr ""
 
 
-#: src/Domain/OrderPayloadBuilder.php:156 src/Domain/OrderPayloadBuilder.php:180
+#: src/Domain/OrderPayloadBuilder.php:156 src/Domain/OrderPayloadBuilder.php:180 src/Domain/OrderPayloadBuilder.php:384
 msgid "Het berekende SooCool-ordergewicht is te groot om veilig te verwerken."
 msgstr ""
 
