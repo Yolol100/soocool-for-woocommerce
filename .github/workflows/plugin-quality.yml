@@ -50,6 +50,9 @@ jobs:
       - name: Payment eligibility regression
         run: php tests/order-sync-payment-regression.php
 
+      - name: Variation pack weight regression
+        run: php tests/variation-pack-weight-regression.php
+
       - name: Maintenance recovery regression
         run: php tests/order-actions-recovery-regression.php
 
