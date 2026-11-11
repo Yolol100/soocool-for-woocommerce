@@ -34,7 +34,11 @@ namespace {
 	}
 
 	class WC_Order {
-		public function __construct( private readonly array $items = array() ) {}
+		public function __construct( private readonly array $items = array(), private readonly array $refunds = array() ) {}
+
+		public function get_qty_refunded_for_item( int $item_id ): float {
+			return (float) ( $this->refunds[ $item_id ] ?? 0 );
+		}
 
 		public function get_items(): array {
 			return $this->items;
@@ -48,7 +52,8 @@ namespace {
 	final class SooCoolWeightTestProduct {
 		public function __construct(
 			private readonly array $attributes,
-			private readonly string $weight = ''
+			private readonly string $weight = '',
+			private readonly bool $virtual = false
 		) {}
 
 		public function get_variation_attributes( bool $formatted = false ): array {
@@ -64,7 +69,7 @@ namespace {
 		}
 
 		public function is_virtual(): bool {
-			return false;
+			return $this->virtual;
 		}
 
 		public function get_sku(): string {
@@ -72,14 +77,32 @@ namespace {
 		}
 	}
 
+	final class SooCoolSimpleWeightTestProduct {
+		public function __construct( private readonly string $weight ) {}
+
+		public function get_weight( string $context = 'view' ): string {
+			return $this->weight;
+		}
+
+		public function is_virtual(): bool {
+			return false;
+		}
+
+		public function get_sku(): string {
+			return 'simple-product';
+		}
+	}
+
 	final class SooCoolWeightTestItem {
 		public function __construct(
-			private readonly SooCoolWeightTestProduct $product,
+			private readonly object $product,
 			private readonly int $quantity = 1,
-			private readonly array $metadata = array()
+			private readonly array $metadata = array(),
+			private readonly int $id = 0,
+			private readonly string $name = 'Kip kruiden'
 		) {}
 
-		public function get_product(): SooCoolWeightTestProduct {
+		public function get_product(): object {
 			return $this->product;
 		}
 
@@ -87,8 +110,12 @@ namespace {
 			return $this->quantity;
 		}
 
+		public function get_id(): int {
+			return $this->id;
+		}
+
 		public function get_name(): string {
-			return 'Kip kruiden';
+			return $this->name;
 		}
 
 		public function get_all_formatted_meta_data( string $hide_prefix = '', bool $include_all = false ): array {
@@ -101,6 +128,17 @@ namespace {
 			fwrite( STDERR, $message . ': expected ' . var_export( $expected, true ) . ', got ' . var_export( $actual, true ) . PHP_EOL );
 			exit( 1 );
 		}
+	}
+
+	function soocool_weight_expect_rejected( callable $action, string $message ): void {
+		try {
+			$action();
+		} catch ( \SooCool\WooCommerce\Domain\PayloadValidationException ) {
+			return;
+		}
+
+		fwrite( STDERR, $message . ': expected PayloadValidationException.' . PHP_EOL );
+		exit( 1 );
 	}
 }
 
@@ -183,5 +221,137 @@ namespace {
 		// Expected: conflicting variation count must not silently undercharge.
 	}
 
+
+	// Variations use the selected pack attributes; WC line quantity multiplies the full pack.
+	$packs_80g = new SooCoolWeightTestProduct( array( 'pa_gewicht' => '80g', 'pa_aantal' => '10' ) );
+	$weight_from_meta = new SooCoolWeightTestProduct( array() );
+	$pack_from_meta_item = new SooCoolWeightTestItem(
+		$weight_from_meta,
+		1,
+		array(
+			(object) array( 'display_key' => 'Gewicht', 'display_value' => '80g' ),
+			(object) array( 'display_key' => 'Aantal', 'display_value' => '10' ),
+		)
+	);
+	soocool_weight_expect(
+		$weight_method->invoke( $builder, $weight_from_meta, 'Kip kruiden', 1000, $pack_from_meta_item, new WC_Order() ),
+		800.0,
+		'Pack attributes stored in WooCommerce order item metadata'
+	);
+
+	$decimal_variant = new SooCoolWeightTestProduct( array( 'pa_gewicht' => '1,5kg', 'pa_aantal' => '3' ) );
+	$decimal_item = new SooCoolWeightTestItem( $decimal_variant );
+	soocool_weight_expect(
+		$weight_method->invoke( $builder, $decimal_variant, 'Kip kruiden', 1000, $decimal_item, new WC_Order() ),
+		4500.0,
+		'Localized decimal comma remains valid'
+	);
+	$taxonomy_slug = new SooCoolWeightTestProduct( array( 'pa_gewicht' => '0-5kg', 'pa_aantal' => '2' ) );
+	$slug_item = new SooCoolWeightTestItem( $taxonomy_slug );
+	soocool_weight_expect(
+		$weight_method->invoke( $builder, $taxonomy_slug, 'Kip kruiden', 1000, $slug_item, new WC_Order() ),
+		1000.0,
+		'Legacy taxonomy slug 0-5kg is 0.5kg'
+	);
+
+	// Regression: packed products and ordinary products share the same 10 kg capacity.
+	$meat = new SooCoolSimpleWeightTestProduct( '9' );
+	$under_limit_order = new WC_Order(
+		array(
+			new SooCoolWeightTestItem( $meat ),
+			new SooCoolWeightTestItem( $packs_80g ),
+		)
+	);
+	$goods = $goods_method->invoke( $builder, $under_limit_order, $settings );
+	soocool_weight_expect( count( $goods ), 1, '9kg meat and 800g spices fit in one box' );
+	soocool_weight_expect( $goods[0]['weight'], 9800, 'Mixed order must equal 9800 grams' );
+
+	$exact_limit = new SooCoolWeightTestProduct( array( 'pa_gewicht' => '1kg', 'pa_aantal' => '10' ) );
+	$goods = $goods_method->invoke( $builder, new WC_Order( array( new SooCoolWeightTestItem( $exact_limit ) ) ), $settings );
+	soocool_weight_expect( count( $goods ), 1, 'Exactly 10kg is still one box' );
+	soocool_weight_expect( $goods[0]['weight'], 10000, 'Exact box capacity' );
+
+	$one_gram_over = new SooCoolWeightTestProduct( array( 'pa_gewicht' => '1g', 'pa_aantal' => '10001' ) );
+	$goods = $goods_method->invoke( $builder, new WC_Order( array( new SooCoolWeightTestItem( $one_gram_over ) ) ), $settings );
+	soocool_weight_expect( count( $goods ), 2, 'One gram over capacity must require two boxes' );
+	soocool_weight_expect( $goods[1]['weight'], 1, 'Remainder is one gram' );
+
+	$refunded_item = new SooCoolWeightTestItem( $packs_80g, 2, array(), 301 );
+	$goods = $goods_method->invoke( $builder, new WC_Order( array( $refunded_item ), array( 301 => 1 ) ), $settings );
+	soocool_weight_expect( $goods[0]['weight'], 800, 'One refunded pack must be excluded' );
+	soocool_weight_expect_rejected(
+		static fn () => $goods_method->invoke( $builder, new WC_Order( array( $refunded_item ), array( 301 => 2 ) ), $settings ),
+		'Fully refunded order must not create boxes'
+	);
+
+	$virtual = new SooCoolWeightTestProduct( array( 'pa_gewicht' => '10kg', 'pa_aantal' => '10' ), '', true );
+	$goods = $goods_method->invoke(
+		$builder,
+		new WC_Order( array( new SooCoolWeightTestItem( $virtual ), new SooCoolWeightTestItem( $packs_80g ) ) ),
+		$settings
+	);
+	soocool_weight_expect( $goods[0]['weight'], 800, 'Virtual products do not count towards shipping weight' );
+	$goods = $goods_method->invoke(
+		$builder,
+		new WC_Order( array( new SooCoolWeightTestItem( $virtual, 0 ), new SooCoolWeightTestItem( $packs_80g ) ) ),
+		$settings
+	);
+	soocool_weight_expect( $goods[0]['weight'], 800, 'Zero-quantity lines are ignored' );
+
+	$missing_weight = new SooCoolSimpleWeightTestProduct( '' );
+	$goods = $goods_method->invoke( $builder, new WC_Order( array( new SooCoolWeightTestItem( $missing_weight ) ) ), $settings );
+	soocool_weight_expect( $goods[0]['weight'], 1000, 'Legacy configurable missing-weight fallback is preserved' );
+	$name_weight = new SooCoolSimpleWeightTestProduct( '' );
+	$goods = $goods_method->invoke(
+		$builder,
+		new WC_Order( array( new SooCoolWeightTestItem( $name_weight, 1, array(), 0, 'Kip kruiden - 80g' ) ) ),
+		$settings
+	);
+	soocool_weight_expect( $goods[0]['weight'], 80, 'Legacy unambiguous product-name weight still works' );
+
+	$bad_count_values = array( '0', '-1', '2.5', '1e2', '10 stuks', '1000000', '<b>0</b>' );
+	foreach ( $bad_count_values as $bad_count ) {
+		$invalid = new SooCoolWeightTestProduct( array( 'pa_gewicht' => '80g', 'pa_aantal' => $bad_count ), '1' );
+		$invalid_item = new SooCoolWeightTestItem( $invalid );
+		soocool_weight_expect_rejected(
+			static fn () => $weight_method->invoke( $builder, $invalid, 'Kip kruiden', 1000, $invalid_item, new WC_Order() ),
+			'Invalid count ' . $bad_count
+		);
+	}
+
+	$wrong_weight = new SooCoolWeightTestProduct( array( 'pa_gewicht' => 'unknown', 'pa_aantal' => '10' ), '1' );
+	$wrong_item = new SooCoolWeightTestItem( $wrong_weight );
+	soocool_weight_expect_rejected(
+		static fn () => $weight_method->invoke( $builder, $wrong_weight, 'Kip kruiden', 1000, $wrong_item, new WC_Order() ),
+		'Invalid explicit weight must not silently use the one kilogram fallback'
+	);
+	$ambiguous_range = new SooCoolWeightTestProduct( array( 'pa_gewicht' => '10-20kg', 'pa_aantal' => '2' ) );
+	$range_item = new SooCoolWeightTestItem( $ambiguous_range );
+	soocool_weight_expect_rejected(
+		static fn () => $weight_method->invoke( $builder, $ambiguous_range, 'Kip kruiden', 1000, $range_item, new WC_Order() ),
+		'Ambiguous taxonomy range must not be interpreted as a decimal'
+	);
+	$conflicting_weight = new SooCoolWeightTestItem(
+		$packs_80g,
+		1,
+		array( (object) array( 'display_key' => 'Gewicht', 'display_value' => '200g' ) )
+	);
+	soocool_weight_expect_rejected(
+		static fn () => $weight_method->invoke( $builder, $packs_80g, 'Kip kruiden', 1000, $conflicting_weight, new WC_Order() ),
+		'Conflicting historical and current weight attributes must not silently use fallback'
+	);
+	$ambiguous_counts = new SooCoolWeightTestProduct( array( 'pa_aantal' => '10' ), '1' );
+	$ambiguous_item = new SooCoolWeightTestItem( $ambiguous_counts, 1, array( (object) array( 'display_key' => 'Aantal', 'display_value' => '2' ) ) );
+	soocool_weight_expect_rejected(
+		static fn () => $weight_method->invoke( $builder, $ambiguous_counts, 'Kip kruiden', 1000, $ambiguous_item, new WC_Order() ),
+		'Conflicting counts must be rejected even when explicit weight is missing'
+	);
+
+	$over_limit_order = new WC_Order( array( new SooCoolWeightTestItem( $meat, 1200 ) ) );
+	soocool_weight_expect_rejected(
+		static fn () => $goods_method->invoke( $builder, $over_limit_order, $settings ),
+		'Maximum box safety limit remains enforced'
+	);
+	
 	echo "SooCool variation pack weight regression checks passed.\n";
 }
