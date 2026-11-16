@@ -266,6 +266,14 @@ namespace {
 	soocool_weight_expect( count( $goods ), 1, '9kg meat and 800g spices fit in one box' );
 	soocool_weight_expect( $goods[0]['weight'], 9800, 'Mixed order must equal 9800 grams' );
 
+	$over_capacity_meat = new SooCoolSimpleWeightTestProduct( '9.5' );
+	$over_capacity_order = new WC_Order( array( new SooCoolWeightTestItem( $over_capacity_meat ), new SooCoolWeightTestItem( $packs_80g ) ) );
+	$goods = $goods_method->invoke( $builder, $over_capacity_order, $settings );
+	soocool_weight_expect( count( $goods ), 2, '9.5kg and 800g require two boxes' );
+	soocool_weight_expect( $goods[0]['weight'], 10000, 'First box holds 10kg' );
+	soocool_weight_expect( $goods[1]['weight'], 300, 'Second box holds 300g' );
+
+
 	$exact_limit = new SooCoolWeightTestProduct( array( 'pa_gewicht' => '1kg', 'pa_aantal' => '10' ) );
 	$goods = $goods_method->invoke( $builder, new WC_Order( array( new SooCoolWeightTestItem( $exact_limit ) ) ), $settings );
 	soocool_weight_expect( count( $goods ), 1, 'Exactly 10kg is still one box' );
